@@ -3,6 +3,10 @@
     #include <queue>
     #include <iostream>
     #include <string>
+    #include <stack>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <stdio.h>
     
     /* 
      * return 1 -> if yylval was successfuly created.
@@ -98,8 +102,7 @@
     enum lex_state_t { DEFAULT = 0, LINE_COMMENT = 1, BLOCK_COMMENT = 2 } state;
     unsigned int tokenCounter;
     std::queue<alpha_token_t*> tokenQueue;
-    
-   
+    std::stack<unsigned int> commentStack;
 %}
 
 /* Flex options */
@@ -614,15 +617,57 @@ STRING                      \"(\\.|[^"\\])*\"
                         }
 
 {LINE_COMMENT}          {
-                            
+                            if( state != DEFAULT ) return 0;
+                            state = LINE_COMMENT;
+                            yylval->setNumline(yylineno);
+                            yylval->setNumtoken(++tokenCounter);
+                            yylval->setContent(yytext);
+                            yylval->setTokenCategory("COMMENT");
+                            yylval->setTokenType("LINE_COMMENT");
+                            yylval->setContentType("enumerated");
+                            return 1;
                         }
                             
 {BLOCK_COMMENT_OPEN}    {
-                            
+                            if( state == LINE_COMMENT ) return 0;
+                            commentStack.push(yylineno);
+                            state = BLOCK_COMMENT;
+                            return 0;
                         }
 
 {BLOCK_COMMENT_CLOSE}   {
+                            if( state == LINE_COMMENT ) return 0;
+                            if( commentStack.empty() ) {
+                                alpha_token_t* mult = new alpha_token_t(yylineno, ++tokenCounter, "*", "OPERATOR", "MULTIPLICATION", "enumerated");
+                                alpha_token_t* div = new alpha_token_t(yylineno, ++tokenCounter, "/", "OPERATOR", "DIVISION", "enumerated");
+                                tokenQueue.push(mult);
+                                tokenQueue.push(div);
+                                return 0;
+                            }
+                            unsigned int lastCommentLine = commentStack.top();
+                            commentStack.pop();
                             
+                            std::string blockCommentRange = std::to_string(lastCommentLine) + " - " + std::to_string(yylineno);
+                            char* blockCommentRange_cstr = new char[blockCommentRange.length() + 1];
+                            strcpy(blockCommentRange_cstr, blockCommentRange.c_str());
+                            if(commentStack.empty()) {
+                                state = DEFAULT;
+                                yylval->setNumline(lastCommentLine);
+                                yylval->setNumtoken(++tokenCounter);
+                                yylval->setContent(blockCommentRange_cstr);
+                                yylval->setTokenCategory("COMMENT");
+                                yylval->setTokenType("BLOCK_COMMENT");
+                                yylval->setContentType("enumerated");
+                            } else {
+                                yylval->setNumline(lastCommentLine);
+                                yylval->setNumtoken(++tokenCounter);
+                                yylval->setContent(blockCommentRange_cstr);
+                                yylval->setTokenCategory("COMMENT");
+                                yylval->setTokenType("NESTED_COMMENT");
+                                yylval->setContentType("enumerated");
+                            }
+
+                            return 1;
                         }
 
 
@@ -660,6 +705,9 @@ STRING                      \"(\\.|[^"\\])*\"
                         }
 
 {DELIMITER}             {
+                            if(strcmp(yytext, "\n") == 0 && state == LINE_COMMENT) {
+                                    state = DEFAULT;
+                            }
                         }
 
 {STRING}                {
@@ -686,6 +734,7 @@ int main(int argc, char** argv) {
     
     // Initialization
     tokenQueue = std::queue<alpha_token_t*>();
+    commentStack = std::stack<unsigned int>();
     tokenCounter = 0;
     state = DEFAULT;
 
@@ -721,6 +770,6 @@ int main(int argc, char** argv) {
 }
 
 
-/* 
+/*
 if ()
 */
