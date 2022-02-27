@@ -4,9 +4,7 @@
     #include <iostream>
     #include <string>
     #include <stack>
-    #include <stdlib.h>
     #include <string.h>
-    #include <stdio.h>
     
     /* 
      * return 1 -> if yylval was successfuly created.
@@ -60,7 +58,10 @@
             }
 
             void setContent(char* content) {
-                m_content = content;
+                int strSize = strlen(content);
+                char* newContent = new char[strSize + 1];
+                strcpy(newContent, content);
+                m_content = newContent;
             }
 
             char* getTokenCategory() {
@@ -76,7 +77,10 @@
             }
 
             void setTokenType(char* type) {
-                m_token_type = type;
+                int strSize = strlen(type);
+                char* newTokenType = new char[strSize + 1];
+                strcpy(newTokenType, type);
+                m_token_type = newTokenType;
             }
 
             char* getContentType() {
@@ -90,9 +94,14 @@
             std::string toString() {
                 return  std::to_string(m_numline) + ":   " \
                 + "#" + std::to_string(m_numToken) + "   " \
-                + "\"" + m_content + "\"" + "   " \
+                + (strcmp(m_token_category, "STRING") == 0 ? "" : "\"") \
+                + m_content \
+                + (strcmp(m_token_category, "STRING") == 0 ? "" : "\"") + "   " \
                 + m_token_category + "   " \ 
-                + "\"" +  m_token_type + "\"" + "   " \
+                + (strcmp(m_token_category, "STRING") == 0 ? "" : "\"") \ 
+                +  m_token_type 
+                + (strcmp(m_token_category, "STRING") == 0 ? "" : "\"") \
+                + "   " \
                 + "<-" + m_content_type + "\n";
             }
 
@@ -103,6 +112,51 @@
     unsigned int tokenCounter;
     std::queue<alpha_token_t*> tokenQueue;
     std::stack<unsigned int> commentStack;
+
+    //Function 
+
+    char* formatEscapedCharacters(char* string){
+        int stringSize = strlen(string);
+        char* formatedString = new char[stringSize + 1];
+        int j = 0;
+        for(int i = 0; i < stringSize; ++i) {
+            if(string[i] != '\\') formatedString[j++] = string[i];
+            else {
+                switch(string[i + 1]) {
+                    case 'n':
+                        formatedString[j++] = '\n';
+                        i++;
+                        break;
+                    case 't':
+                        formatedString[j++] = '\t';
+                        i++;
+                        break;
+                    case '\\':
+                        formatedString[j++] = '\\';
+                        i++;
+                        break;
+                    case '\"':    
+                        formatedString[j++] = '"';
+                        i++;
+                        break;    
+                    default:
+                        std::cerr << "Warning: In line " << yylineno << " invalid escape character found!" << std::endl;
+                        return NULL;
+                }
+            }
+        }
+
+        return formatedString;
+    }
+
+    void print_output (FILE* file) {
+        if(file == NULL) file = alpha_yyout;
+        while(!tokenQueue.empty()){
+            alpha_token_t* current = tokenQueue.front();
+            tokenQueue.pop();
+            fprintf(file, current->toString().c_str());
+        }
+    }
 %}
 
 /* Flex options */
@@ -164,6 +218,7 @@ INTEGER                     [0-9]+
 REAL                        [0-9]*\.[0-9]+
 DELIMITER                   [\r\n \t\v\r]
 STRING                      \"(\\.|[^"\\])*\"
+INCOMPLETE_STRING           \"
 
 /* Pattern Actions */
 %%
@@ -689,7 +744,7 @@ STRING                      \"(\\.|[^"\\])*\"
                             yylval->setContent(yytext);
                             yylval->setTokenCategory("INTEGER");
                             yylval->setTokenType(yytext);
-                            yylval->setContentType("int");
+                            yylval->setContentType("integer");
                             return 1;
                         }
                         
@@ -699,7 +754,7 @@ STRING                      \"(\\.|[^"\\])*\"
                             yylval->setNumtoken(++tokenCounter);
                             yylval->setContent(yytext);
                             yylval->setTokenCategory("REAL");
-                            yylval->setTokenType("yytext");
+                            yylval->setTokenType(yytext);
                             yylval->setContentType("real");
                             return 1;
                         }
@@ -708,12 +763,30 @@ STRING                      \"(\\.|[^"\\])*\"
                             if(strcmp(yytext, "\n") == 0 && state == LINE_COMMENT) {
                                     state = DEFAULT;
                             }
+                            return 0;
                         }
 
 {STRING}                {
-                            
+                            if( state != DEFAULT ) return 0;
+                            char* formatedString =  formatEscapedCharacters(yytext);
+                            if(formatedString == NULL) return 0;
+                            yylval->setNumline(yylineno);
+                            yylval->setNumtoken(++tokenCounter);
+                            yylval->setContent(formatedString);
+                            yylval->setTokenCategory("STRING");
+                            yylval->setTokenType(formatedString);
+                            yylval->setContentType("char*");
+                            return 1;
                         }
-                            
+
+
+
+<<EOF>>                 {
+                            if(state != BLOCK_COMMENT && commentStack.empty()) return 2;
+                            std::cerr << "Comment opened in line " << commentStack.top() << " but never closed." << std::endl;
+                            commentStack.pop();
+                            return 2;
+                        }         
                                    
 %%
 
@@ -739,8 +812,10 @@ int main(int argc, char** argv) {
     state = DEFAULT;
 
     // Main Loop
-    while(true) {
-        alpha_token_t* token = new alpha_token_t();
+    bool alive = true;
+    alpha_token_t* token;
+    while(alive) {
+        token = new alpha_token_t();
         int isSuccess = alpha_yylex(token);
         
         switch( isSuccess ) {
@@ -748,8 +823,9 @@ int main(int argc, char** argv) {
                 break;
             case 1:
                 tokenQueue.push(token);
-                std::cout << token->toString() << std::endl;
                 break;
+            case 2:
+                alive = false;
         }
     }
 
@@ -760,16 +836,11 @@ int main(int argc, char** argv) {
     if ( argc == 3) {
         FILE *output_file;
         output_file = fopen(argv[2], "w");
-        // TODO grafoume sto arxeio.
+        print_output(output_file);
         fclose(output_file);
     } else
-        // TODO grafoume sto terminal.
+        print_output(NULL);
 
     return 0;
     
 }
-
-
-/*
-if ()
-*/
