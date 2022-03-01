@@ -7,7 +7,8 @@
     #include <string.h>
     
     /* 
-     * return 2 -> Terminates the program.
+     * return 3 -> Terminates the program (error).
+     * return 2 -> Exits the main loop.
      * return 1 -> If yylval was successfuly created.
      * return 0 -> If yylval was not created.
      */
@@ -239,7 +240,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-    
 {ELSE}                  {   
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -249,8 +249,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("ELSE");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                            
+                        }                       
 {WHILE}                 {   
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -260,8 +259,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("WHILE");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                            
+                        }                      
 {FOR}                   {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -272,7 +270,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;        
                         }
-
 {FUNCTION}              {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -282,8 +279,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("FUNCTION");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }                  
-                            
+                        }                                       
 {RETURN}                {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -294,7 +290,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }  
-     
 {BREAK}                 {   
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -304,8 +299,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("BREAK");
                             yylval->setContentType("enumerated");
                             return 1;
-                        } 
-                            
+                        }                     
 {CONTINUE}              {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -315,8 +309,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("CONTINUE");
                             yylval->setContentType("enumerated");
                             return 1;
-                        } 
-                            
+                        }                      
 {AND}                   {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -327,7 +320,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {NOT}                   {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -338,7 +330,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }    
-
 {OR}                    {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -349,7 +340,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }  
-
 {LOCAL}                 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -360,7 +350,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }    
-
 {TRUE}                  {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -370,8 +359,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("TRUE");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }  
-                        
+                        }                      
 {FALSE}                 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -382,7 +370,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         } 
-
 {NIL}                   {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -392,8 +379,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("NIL");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }              
 {ASSIGNMENT}            {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -404,7 +390,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {ADDITION}              {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -414,8 +399,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("ADDITION");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }               
 {SUBTRACTION}           {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -426,7 +410,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {MULTIPLICATION}        {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -436,8 +419,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("MULTIPLICATION");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }         
 {DIVISION}              {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -447,8 +429,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("DIVISION");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }             
 {MODULO}                {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -458,8 +439,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("MODULO");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }   
-                                                                                                    
+                        }                                                                                              
 {EQUALITY}              {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -469,8 +449,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("EQUALITY");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }                 
 {INEQUALITY}            {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -480,8 +459,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("INEQUALITY");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }              
 {INCREMENT}             {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -491,8 +469,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("INCREMENT");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }                
 {DECREMENT}             {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -502,8 +479,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("DECREMENT");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }                    
 {GREATER_THAN}          {
                             if( state != DEFAULT ) return 0;    
                             yylval->setNumline(alpha_yylineno);
@@ -513,8 +489,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("GREATER_THAN");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                        
+                        }                   
 {LESS_THAN}             {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -525,7 +500,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }            
-
 {GREATER_OR_EQUAL}      {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -536,7 +510,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {LESS_OR_EQUAL}         {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -558,7 +531,7 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-{RIGHT_CURLY_BRACKET}    {
+{RIGHT_CURLY_BRACKET}   {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
@@ -578,7 +551,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-    
 {RIGHT_SQUARE_BRACKET}  {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -589,7 +561,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {LEFT_PARENTHESES}      {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -600,7 +571,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {RIGHT_PARENTHESES}     {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -611,7 +581,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {SEMICOLON}             {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -622,7 +591,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {COMMA}                 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -632,8 +600,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("COMMA");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                            
+                        }                 
 {COLON}                 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -644,7 +611,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {DOUBLE_COLON}          {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -655,7 +621,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {DOT}                   {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -666,7 +631,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {DOUBLE_DOT}            {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -677,7 +641,6 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-
 {LINE_COMMENT}          {
                             if( state != DEFAULT ) return 0;
                             state = LINE_COMMENT;
@@ -688,15 +651,13 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("LINE_COMMENT");
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-                            
+                        }                         
 {BLOCK_COMMENT_OPEN}    {
                             if( state == LINE_COMMENT ) return 0;
                             commentStack.push(alpha_yylineno);
                             state = BLOCK_COMMENT;
                             return 0;
                         }
-
 {BLOCK_COMMENT_CLOSE}   {
                             if( state == LINE_COMMENT ) return 0;
                             if( commentStack.empty() ) {
@@ -731,8 +692,6 @@ INCOMPLETE_STRING           \"
 
                             return 1;
                         }
-
-
 {ID}                    {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -742,8 +701,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType("ID");
                             yylval->setContentType("char*");
                             return 1;
-                        }
-                        
+                        }                       
 {INTEGER}               {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -753,8 +711,7 @@ INCOMPLETE_STRING           \"
                             yylval->setTokenType(alpha_yytext);
                             yylval->setContentType("integer");
                             return 1;
-                        }
-                        
+                        }                       
 {REAL}                  {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -765,14 +722,12 @@ INCOMPLETE_STRING           \"
                             yylval->setContentType("real");
                             return 1;
                         }
-
 {DELIMITER}             {
                             if(strcmp(alpha_yytext, "\n") == 0 && state == LINE_COMMENT) {
                                     state = DEFAULT;
                             }
                             return 0;
                         }
-
 {STRING}                {
                             if( state != DEFAULT ) return 0;
                             char* formatedString =  formatEscapedCharacters(alpha_yytext);
@@ -786,17 +741,17 @@ INCOMPLETE_STRING           \"
                             return 1;
                         }
 {INCOMPLETE_STRING}     {
-                            std::cout << "This was an  incomplet string " << alpha_yytext << std::endl;
-                            return 2;
+                            if(state != DEFAULT) return 0;
+                            std::cerr << "Error: Incomplete string was detected at line:" << alpha_yylineno << std::endl;
+                            return 3;
                         }
-
 
 
 <<EOF>>                 {
                             if(state != BLOCK_COMMENT && commentStack.empty()) return 2;
-                            std::cerr << "Comment opened in line " << commentStack.top() << " but never closed." << std::endl;
+                            std::cerr << "Error: Comment opened in line " << commentStack.top() << " but never closed." << std::endl;
                             commentStack.pop();
-                            return 2;
+                            return 3;
                         }         
                                    
 %%
@@ -837,6 +792,8 @@ int main(int argc, char** argv) {
                 break;
             case 2:
                 alive = false;
+            case 3:
+                exit(0);
         }
     }
 
