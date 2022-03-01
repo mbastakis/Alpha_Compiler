@@ -1,3 +1,7 @@
+|*************************|
+| AM4361  AM4398   AM4406 |
+|*************************|
+
 # First Phase, Lexical Analysis
 
 To build the Lexical Analyzer execute the build script.sh `./build.sh`

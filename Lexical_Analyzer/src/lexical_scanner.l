@@ -232,7 +232,7 @@ REAL                        [0-9]*\.[0-9]+
 DELIMITER                   [\r\n \t\v\r]
 STRING                      \"(\\.|[^"\\])*\"
 INCOMPLETE_STRING           \"
-UNKNOWN_CHARACTER           [!@#$^?`'~|\\]
+UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
 
 /* Pattern Actions */
 %%
