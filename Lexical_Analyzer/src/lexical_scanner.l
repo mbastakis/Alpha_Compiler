@@ -170,7 +170,7 @@
 /* Flex options */
 %option yylineno
 %option prefix="alpha_yy"
-%option noyywrap
+%option noyywrap 
 
 /* ___Flex macros___ */
 /* KEYWORDS */
