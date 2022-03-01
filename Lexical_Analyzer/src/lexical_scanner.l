@@ -59,11 +59,16 @@
                 return m_content;
             }
 
-            void setContent(char* content) {
-                int strSize = strlen(content);
-                char* newContent = new char[strSize + 1];
-                strcpy(newContent, content);
-                m_content = newContent;
+            void setContent(char* content, bool needQuotation) {
+                std::string str(content);
+                std::string newContent{};
+
+                newContent = needQuotation ? "\"" : "";
+                newContent += str;
+                newContent += needQuotation ? "\"" : "";
+
+                m_content = new char[newContent.size() + 1];
+                strcpy(m_content, newContent.c_str());
             }
 
             char* getTokenCategory() {
@@ -78,11 +83,16 @@
                 return m_token_type;
             }
 
-            void setTokenType(char* type) {
-                int strSize = strlen(type);
-                char* newTokenType = new char[strSize + 1];
-                strcpy(newTokenType, type);
-                m_token_type = newTokenType;
+            void setTokenType(char* type, bool needQuotation) {
+                std::string str(type);
+                std::string newType{};
+
+                newType = needQuotation ? "\"" : "";
+                newType += str;
+                newType += needQuotation ? "\"" : "";
+
+                m_token_type = new char[newType.size() + 1];
+                strcpy(m_token_type, newType.c_str());
             }
 
             char* getContentType() {
@@ -94,22 +104,17 @@
             }
 
             std::string toString() {
-                std::string quotation = (strcmp(m_token_category, "STRING") == 0 ? "" : "\"");
-                const std::string spaces = "   ";
+                const std::string spaces = "  ";
 
                 return  std::to_string(m_numline) \
                 + ":   " \
                 + "#" + std::to_string(m_numToken) \
                 + spaces \
-                + quotation \
                 + m_content \
-                + quotation 
                 + spaces \
                 + m_token_category \
                 + spaces \ 
-                + quotation \ 
                 + m_token_type \
-                + quotation \
                 + spaces \
                 + "<-" + m_content_type + "\n";
             }
@@ -234,9 +239,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("IF");
+                            yylval->setTokenType("IF", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -244,9 +249,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("ELSE");
+                            yylval->setTokenType("ELSE", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                       
@@ -254,9 +259,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("WHILE");
+                            yylval->setTokenType("WHILE", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                      
@@ -264,9 +269,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("FOR");
+                            yylval->setTokenType("FOR", false);
                             yylval->setContentType("enumerated");
                             return 1;        
                         }
@@ -274,9 +279,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("FUNCTION");
+                            yylval->setTokenType("FUNCTION", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                                       
@@ -284,9 +289,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("RETURN");
+                            yylval->setTokenType("RETURN", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }  
@@ -294,9 +299,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("BREAK");
+                            yylval->setTokenType("BREAK", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                     
@@ -304,9 +309,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("CONTINUE");
+                            yylval->setTokenType("CONTINUE", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                      
@@ -314,9 +319,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("AND");
+                            yylval->setTokenType("AND", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -324,9 +329,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("NOT");
+                            yylval->setTokenType("NOT", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }    
@@ -334,9 +339,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("OR");
+                            yylval->setTokenType("OR", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }  
@@ -344,9 +349,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("LOCAL");
+                            yylval->setTokenType("LOCAL", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }    
@@ -354,9 +359,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("TRUE");
+                            yylval->setTokenType("TRUE", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                      
@@ -364,9 +369,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("FALSE");
+                            yylval->setTokenType("FALSE", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         } 
@@ -374,9 +379,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("NIL");
+                            yylval->setTokenType("NIL", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }              
@@ -384,9 +389,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("ASSIGNMENT");
+                            yylval->setTokenType("ASSIGNMENT", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -394,9 +399,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("ADDITION");
+                            yylval->setTokenType("ADDITION", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }               
@@ -404,9 +409,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("SUBTRACTION");
+                            yylval->setTokenType("SUBTRACTION", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -414,9 +419,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("MULTIPLICATION");
+                            yylval->setTokenType("MULTIPLICATION", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }         
@@ -424,9 +429,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("DIVISION");
+                            yylval->setTokenType("DIVISION", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }             
@@ -434,9 +439,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("MODULO");
+                            yylval->setTokenType("MODULO", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                                                                                              
@@ -444,9 +449,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("EQUALITY");
+                            yylval->setTokenType("EQUALITY", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                 
@@ -454,9 +459,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("INEQUALITY");
+                            yylval->setTokenType("INEQUALITY", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }              
@@ -464,9 +469,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("INCREMENT");
+                            yylval->setTokenType("INCREMENT", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                
@@ -474,9 +479,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("DECREMENT");
+                            yylval->setTokenType("DECREMENT", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                    
@@ -484,9 +489,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;    
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("GREATER_THAN");
+                            yylval->setTokenType("GREATER_THAN", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                   
@@ -494,9 +499,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("LESS_THAN");
+                            yylval->setTokenType("LESS_THAN", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }            
@@ -504,9 +509,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("GREATER_OR_EQUAL");
+                            yylval->setTokenType("GREATER_OR_EQUAL", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -514,9 +519,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("OPERATOR");
-                            yylval->setTokenType("LESS_OR_EQUAL");
+                            yylval->setTokenType("LESS_OR_EQUAL", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -525,9 +530,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PUNCTUATION");
-                            yylval->setTokenType("LEFT_CURLY_BRACKET");
+                            yylval->setTokenType("LEFT_CURLY_BRACKET", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -535,9 +540,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PUNCTUATION");
-                            yylval->setTokenType("RIGHT_CURLY_BRACKET");
+                            yylval->setTokenType("RIGHT_CURLY_BRACKET", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -545,9 +550,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PUNCTUATION");
-                            yylval->setTokenType("LEFT_SQUARE_BRACKET");
+                            yylval->setTokenType("LEFT_SQUARE_BRACKET", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -555,9 +560,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PANCTUATION");
-                            yylval->setTokenType("RIGHT_SQUARE_BRACKET");
+                            yylval->setTokenType("RIGHT_SQUARE_BRACKET", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -565,9 +570,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PANCTUATION");
-                            yylval->setTokenType("LEFT_PARENTHESES");
+                            yylval->setTokenType("LEFT_PARENTHESES", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -575,9 +580,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PANCTUATION");
-                            yylval->setTokenType("RIGHT_PARENTHESES");
+                            yylval->setTokenType("RIGHT_PARENTHESES", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -585,9 +590,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PANCTUATION");
-                            yylval->setTokenType("SEMICOLON");
+                            yylval->setTokenType("SEMICOLON", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -595,9 +600,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PANCTUATION");
-                            yylval->setTokenType("COMMA");
+                            yylval->setTokenType("COMMA", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                 
@@ -605,9 +610,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PANCTUATION");
-                            yylval->setTokenType("COLON");
+                            yylval->setTokenType("COLON", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -615,9 +620,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PANCTUATION");
-                            yylval->setTokenType("DOUBLE_COLON");
+                            yylval->setTokenType("DOUBLE_COLON", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -625,9 +630,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PUNCTUATION");
-                            yylval->setTokenType("DOT");
+                            yylval->setTokenType("DOT", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -635,9 +640,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("PUNCTUATION");
-                            yylval->setTokenType("DOUBLE_DOT");
+                            yylval->setTokenType("DOUBLE_DOT", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }
@@ -646,9 +651,9 @@ INCOMPLETE_STRING           \"
                             state = LINE_COMMENT;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("COMMENT");
-                            yylval->setTokenType("LINE_COMMENT");
+                            yylval->setTokenType("LINE_COMMENT", false);
                             yylval->setContentType("enumerated");
                             return 1;
                         }                         
@@ -677,16 +682,16 @@ INCOMPLETE_STRING           \"
                                 state = DEFAULT;
                                 yylval->setNumline(lastCommentLine);
                                 yylval->setNumtoken(++tokenCounter);
-                                yylval->setContent(blockCommentRange_cstr);
+                                yylval->setContent(blockCommentRange_cstr, true);
                                 yylval->setTokenCategory("COMMENT");
-                                yylval->setTokenType("BLOCK_COMMENT");
+                                yylval->setTokenType("BLOCK_COMMENT", false);
                                 yylval->setContentType("enumerated");
                             } else {
                                 yylval->setNumline(lastCommentLine);
                                 yylval->setNumtoken(++tokenCounter);
-                                yylval->setContent(blockCommentRange_cstr);
+                                yylval->setContent(blockCommentRange_cstr, true);
                                 yylval->setTokenCategory("COMMENT");
-                                yylval->setTokenType("NESTED_COMMENT");
+                                yylval->setTokenType("NESTED_COMMENT", false);
                                 yylval->setContentType("enumerated");
                             }
 
@@ -696,9 +701,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
-                            yylval->setTokenCategory("KEYWORD");
-                            yylval->setTokenType("ID");
+                            yylval->setContent(alpha_yytext, true);
+                            yylval->setTokenCategory("ID");
+                            yylval->setTokenType(alpha_yytext, true);
                             yylval->setContentType("char*");
                             return 1;
                         }                       
@@ -706,9 +711,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("INTEGER");
-                            yylval->setTokenType(alpha_yytext);
+                            yylval->setTokenType(alpha_yytext, false);
                             yylval->setContentType("integer");
                             return 1;
                         }                       
@@ -716,9 +721,9 @@ INCOMPLETE_STRING           \"
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext);
+                            yylval->setContent(alpha_yytext, true);
                             yylval->setTokenCategory("REAL");
-                            yylval->setTokenType(alpha_yytext);
+                            yylval->setTokenType(alpha_yytext, false);
                             yylval->setContentType("real");
                             return 1;
                         }
@@ -734,9 +739,9 @@ INCOMPLETE_STRING           \"
                             if(formatedString == NULL) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(formatedString);
+                            yylval->setContent(formatedString, false);
                             yylval->setTokenCategory("STRING");
-                            yylval->setTokenType(formatedString);
+                            yylval->setTokenType(formatedString, false);
                             yylval->setContentType("char*");
                             return 1;
                         }
@@ -764,11 +769,11 @@ int main(int argc, char** argv) {
     }
     if (argc > 1) {
         if (!(alpha_yyin = fopen(argv[1], "r"))) {
-            fprintf(stderr, "Cannot read file: %s\n", argv[1]);
+            std::cerr << "Cannot read file: " << argv[1] << std::endl;
             return 1;
         }
     } else {
-        alpha_yyin = stdin;       
+        alpha_yyin = stdin;
     }
     
     // Initialization
@@ -792,8 +797,10 @@ int main(int argc, char** argv) {
                 break;
             case 2:
                 alive = false;
+                break;
             case 3:
                 exit(0);
+                break;
         }
     }
 
