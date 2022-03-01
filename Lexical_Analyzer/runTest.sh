@@ -6,4 +6,4 @@ echo ---------------------- INPUT -----------------------
 cat -n tests/$1.test
 echo -e '\n'
 echo ---------------------- OUTPUT ----------------------
-./dist/al tests/$1.test
+./dist/als tests/$1.test

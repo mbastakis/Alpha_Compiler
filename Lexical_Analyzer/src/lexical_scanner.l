@@ -232,6 +232,7 @@ REAL                        [0-9]*\.[0-9]+
 DELIMITER                   [\r\n \t\v\r]
 STRING                      \"(\\.|[^"\\])*\"
 INCOMPLETE_STRING           \"
+UNKNOWN_CHARACTER           [!@#$^?`'~|\\]
 
 /* Pattern Actions */
 %%
@@ -747,10 +748,14 @@ INCOMPLETE_STRING           \"
                         }
 {INCOMPLETE_STRING}     {
                             if(state != DEFAULT) return 0;
-                            std::cerr << "Error: Incomplete string was detected at line:" << alpha_yylineno << std::endl;
+                            std::cerr << "Error: Incomplete string was detected at line: " << alpha_yylineno << std::endl;
                             return 3;
                         }
-
+{UNKNOWN_CHARACTER}     {
+                            if(state != DEFAULT) return 0;
+                            std::cerr << "Error: Unknown character " << alpha_yytext << " found at line: " << alpha_yylineno << std::endl;
+                            return 3;
+                        }
 
 <<EOF>>                 {
                             if(state != BLOCK_COMMENT && commentStack.empty()) return 2;
