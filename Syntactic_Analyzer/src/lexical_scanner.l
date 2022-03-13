@@ -175,7 +175,7 @@
 /* Flex options */
 %option yylineno
 %option prefix="alpha_yy"
-%option noyywrap 
+%option noyywrap
 
 /* ___Flex macros___ */
 /* KEYWORDS */
@@ -246,7 +246,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             yylval->setContentType("enumerated");
                             return 1;
                         }
-{ELSE}                  {   
+{ELSE}                  {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
@@ -255,8 +255,8 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             yylval->setTokenType("ELSE", false);
                             yylval->setContentType("enumerated");
                             return 1;
-                        }                       
-{WHILE}                 {   
+                        }
+{WHILE}                 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
                             yylval->setNumtoken(++tokenCounter);
@@ -265,7 +265,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             yylval->setTokenType("WHILE", false);
                             yylval->setContentType("enumerated");
                             return 1;
-                        }                      
+                        }
 {FOR}                   {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -274,7 +274,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             yylval->setTokenCategory("KEYWORD");
                             yylval->setTokenType("FOR", false);
                             yylval->setContentType("enumerated");
-                            return 1;        
+                            return 1;
                         }
 {FUNCTION}              {
                             if( state != DEFAULT ) return 0;
@@ -285,7 +285,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             yylval->setTokenType("FUNCTION", false);
                             yylval->setContentType("enumerated");
                             return 1;
-                        }                                       
+                        }
 {RETURN}                {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -445,7 +445,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             yylval->setTokenType("MODULO", false);
                             yylval->setContentType("enumerated");
                             return 1;
-                        }                                                                                              
+                        }
 {EQUALITY}              {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
