@@ -4,7 +4,7 @@
     #include <string>
     #include <stack>
     #include <string.h>
-    /*#include "parser.h"*/
+    #include "parser.h"
 
     // Globals
     enum { DEFAULT = 0, LINE_COMMENT = 1, BLOCK_COMMENT = 2 } state;
@@ -305,7 +305,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                         }
 {REAL}                  {
                             if( state == DEFAULT ) {
-                                alpha_yylval.real = std::stof(alpha_yytext);
+                                alpha_yylval.real = std::stod(alpha_yytext);
                                 return REAL;
                             }
                         }
