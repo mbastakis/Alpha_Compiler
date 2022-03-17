@@ -1,5 +1,9 @@
 /* Definitions */
 %{
+    /* Defines */
+    #define FUNC 1
+    #define VAR 2
+
     /* Includes */
 
     /* External Variables */
@@ -14,9 +18,9 @@
     /* SymTable */
     class SymTable {
     public:
-
+        std::map<int, string> symbolTable;
     private:
-        
+
     };
 
 %}
@@ -71,11 +75,12 @@
 %%
 program
     : statements {
-
     };
 
 statements
-    : statements stmt
+    : statements stmt{
+        
+    }
     | /* End of recursion */
     ;
 
@@ -83,12 +88,8 @@ stmt
     : expr SEMICOLON {
 
     }
-    | ifstmt {
-
-    }
-    | whilestmt {
-
-    }
+    | ifstmt 
+    | whilestmt 
     | forstmt {
 
     }
@@ -101,9 +102,7 @@ stmt
     | CONTINUE SEMICOLON {
 
     }
-    | block {
-
-    }
+    | block 
     | funcdef {
 
     }
@@ -117,7 +116,9 @@ expr
 
     }
     | expr ADDITION expr {
-
+        if( $1 == Func || $3 == func )
+            yyerror("You cant add with function");
+        $$ = variable
     }
     | expr SUBTRACTION expr {
         
@@ -156,7 +157,7 @@ expr
         
     }
     | term {
-
+        $$ = $1;
     };
 
 term
@@ -182,7 +183,7 @@ term
 
     }
     | primary {
-
+        $$ = $1
     };
 
 assignexpr
@@ -201,7 +202,7 @@ primary
 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {
-
+        $$ = FUNC;
     }
     | const {
 
@@ -321,12 +322,24 @@ funcdef
     };
 
 const
-    : INTEGER
-    | REAL
-    | STRING
-    | NIL
-    | TRUE
-    | FALSE;
+    : INTEGER {
+
+    }
+    | REAL{
+
+    }
+    | STRING{
+
+    }
+    | NIL{
+
+    }
+    | TRUE{
+
+    }
+    | FALSE{
+
+    };
 
 idlist
     : ID nextid {

@@ -356,27 +356,7 @@ int main(int argc, char** argv) {
     tokenCounter = 0;
     state = DEFAULT;
 
-    // Main Loop
-    bool alive = true;
-    alpha_token_t* token;
-    while(alive) {
-        token = new alpha_token_t();
-        int isSuccess = alpha_yylex(token);
-        
-        switch( isSuccess ) {
-            case 0:
-                break;
-            case 1:
-                tokenQueue.push(token);
-                break;
-            case 2:
-                alive = false;
-                break;
-            case 3:
-                exit(0);
-                break;
-        }
-    }
+    yyparse();
 
     // Ending Lexical Analysis
     if ( argc > 1)
