@@ -4,11 +4,13 @@
     #include <string>
     #include <stack>
     #include <string.h>
+    #include <cstring>
     #include "parser.h"
 
     // Globals
-    enum { DEFAULT = 0, LINE_COMMENT = 1, BLOCK_COMMENT = 2 } state;
+    enum { DEFAULT = 0, LINE_COMMENT = 1, BLOCK_COMMENT = 2 } state = DEFAULT;
     std::stack<unsigned int> commentStack;
+    unsigned int tokenCounter;
 
     //Functions 
     char* formatEscapedCharacters(char* string){
@@ -36,7 +38,7 @@
                         i++;
                         break;    
                     default:
-                        std::cerr << "Warning: In line " << alpha_yylineno << " invalid escape character found!" << std::endl;
+                        std::cerr << "Warning: In line " << yylineno << " invalid escape character found!" << std::endl;
                         return NULL;
                 }
             }
@@ -48,7 +50,6 @@
 
 /* Flex options */
 %option yylineno
-%option prefix="alpha_yy"
 %option noyywrap
 
 /* ___Flex macros___ */
@@ -280,7 +281,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                         }                         
 {BLOCK_COMMENT_OPEN}    {
                             if( state != LINE_COMMENT ) {
-                                commentStack.push(alpha_yylineno);
+                                commentStack.push(yylineno);
                                 state = BLOCK_COMMENT;
                             }
                         }
@@ -293,82 +294,47 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                         }
 {ID}                    {
                             if( state == DEFAULT) {
-                                alpha_yylval.string = new std::string(alpha_yytext);
+                                std::string str = std::string(yytext);
+                                char * cStr = strcpy(new char[str.length() + 1], str.c_str());
+                                yylval.string = cStr;
                                 return ID;
                             }
                         }
 {INTEGER}               {
                             if( state == DEFAULT ) {
-                                alpha_yylval.integer = std::stoi(alpha_yytext);
+                                yylval.integer = std::stoi(yytext);
                                 return INTEGER;
                             }
                         }
 {REAL}                  {
                             if( state == DEFAULT ) {
-                                alpha_yylval.real = std::stod(alpha_yytext);
+                                yylval.real = std::stod(yytext);
                                 return REAL;
                             }
                         }
 {DELIMITER}             {
-                            if(strcmp(alpha_yytext, "\n") == 0 && state == LINE_COMMENT) 
+                            if(strcmp(yytext, "\n") == 0 && state == LINE_COMMENT) 
                                 state = DEFAULT;
                         }
 {STRING}                {
                             if( state == DEFAULT ) {
-                                char* formatedString =  formatEscapedCharacters(alpha_yytext);
+                                char* formatedString =  formatEscapedCharacters(yytext);
                                 if(formatedString == NULL) return ERROR;
-                                alpha_yylval.string = formatedString;
+                                yylval.string = formatedString;
                                 return STRING;
                             }
                         }
 {INCOMPLETE_STRING}     {
                             if(state == DEFAULT){
-                                std::cerr << "Error: Incomplete string was detected at line: " << alpha_yylineno << std::endl;
+                                std::cerr << "Error: Incomplete string was detected at line: " << yylineno << std::endl;
                                 return ERROR;
                             }
                         }
 {UNKNOWN_CHARACTER}     {
                             if(state == DEFAULT) {
-                                std::cerr << "Error: Unknown character " << alpha_yytext << " found at line: " << alpha_yylineno << std::endl;
+                                std::cerr << "Error: Unknown character " << yytext << " found at line: " << yylineno << std::endl;
                                 return ERROR;
                             }
                         }
 
 %%
-
-int main(int argc, char** argv) {
-    // Argument Checking.
-    if(argc > 3) {
-        fprintf(stderr, "Too many input arguments\n");
-        return 1;
-    }
-    if (argc > 1) {
-        if (!(alpha_yyin = fopen(argv[1], "r"))) {
-            std::cerr << "Cannot read file: " << argv[1] << std::endl;
-            return 1;
-        }
-    } else {
-        alpha_yyin = stdin;
-    }
-    
-    // Initialization
-    commentStack = std::stack<unsigned int>();
-    tokenCounter = 0;
-    state = DEFAULT;
-
-    yyparse();
-
-    // Ending Lexical Analysis
-    if ( argc > 1)
-        fclose(alpha_yyin);
-
-    if ( argc == 3) {
-        FILE *output_file;
-        output_file = fopen(argv[2], "w");
-        printOutput(output_file);
-        fclose(output_file);
-    } else
-        printOutput(NULL);
-
-    return 0;
-}

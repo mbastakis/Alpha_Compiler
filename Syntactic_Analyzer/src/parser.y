@@ -5,20 +5,30 @@
     #define VAR 2
 
     /* Includes */
+    #include <stdio.h>
+    #include <iostream>
+    #include <stack>
+    #include <map>
+
+    
 
     /* External Variables */
     extern int yylineno;
     extern char* yytext;
+    extern FILE* yyin;
+    extern unsigned int tokenCounter;
     extern std::stack<unsigned int> commentStack;
+    extern int yylex();
 
     /* Function Declarations */
-    void yyerror(char* bisonProvidedMessage);
-    void yylex(void);
+     void yyerror (char const *s) {
+        fprintf (stderr, "%s\n", s);
+    }
 
     /* SymTable */
     class SymTable {
     public:
-        std::map<int, string> symbolTable;
+        std::map<int, std::string> symbolTable;
     private:
 
     };
@@ -30,10 +40,10 @@
 
 /* Union of all the types that a symbol can have. */
 %union {
-    std::string string;
     int integer;
     double real;
-    unsigned int expr_t;
+    char* string;
+    unsigned int expression;
 }
 
 /* Terminal Symbols */
@@ -45,16 +55,17 @@
 %token<string>  LEFT_CURLY_BRACKET RIGHT_CURLY_BRACKET LEFT_SQUARE_BRACKET
                 RIGHT_SQUARE_BRACKET LEFT_PARENTHESES RIGHT_PARENTHESES
                 SEMICOLON COMMA COLON DOUBLE_COLON DOT DOUBLE_DOT
-%token<string>  STRING ID ERROR
+%token<string>  STRING ID
 %token<integer> INTEGER
 %token<real>    REAL
+%token<string>  ERROR
 
 /* Non Terminal Symbols */
-%type</*Edw 8elei tupo enos entry ston symbol table*/> symbol_table_entry
-%type<expr_t> expr
-%type<expr_t> assignexpr
-%type<expr_t> term
-%type<expr_t> primary
+/* %type<Edw 8elei tupo enos entry ston symbol table> symbol_table_entry */
+%type<expression> expr
+%type<expression> assignexpr
+%type<expression> term
+%type<expression> primary
 
 /* Rules for priority and associativeness */
 %right ASSIGNMENT
@@ -81,7 +92,7 @@ statements
     : statements stmt{
         
     }
-    | /* End of recursion */
+    | %empty
     ;
 
 stmt
@@ -103,12 +114,8 @@ stmt
 
     }
     | block 
-    | funcdef {
-
-    }
-    | SEMICOLON {
-
-    }
+    | funcdef
+    | SEMICOLON
     ;
 
 expr
@@ -116,9 +123,6 @@ expr
 
     }
     | expr ADDITION expr {
-        if( $1 == Func || $3 == func )
-            yyerror("You cant add with function");
-        $$ = variable
     }
     | expr SUBTRACTION expr {
         
@@ -183,7 +187,6 @@ term
 
     }
     | primary {
-        $$ = $1
     };
 
 assignexpr
@@ -270,14 +273,14 @@ elist
     : expr nextexpr {
 
     }
-    | /* End of recursion */
+    | %empty
     ;
 
 nextexpr
     : COMMA expr nextexpr {
 
     }
-    | /* End of recursion */
+    | %empty
     ;
 
 objectdef
@@ -289,18 +292,16 @@ objectdef
     };
 
 indexed
-    :
-    | indexedelem nextindexed {
+    : indexedelem nextindexed {
 
     }
-    | /* End of recursion */
     ;
 
 nextindexed
     : COMMA indexedelem nextindexed {
 
     }
-    | /* End of recursion */
+    | %empty
     ;
 
 indexedelem
@@ -345,14 +346,14 @@ idlist
     : ID nextid {
 
     }
-    | /* End of recursion */
+    | %empty
     ;
 
 nextid
     : COMMA ID nextid {
 
     }
-    | /* End of recursion */
+    | %empty
     ;
 
 ifstmt
@@ -381,3 +382,39 @@ returnstmt
         
     };
 %%
+
+int main(int argc, char** argv) {
+    // Argument Checking.
+    if(argc > 3) {
+        fprintf(stderr, "Too many input arguments\n");
+        return 1;
+    }
+    if (argc > 1) {
+        if (!(yyin = fopen(argv[1], "r"))) {
+            std::cerr << "Cannot read file: " << argv[1] << std::endl;
+            return 1;
+        }
+    } else {
+        yyin = stdin;
+    }
+    
+    // Initialization
+    commentStack = std::stack<unsigned int>();
+    tokenCounter = 0;
+
+    yyparse();
+
+    // Ending Lexical Analysis
+    if ( argc > 1)
+        fclose(yyin);
+
+    if ( argc == 3) {
+        FILE *output_file;
+        output_file = fopen(argv[2], "w");
+        /* printOutput(output_file); */
+        fclose(output_file);
+    } else
+        /* printOutput(NULL); */
+
+    return 0;
+}
