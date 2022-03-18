@@ -338,3 +338,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                         }
 
 %%
+
+int Current_Line(){
+	return yylineno;
+}

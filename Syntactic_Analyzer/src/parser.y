@@ -19,10 +19,16 @@
     extern unsigned int tokenCounter;
     extern std::stack<unsigned int> commentStack;
     extern int yylex();
+    extern int Current_Line();
+
+    int found_errors = 0;
 
     /* Function Declarations */
-     void yyerror (char const *s) {
+     void yyerror (char const *s) {      
         fprintf (stderr, "%s\n", s);
+        fprintf(stderr, "at line %d,  before token: %s \n", yylineno, yytext);
+        fprintf(stderr, "INPUT NOT VALID\n");
+        found_errors = 1;
     }
 
     /* SymTable */
@@ -120,48 +126,73 @@ stmt
 
 expr
     : assignexpr {
-
+        
     }
-    | expr ADDITION expr {
+    | expr ADDITION expr {           
+            $$ = $1 + $3;
+            printf("expr + expr, Line: %d\n" ,Current_Line());
     }
     | expr SUBTRACTION expr {
+            $$ = $1 - $3;
+            printf("expr - expr, Line: %d\n" ,Current_Line());
         
     }
     | expr MULTIPLICATION expr {
+            $$ = $1 * $3;
+            printf("expr * expr, Line: %d\n" ,Current_Line());
         
     }
     | expr DIVISION expr {
+            $$ = $1 / $3;
+            printf("expr / expr, Line: %d\n" ,Current_Line());
         
     }
     | expr MODULO expr {
+            $$ = $1 % $3;
+            printf("expr %% expr, Line: %d\n" ,Current_Line());
         
     }
     | expr GREATER_THAN expr {
+            $$ = $1 > $3;
+            printf("expr > expr, Line: %d\n" ,Current_Line());
         
     }
     | expr LESS_THAN expr {
+            $$ = $1 < $3;
+            printf("expr < expr, Line: %d\n" ,Current_Line());
         
     }
     | expr GREATER_OR_EQUAL expr {
+            $$ = $1 >= $3;
+            printf("expr >= expr, Line: %d\n" ,Current_Line());
         
     }
     | expr LESS_OR_EQUAL expr {
+            $$ = $1 <= $3;
+            printf("expr <= expr, Line: %d\n" ,Current_Line());
         
     }
     | expr EQUALITY expr {
+            $$ = $1 == $3;
+            printf("expr == expr, Line: %d\n" ,Current_Line());
         
     }
     | expr INEQUALITY expr {
+            $$ = $1 != $3;
+            printf("expr != expr, Line: %d\n" ,Current_Line());
         
     }
     | expr AND expr {
+            $$ = $1 && $3;
+            printf("expr && expr, Line: %d\n" ,Current_Line());
         
     }
     | expr OR expr {
-        
+            $$ = $1 || $3;
+            printf("expr || expr, Line: %d\n" ,Current_Line());
     }
     | term {
-        $$ = $1;
+            $$ = $1;
     };
 
 term
@@ -191,12 +222,10 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-
     };
 
 primary
     : lvalue {
-
     }
     | call {
 
