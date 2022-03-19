@@ -1,0 +1,11 @@
+return;
+
+function g(x,y) {
+	x=5;
+	return 1;
+}
+
+function h(x,y) {
+	y=5;
+}
+

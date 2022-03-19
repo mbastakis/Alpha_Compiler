@@ -22,6 +22,11 @@
     extern int Current_Line();
 
     int found_errors = 0;
+    int function_open = 0;
+
+    /*TODO break,continue*/
+    int flag_loop=0;
+
     int i = 1;
 
     /* Function Declarations */
@@ -32,6 +37,7 @@
         found_errors = 1;
     }
 
+    
     /* SymTable */
     class SymTable {
     public:
@@ -39,6 +45,8 @@
     private:
 
     };
+    
+
 
 %}
 
@@ -73,6 +81,7 @@
 %type<expression> assignexpr
 %type<expression> term
 %type<expression> primary
+%type<expression> lvalue
 
 /* Rules for priority and associativeness */
 %right ASSIGNMENT
@@ -193,32 +202,40 @@ expr
             printf("expr OR expr, Line: %d\n" ,Current_Line());
     }
     | term {
+            
             $$ = $1;
-
-            //std::cout << $$ <<" "<< $1;
+            SymTable.symbolTable.insert(1,"int",$1);
+            std::cout<<SymTable.symbolTable.begin();
     };
 
 term
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
-
+        $$ = ($2);
+        printf("left expr right, Line: %d\n" ,Current_Line());
     }
     | SUBTRACTION expr %prec UNARY_MINUS {
-
+        $$ = - $2;
+        printf("unary minus, Line: %d\n" ,Current_Line());
     }
     | NOT expr {
-
+        $$ = not $2;
+        printf("NOT expr, Line: %d\n" ,Current_Line());
     }
     | INCREMENT lvalue {
-
+        $$ = $$ + 1;
+        printf("increment lvalue, Line: %d\n" ,Current_Line());
     }
     | lvalue INCREMENT {
-
+        $$ = $$ + 1;
+        printf("lvalue increment, Line: %d\n" ,Current_Line());
     }
     | DECREMENT lvalue {
-
+        $$ = $$ - 1;
+        printf("decrement lvalue, Line: %d\n" ,Current_Line());
     }
     | lvalue DECREMENT {
-
+        $$ = $$ - 1;
+        printf("lvalue decrement, Line: %d\n" ,Current_Line());
     }
     | primary {
     };
@@ -229,7 +246,7 @@ assignexpr
 
 primary
     : lvalue {
-        //std::cout << $$;
+
     }
     | call {
 
@@ -246,20 +263,20 @@ primary
 
 lvalue
     : ID {
-        
+        printf("id, Line: %d\n" ,Current_Line());
     }
     | LOCAL ID {
-
+        printf("local id, Line: %d\n" ,Current_Line());
     }
     | DOUBLE_COLON ID {
-
+        
     }
     | member {
     };
 
 member
     : lvalue DOT ID {
-
+        
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_CURLY_BRACKET {
 
@@ -273,7 +290,7 @@ member
 
 call
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-
+        
     }
     | lvalue callsufix {
 
@@ -293,12 +310,12 @@ callsufix
 
 normcall 
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-
+        printf("normcall, Line: %d\n" ,Current_Line());
     }
 
 methodcall
     : DOUBLE_DOT ID LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-
+        printf("method call, Line: %d\n" ,Current_Line());
     };
 
 elist
@@ -317,10 +334,10 @@ nextexpr
 
 objectdef
     : LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET {
-
+        printf("object elist, Line: %d\n" ,Current_Line());
     }
     | LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
-
+        printf("object indexed, Line: %d\n" ,Current_Line());
     };
 
 indexed
@@ -338,20 +355,20 @@ nextindexed
 
 indexedelem
     : LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET{
-
+        
     };
 
 block
-    : LEFT_CURLY_BRACKET statements RIGHT_CURLY_BRACKET{
-
+    : LEFT_CURLY_BRACKET {function_open++;} statements RIGHT_CURLY_BRACKET {function_open--;} {
+        
     };
 
 funcdef
-    : FUNCTION ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
-
+    : FUNCTION {i = Current_Line();} ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+        printf("function id, Line: %d\n" ,i);
     }
-    | FUNCTION LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
-
+    | FUNCTION {i = Current_Line();} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+        printf("function, Line: %d\n" ,i);
     };
 
 const
@@ -391,11 +408,11 @@ nextid
 /* TODO: Check if variables have been declared */
 
 ifstmt
-    : IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
-        printf("if else, Line: %d\n" ,i);
-    }
-    | IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
+    : IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
         printf("pure if, Line: %d\n" ,i);
+    }
+    | IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
+        printf("if else, Line: %d\n" ,i);
     };
 
 whilestmt
@@ -410,8 +427,13 @@ forstmt
 
 returnstmt
     : RETURN SEMICOLON {
-        /* If $ $ is inside function*/
-        printf("return, Line: %d\n" ,Current_Line());
+        if(function_open == 0){
+            printf("Error: return outside of function, Line: %d\n" ,Current_Line());
+        } 
+        else {
+            printf("return, Line: %d\n" ,Current_Line());
+        }
+        
     }
     | RETURN expr SEMICOLON {
         printf("return expr, Line: %d\n" ,Current_Line());
