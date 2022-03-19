@@ -22,6 +22,7 @@
     extern int Current_Line();
 
     int found_errors = 0;
+    int i = 1;
 
     /* Function Declarations */
      void yyerror (char const *s) {      
@@ -183,16 +184,18 @@ expr
         
     }
     | expr AND expr {
-            $$ = $1 && $3;
-            printf("expr && expr, Line: %d\n" ,Current_Line());
+            $$ = $1 and $3;
+            printf("expr AND expr, Line: %d\n" ,Current_Line());
         
     }
     | expr OR expr {
-            $$ = $1 || $3;
-            printf("expr || expr, Line: %d\n" ,Current_Line());
+            $$ = $1 or $3;
+            printf("expr OR expr, Line: %d\n" ,Current_Line());
     }
     | term {
             $$ = $1;
+
+            //std::cout << $$ <<" "<< $1;
     };
 
 term
@@ -226,6 +229,7 @@ assignexpr
 
 primary
     : lvalue {
+        //std::cout << $$;
     }
     | call {
 
@@ -242,7 +246,7 @@ primary
 
 lvalue
     : ID {
-
+        
     }
     | LOCAL ID {
 
@@ -251,7 +255,6 @@ lvalue
 
     }
     | member {
-
     };
 
 member
@@ -353,22 +356,22 @@ funcdef
 
 const
     : INTEGER {
-
-    }
+        printf("integer, Line: %d\n" ,Current_Line());
+    }   
     | REAL{
-
+        printf("real, Line: %d\n" ,Current_Line());
     }
     | STRING{
-
+        printf("string, Line: %d\n" ,Current_Line());
     }
     | NIL{
-
+        printf("NIL, Line: %d\n" ,Current_Line());
     }
     | TRUE{
-
+        printf("true, Line: %d\n" ,Current_Line());
     }
     | FALSE{
-
+        printf("false, Line: %d\n" ,Current_Line());
     };
 
 idlist
@@ -385,30 +388,33 @@ nextid
     | %empty
     ;
 
+/* TODO: Check if variables have been declared */
+
 ifstmt
-    : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
-
+    : IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
+        printf("if else, Line: %d\n" ,i);
     }
-    | IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
-
+    | IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
+        printf("pure if, Line: %d\n" ,i);
     };
 
 whilestmt
-    : WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {
-
+    : WHILE {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {
+        printf("while, Line: %d\n" ,i);
     };
 
 forstmt 
-    : FOR LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {
-
+    : FOR {i = Current_Line();} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {
+        printf("for, Line: %d\n" ,i);
     };
 
 returnstmt
     : RETURN SEMICOLON {
-
+        /* If $ $ is inside function*/
+        printf("return, Line: %d\n" ,Current_Line());
     }
     | RETURN expr SEMICOLON {
-        
+        printf("return expr, Line: %d\n" ,Current_Line());
     };
 %%
 
