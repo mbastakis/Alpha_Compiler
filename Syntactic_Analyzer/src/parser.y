@@ -1,6 +1,7 @@
 /* Definitions */
 %{
     /* Defines */
+    #define SIZE 100
     #define FUNC 1
     #define VAR 2
 
@@ -9,8 +10,6 @@
     #include <iostream>
     #include <stack>
     #include <map>
-
-    
 
     /* External Variables */
     extern int yylineno;
@@ -23,9 +22,7 @@
 
     int found_errors = 0;
     int function_open = 0;
-
-    /*TODO break,continue*/
-    int flag_loop=0;
+    int stmt_open=0;
 
     int i = 1;
 
@@ -37,16 +34,13 @@
         found_errors = 1;
     }
 
-    
-    /* SymTable */
-    class SymTable {
-    public:
-        std::map<int, std::string> symbolTable;
-    private:
-
+    struct symbols {
+        std::string name,type,value;
+        int scope;
     };
-    
 
+    /* SymTable */
+    std::map<int, symbols> symbolTable;
 
 %}
 
@@ -82,6 +76,7 @@
 %type<expression> term
 %type<expression> primary
 %type<expression> lvalue
+%type<expression> ifprefix
 
 /* Rules for priority and associativeness */
 %right ASSIGNMENT
@@ -124,9 +119,20 @@ stmt
 
     }
     | BREAK SEMICOLON {
-
+        if(stmt_open == 0){
+            printf("Error: break outside of statement, Line: %d\n" ,Current_Line());
+        } 
+        else {
+            printf("break, Line: %d\n" ,Current_Line());
+        }
     }
     | CONTINUE SEMICOLON {
+        if(stmt_open == 0){
+            printf("Error: continue outside of statement, Line: %d\n" ,Current_Line());
+        } 
+        else {
+            printf("continue, Line: %d\n" ,Current_Line());
+        }
 
     }
     | block 
@@ -202,10 +208,9 @@ expr
             printf("expr OR expr, Line: %d\n" ,Current_Line());
     }
     | term {
-            
             $$ = $1;
-            SymTable.symbolTable.insert(1,"int",$1);
-            std::cout<<SymTable.symbolTable.begin();
+            /*symbolTable[0] = {"x","int","1",1};
+            std::cout<<symbolTable[0].name << std::endl;*/
     };
 
 term
@@ -238,15 +243,17 @@ term
         printf("lvalue decrement, Line: %d\n" ,Current_Line());
     }
     | primary {
+        
     };
 
 assignexpr
     : lvalue ASSIGNMENT expr {
+        
     };
 
 primary
     : lvalue {
-
+        
     }
     | call {
 
@@ -263,6 +270,7 @@ primary
 
 lvalue
     : ID {
+        symbolTable[0].name = $1;
         printf("id, Line: %d\n" ,Current_Line());
     }
     | LOCAL ID {
@@ -359,7 +367,7 @@ indexedelem
     };
 
 block
-    : LEFT_CURLY_BRACKET {function_open++;} statements RIGHT_CURLY_BRACKET {function_open--;} {
+    : LEFT_CURLY_BRACKET {function_open++; stmt_open++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--;} {
         
     };
 
@@ -407,21 +415,26 @@ nextid
 
 /* TODO: Check if variables have been declared */
 
+ifprefix
+    : IF {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+
+    };
+
 ifstmt
-    : IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
+    : ifprefix stmt {stmt_open--;} %prec PUREIF {
         printf("pure if, Line: %d\n" ,i);
     }
-    | IF {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
+    | ifprefix stmt ELSE {stmt_open++;} stmt {stmt_open--;} {
         printf("if else, Line: %d\n" ,i);
     };
 
 whilestmt
-    : WHILE {i = Current_Line();} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {
+    : WHILE {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
         printf("while, Line: %d\n" ,i);
     };
 
 forstmt 
-    : FOR {i = Current_Line();} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {
+    : FOR {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
         printf("for, Line: %d\n" ,i);
     };
 
