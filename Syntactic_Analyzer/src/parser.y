@@ -9,7 +9,7 @@
     #include <stdio.h>
     #include <iostream>
     #include <stack>
-    #include <map>
+    #include <unordered_map>
 
     /* External Variables */
     extern int yylineno;
@@ -19,6 +19,10 @@
     extern std::stack<unsigned int> commentStack;
     extern int yylex();
     extern int Current_Line();
+
+    /* Global Variables */
+    unsigned int currentScope = 0;
+    unsigned int SymbolTableSize = 0;
 
     int found_errors = 0;
     int function_open = 0;
@@ -34,13 +38,36 @@
         found_errors = 1;
     }
 
-    struct symbols {
-        std::string name,type,value;
-        int scope;
-    };
+    /* Symbol */
+    class Symbol {
+    private:
+        std::string id;
+        unsigned int scope;
+        unsigned int line;
+    public:
+        Symbol(std::string _id, unsigned int _scope, unsigned int _line) {
+            id = _id;
+            scope = _scope;
+            line = _line;
+        }
 
+        std::string getId() {
+            return id;
+        }
+
+        unsigned int getLine() {
+            return line;
+        }
+
+        unsigned int getScope() {
+            return scope;
+        }
+
+
+    };
+    
     /* SymTable */
-    std::map<int, symbols> symbolTable;
+    std::unordered_map<int, Symbol> SymbolTable;
 
 %}
 
@@ -205,6 +232,7 @@ expr
     }
     | expr OR expr {
             $$ = $1 or $3;
+            
             printf("expr OR expr, Line: %d\n" ,Current_Line());
     }
     | term {
@@ -270,8 +298,9 @@ primary
 
 lvalue
     : ID {
-        symbolTable[0].name = $1;
-        printf("id, Line: %d\n" ,Current_Line());
+        Symbol symbol = Symbol($1, currentScope, yylineno);
+        SymbolTable.insert(std::pair<int, Symbol>(SymbolTableSize++, symbol));
+        printf("id, Line: %d\n" , symbol.getLine());
     }
     | LOCAL ID {
         printf("local id, Line: %d\n" ,Current_Line());
