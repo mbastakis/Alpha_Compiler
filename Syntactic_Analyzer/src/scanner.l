@@ -276,8 +276,8 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                                 return (DOUBLE_DOT);
                         }
 {LINE_COMMENT}          {
-                            if( state == DEFAULT ) 
-                                state = LINE_COMMENT;
+                            if( state == DEFAULT ) state = LINE_COMMENT;
+                            else if( state == BLOCK_COMMENT ) unput(yytext[1]);
                         }                         
 {BLOCK_COMMENT_OPEN}    {
                             if( state != LINE_COMMENT ) {

@@ -97,7 +97,7 @@ statements
 
 stmt
     : expr SEMICOLON {
-
+        
     }
     | ifstmt 
     | whilestmt 
@@ -161,7 +161,7 @@ expr
         
     }
     | term {
-        $$ = $1;
+        
     };
 
 term
@@ -175,7 +175,7 @@ term
 
     }
     | INCREMENT lvalue {
-
+        
     }
     | lvalue INCREMENT {
 
@@ -191,7 +191,7 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-
+        
     };
 
 primary
@@ -205,7 +205,7 @@ primary
 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {
-        $$ = FUNC;
+        
     }
     | const {
 
@@ -213,7 +213,7 @@ primary
 
 lvalue
     : ID {
-
+        
     }
     | LOCAL ID {
 
