@@ -765,7 +765,8 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                                 yylval->setContentType("enumerated");
                                 return 1;
                             }
-                        }             
+                        }
+                        
 %%
 
 int main(int argc, char** argv) {
