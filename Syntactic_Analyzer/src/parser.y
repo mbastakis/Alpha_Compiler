@@ -18,7 +18,7 @@
     extern unsigned int tokenCounter;
     extern std::stack<unsigned int> commentStack;
     extern int yylex();
-    extern int Current_Line();
+    extern int yylineno;
 
     /* Global Variables */
     unsigned int currentScope = 0;
@@ -37,22 +37,36 @@
         fprintf(stderr, "INPUT NOT VALID\n");
         found_errors = 1;
     }
+    /*Enum type*/
+    typedef enum {
+        GLOBAL_VARIABLE,
+        LOCAL_VARIABLE,
+        FORMAL_ARGUMENT,
+        LIBRARY_FUNCTION,
+        USER_FUNCTION
+    } symType;
 
     /* Symbol */
     class Symbol {
     private:
         std::string id;
+        symType type;
         unsigned int scope;
         unsigned int line;
     public:
-        Symbol(std::string _id, unsigned int _scope, unsigned int _line) {
+        Symbol(std::string _id, symType _type, unsigned int _scope, unsigned int _line) {
             id = _id;
+            type = _type;
             scope = _scope;
             line = _line;
         }
 
         std::string getId() {
             return id;
+        }
+
+        symType getType() {
+            return type;
         }
 
         unsigned int getLine() {
@@ -147,18 +161,18 @@ stmt
     }
     | BREAK SEMICOLON {
         if(stmt_open == 0){
-            printf("Error: break outside of statement, Line: %d\n" ,Current_Line());
+            printf("Error: break outside of statement, Line: %d\n" ,yylineno);
         } 
         else {
-            printf("break, Line: %d\n" ,Current_Line());
+            printf("break, Line: %d\n" ,yylineno);
         }
     }
     | CONTINUE SEMICOLON {
         if(stmt_open == 0){
-            printf("Error: continue outside of statement, Line: %d\n" ,Current_Line());
+            printf("Error: continue outside of statement, Line: %d\n" ,yylineno);
         } 
         else {
-            printf("continue, Line: %d\n" ,Current_Line());
+            printf("continue, Line: %d\n" ,yylineno);
         }
 
     }
@@ -173,67 +187,67 @@ expr
     }
     | expr ADDITION expr {           
             $$ = $1 + $3;
-            printf("expr + expr, Line: %d\n" ,Current_Line());
+            printf("expr + expr, Line: %d\n" ,yylineno);
     }
     | expr SUBTRACTION expr {
             $$ = $1 - $3;
-            printf("expr - expr, Line: %d\n" ,Current_Line());
+            printf("expr - expr, Line: %d\n" ,yylineno);
         
     }
     | expr MULTIPLICATION expr {
             $$ = $1 * $3;
-            printf("expr * expr, Line: %d\n" ,Current_Line());
+            printf("expr * expr, Line: %d\n" ,yylineno);
         
     }
     | expr DIVISION expr {
             $$ = $1 / $3;
-            printf("expr / expr, Line: %d\n" ,Current_Line());
+            printf("expr / expr, Line: %d\n" ,yylineno);
         
     }
     | expr MODULO expr {
             $$ = $1 % $3;
-            printf("expr %% expr, Line: %d\n" ,Current_Line());
+            printf("expr %% expr, Line: %d\n" ,yylineno);
         
     }
     | expr GREATER_THAN expr {
             $$ = $1 > $3;
-            printf("expr > expr, Line: %d\n" ,Current_Line());
+            printf("expr > expr, Line: %d\n" ,yylineno);
         
     }
     | expr LESS_THAN expr {
             $$ = $1 < $3;
-            printf("expr < expr, Line: %d\n" ,Current_Line());
+            printf("expr < expr, Line: %d\n" ,yylineno);
         
     }
     | expr GREATER_OR_EQUAL expr {
             $$ = $1 >= $3;
-            printf("expr >= expr, Line: %d\n" ,Current_Line());
+            printf("expr >= expr, Line: %d\n" ,yylineno);
         
     }
     | expr LESS_OR_EQUAL expr {
             $$ = $1 <= $3;
-            printf("expr <= expr, Line: %d\n" ,Current_Line());
+            printf("expr <= expr, Line: %d\n" ,yylineno);
         
     }
     | expr EQUALITY expr {
             $$ = $1 == $3;
-            printf("expr == expr, Line: %d\n" ,Current_Line());
+            printf("expr == expr, Line: %d\n" ,yylineno);
         
     }
     | expr INEQUALITY expr {
             $$ = $1 != $3;
-            printf("expr != expr, Line: %d\n" ,Current_Line());
+            printf("expr != expr, Line: %d\n" ,yylineno);
         
     }
     | expr AND expr {
             $$ = $1 and $3;
-            printf("expr AND expr, Line: %d\n" ,Current_Line());
+            printf("expr AND expr, Line: %d\n" ,yylineno);
         
     }
     | expr OR expr {
             $$ = $1 or $3;
             
-            printf("expr OR expr, Line: %d\n" ,Current_Line());
+            printf("expr OR expr, Line: %d\n" ,yylineno);
     }
     | term {
             $$ = $1;
@@ -244,31 +258,31 @@ expr
 term
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
         $$ = ($2);
-        printf("left expr right, Line: %d\n" ,Current_Line());
+        printf("left expr right, Line: %d\n" ,yylineno);
     }
     | SUBTRACTION expr %prec UNARY_MINUS {
         $$ = - $2;
-        printf("unary minus, Line: %d\n" ,Current_Line());
+        printf("unary minus, Line: %d\n" ,yylineno);
     }
     | NOT expr {
         $$ = not $2;
-        printf("NOT expr, Line: %d\n" ,Current_Line());
+        printf("NOT expr, Line: %d\n" ,yylineno);
     }
     | INCREMENT lvalue {
         $$ = $$ + 1;
-        printf("increment lvalue, Line: %d\n" ,Current_Line());
+        printf("increment lvalue, Line: %d\n" ,yylineno);
     }
     | lvalue INCREMENT {
         $$ = $$ + 1;
-        printf("lvalue increment, Line: %d\n" ,Current_Line());
+        printf("lvalue increment, Line: %d\n" ,yylineno);
     }
     | DECREMENT lvalue {
         $$ = $$ - 1;
-        printf("decrement lvalue, Line: %d\n" ,Current_Line());
+        printf("decrement lvalue, Line: %d\n" ,yylineno);
     }
     | lvalue DECREMENT {
         $$ = $$ - 1;
-        printf("lvalue decrement, Line: %d\n" ,Current_Line());
+        printf("lvalue decrement, Line: %d\n" ,yylineno);
     }
     | primary {
         
@@ -303,7 +317,7 @@ lvalue
         printf("id, Line: %d\n" , symbol.getLine());
     }
     | LOCAL ID {
-        printf("local id, Line: %d\n" ,Current_Line());
+        printf("local id, Line: %d\n" ,yylineno);
     }
     | DOUBLE_COLON ID {
         
@@ -347,12 +361,12 @@ callsufix
 
 normcall 
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        printf("normcall, Line: %d\n" ,Current_Line());
+        printf("normcall, Line: %d\n" ,yylineno);
     }
 
 methodcall
     : DOUBLE_DOT ID LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        printf("method call, Line: %d\n" ,Current_Line());
+        printf("method call, Line: %d\n" ,yylineno);
     };
 
 elist
@@ -371,10 +385,10 @@ nextexpr
 
 objectdef
     : LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET {
-        printf("object elist, Line: %d\n" ,Current_Line());
+        printf("object elist, Line: %d\n" ,yylineno);
     }
     | LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
-        printf("object indexed, Line: %d\n" ,Current_Line());
+        printf("object indexed, Line: %d\n" ,yylineno);
     };
 
 indexed
@@ -396,36 +410,38 @@ indexedelem
     };
 
 block
-    : LEFT_CURLY_BRACKET {function_open++; stmt_open++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--;} {
+    : LEFT_CURLY_BRACKET {function_open++; stmt_open++; currentScope++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--; currentScope--;} {
         
     };
 
 funcdef
-    : FUNCTION {i = Current_Line();} ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+    : FUNCTION {i = yylineno;} ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+        
         printf("function id, Line: %d\n" ,i);
     }
-    | FUNCTION {i = Current_Line();} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+    | FUNCTION {i = yylineno;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+        
         printf("function, Line: %d\n" ,i);
     };
 
 const
     : INTEGER {
-        printf("integer, Line: %d\n" ,Current_Line());
+        printf("integer, Line: %d\n" ,yylineno);
     }   
     | REAL{
-        printf("real, Line: %d\n" ,Current_Line());
+        printf("real, Line: %d\n" ,yylineno);
     }
     | STRING{
-        printf("string, Line: %d\n" ,Current_Line());
+        printf("string, Line: %d\n" ,yylineno);
     }
     | NIL{
-        printf("NIL, Line: %d\n" ,Current_Line());
+        printf("NIL, Line: %d\n" ,yylineno);
     }
     | TRUE{
-        printf("true, Line: %d\n" ,Current_Line());
+        printf("true, Line: %d\n" ,yylineno);
     }
     | FALSE{
-        printf("false, Line: %d\n" ,Current_Line());
+        printf("false, Line: %d\n" ,yylineno);
     };
 
 idlist
@@ -445,7 +461,7 @@ nextid
 /* TODO: Check if variables have been declared */
 
 ifprefix
-    : IF {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+    : IF {i = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES {
 
     };
 
@@ -458,27 +474,27 @@ ifstmt
     };
 
 whilestmt
-    : WHILE {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : WHILE {i = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
         printf("while, Line: %d\n" ,i);
     };
 
 forstmt 
-    : FOR {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : FOR {i = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
         printf("for, Line: %d\n" ,i);
     };
 
 returnstmt
     : RETURN SEMICOLON {
         if(function_open == 0){
-            printf("Error: return outside of function, Line: %d\n" ,Current_Line());
+            printf("Error: return outside of function, Line: %d\n" ,yylineno);
         } 
         else {
-            printf("return, Line: %d\n" ,Current_Line());
+            printf("return, Line: %d\n" ,yylineno);
         }
         
     }
     | RETURN expr SEMICOLON {
-        printf("return expr, Line: %d\n" ,Current_Line());
+        printf("return expr, Line: %d\n" ,yylineno);
     };
 %%
 
