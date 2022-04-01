@@ -81,7 +81,20 @@
     };
     
     /* SymTable */
-    std::unordered_map<int, Symbol> SymbolTable;
+    class SymbolTable {
+    private:
+        std::unordered_map<int, Symbol> table;
+    public:
+        SymbolTable() {
+            table = std::unordered_map<int, Symbol>();
+        }
+
+        int insert(Symbol* symbol) {
+
+        }
+        
+    };
+    SymbolTable symtable = SymbolTable();
 
 %}
 
@@ -287,12 +300,11 @@ term
     | primary {
         
     };
-
 assignexpr
     : lvalue ASSIGNMENT expr {
         
+        symtable.insert($1);
     };
-
 primary
     : lvalue {
         
@@ -312,9 +324,11 @@ primary
 
 lvalue
     : ID {
-        Symbol symbol = Symbol($1, currentScope, yylineno);
-        SymbolTable.insert(std::pair<int, Symbol>(SymbolTableSize++, symbol));
-        printf("id, Line: %d\n" , symbol.getLine());
+        symType type;
+        if( currentScope == 0 ) type = GLOBAL_VARIABLE;
+        else type = LOCAL_VARIABLE;
+        
+        $$ = new Symbol($1, type, yylineno, currentScope);
     }
     | LOCAL ID {
         printf("local id, Line: %d\n" ,yylineno);
