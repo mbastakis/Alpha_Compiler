@@ -160,10 +160,14 @@
 %type<expression> term
 %type<expression> primary
 <<<<<<< HEAD
+<<<<<<< HEAD
 %type<expression> lvalue
 %type<expression> ifprefix
 =======
 /* %type<symbol> lvalue */
+>>>>>>> master
+=======
+%type<symbol> lvalue
 >>>>>>> master
 
 /* Rules for priority and associativeness.*/
@@ -207,12 +211,16 @@ stmt
 
     }
     | BREAK SEMICOLON {
+<<<<<<< HEAD
         if(stmt_open == 0){
             printf("Error: break outside of statement, Line: %d\n" ,yylineno);
         } 
         else {
             printf("break, Line: %d\n" ,yylineno);
         }
+=======
+        
+>>>>>>> master
     }
     | CONTINUE SEMICOLON {
         if(stmt_open == 0){

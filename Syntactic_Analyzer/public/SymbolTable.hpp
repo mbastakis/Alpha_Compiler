@@ -56,6 +56,10 @@ public:
         return search == m_table.end() ? NULL : search->second;
     }
 
+    unsigned int count(std::string id) {
+        return m_table.count(id);
+    }
+
     std::list<Symbol*> getSymbols(unsigned int scope) {
         auto symList = std::list<Symbol*>();
 

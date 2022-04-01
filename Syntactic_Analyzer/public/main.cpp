@@ -15,7 +15,7 @@ int main() {
     symtable.insert("lola", new Symbol("lola", FORMAL_ARGUMENT, 20, 3));
     symtable.insert("loln", new Symbol("loln", FORMAL_ARGUMENT, 112, 4));
 
-    auto symList = symtable.getSymbols("");
+    auto symList = symtable.getSymbols("lo");
 
     for (auto it = symList.begin(); it != symList.end(); it++) {
         std::cout << (*it)->toString() << std::endl;
