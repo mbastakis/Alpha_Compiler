@@ -7,5 +7,5 @@ all:
 	@rm -f src/parser.c src/parser.h src/parser.output src/scanner.c
 
 clean:
-	rm -f src/parser.c src/parser.h src/parser.output src/scanner.c
-	rm -rf dist
+	@rm -f src/parser.c src/parser.h src/parser.output src/scanner.c
+	@rm -rf dist

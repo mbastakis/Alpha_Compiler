@@ -34,6 +34,7 @@
 
 /* Specifies the initial symbol of our grammar. */
 %start program
+
 /* Better error messages */
 %define parse.error verbose
 
