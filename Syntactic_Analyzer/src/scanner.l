@@ -3,8 +3,9 @@
     #include <iostream>
     #include <string>
     #include <stack>
-    #include <string.h>
     #include <cstring>
+
+    #include "../public/Symbol.hpp"
     #include "parser.h"
 
     // Globals
@@ -274,11 +275,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
 {DOUBLE_DOT}            {
                             if( state == DEFAULT ) 
                                 return (DOUBLE_DOT);
-                        }
-{LINE_COMMENT}          {
-                            if( state == DEFAULT ) 
-                                state = LINE_COMMENT;
-                        }                         
+                        }                       
 {BLOCK_COMMENT_OPEN}    {
                             if( state != LINE_COMMENT ) {
                                 commentStack.push(yylineno);
@@ -287,7 +284,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                         }
 {BLOCK_COMMENT_CLOSE}   {
                             if( state != LINE_COMMENT ) {
-                                if( commentStack.empty() ) return ERROR;
+                                if( commentStack.empty() ) return (ERROR);
                                 commentStack.pop();
                                 if( commentStack.empty() ) state = DEFAULT;
                             }
@@ -297,19 +294,19 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                                 std::string str = std::string(yytext);
                                 char * cStr = strcpy(new char[str.length() + 1], str.c_str());
                                 yylval.string = cStr;
-                                return ID;
+                                return (ID);
                             }
                         }
 {INTEGER}               {
                             if( state == DEFAULT ) {
                                 yylval.integer = std::stoi(yytext);
-                                return INTEGER;
+                                return (INTEGER);
                             }
                         }
 {REAL}                  {
                             if( state == DEFAULT ) {
                                 yylval.real = std::stod(yytext);
-                                return REAL;
+                                return (REAL);
                             }
                         }
 {DELIMITER}             {
@@ -319,26 +316,34 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
 {STRING}                {
                             if( state == DEFAULT ) {
                                 char* formatedString =  formatEscapedCharacters(yytext);
-                                if(formatedString == NULL) return ERROR;
+                                if(formatedString == NULL) return (ERROR);
                                 yylval.string = formatedString;
-                                return STRING;
+                                return (STRING);
                             }
                         }
 {INCOMPLETE_STRING}     {
                             if(state == DEFAULT){
                                 std::cerr << "Error: Incomplete string was detected at line: " << yylineno << std::endl;
-                                return ERROR;
+                                return (ERROR);
                             }
                         }
 {UNKNOWN_CHARACTER}     {
                             if(state == DEFAULT) {
                                 std::cerr << "Error: Unknown character " << yytext << " found at line: " << yylineno << std::endl;
-                                return ERROR;
+                                return (ERROR);
                             }
                         }
+<<<<<<< HEAD
 
 %%
 
 int Current_Line(){
 	return yylineno;
 }
+=======
+{LINE_COMMENT}          {
+                            if( state == BLOCK_COMMENT ) unput(yytext[1]);
+                            else if( state == DEFAULT ) state = LINE_COMMENT;
+                        }
+%%
+>>>>>>> master

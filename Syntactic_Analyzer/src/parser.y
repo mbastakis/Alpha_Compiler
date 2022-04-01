@@ -1,15 +1,28 @@
 /* Definitions */
 %{
+<<<<<<< HEAD
     /* Defines */
     #define SIZE 100
     #define FUNC 1
     #define VAR 2
 
+=======
+>>>>>>> master
     /* Includes */
     #include <stdio.h>
     #include <iostream>
     #include <stack>
+<<<<<<< HEAD
     #include <unordered_map>
+=======
+
+    #include "../public/Symbol.hpp"
+    #include "../public/SymbolTable.hpp"
+
+    /* Defines */
+    #define FUNC 1
+    #define VAR 2
+>>>>>>> master
 
     /* External Variables */
     extern int yylineno;
@@ -30,11 +43,20 @@
 
     int i = 1;
 
+<<<<<<< HEAD
     /* Function Declarations */
+=======
+    /* Global Variables */
+    unsigned int currentScope;
+    SymbolTable symtable;
+
+    /* Function Definitions */
+>>>>>>> master
      void yyerror (char const *s) {      
         fprintf (stderr, "%s\n", s);
         fprintf(stderr, "at line %d,  before token: %s \n", yylineno, yytext);
         fprintf(stderr, "INPUT NOT VALID\n");
+<<<<<<< HEAD
         found_errors = 1;
     }
     /*Enum type*/
@@ -96,10 +118,16 @@
     };
     SymbolTable symtable = SymbolTable();
 
+=======
+    }
+>>>>>>> master
 %}
 
 /* Specifies the initial symbol of our grammar. */
 %start program
+
+/* Better error messages */
+%define parse.error verbose
 
 /* Union of all the types that a symbol can have. */
 %union {
@@ -107,6 +135,7 @@
     double real;
     char* string;
     unsigned int expression;
+    Symbol* symbol;
 }
 
 /* Terminal Symbols */
@@ -114,33 +143,38 @@
                 LOCAL TRUE FALSE NIL
 %token<string>  ASSIGNMENT ADDITION SUBTRACTION MULTIPLICATION DIVISION MODULO
                 EQUALITY INEQUALITY INCREMENT DECREMENT GREATER_THAN LESS_THAN
-                GREATER_OR_EQUAL LESS_OR_EQUAL UNARY_MINUS
+                GREATER_OR_EQUAL LESS_OR_EQUAL
+%token<string>  UMINUS
 %token<string>  LEFT_CURLY_BRACKET RIGHT_CURLY_BRACKET LEFT_SQUARE_BRACKET
                 RIGHT_SQUARE_BRACKET LEFT_PARENTHESES RIGHT_PARENTHESES
                 SEMICOLON COMMA COLON DOUBLE_COLON DOT DOUBLE_DOT
-%token<string>  STRING ID
+%token<string>  ID
 %token<integer> INTEGER
 %token<real>    REAL
+%token<string>  STRING
 %token<string>  ERROR
 
 /* Non Terminal Symbols */
-/* %type<Edw 8elei tupo enos entry ston symbol table> symbol_table_entry */
 %type<expression> expr
 %type<expression> assignexpr
 %type<expression> term
 %type<expression> primary
+<<<<<<< HEAD
 %type<expression> lvalue
 %type<expression> ifprefix
+=======
+/* %type<symbol> lvalue */
+>>>>>>> master
 
-/* Rules for priority and associativeness */
+/* Rules for priority and associativeness.*/
 %right ASSIGNMENT
 %left OR
 %left AND
 %nonassoc EQUALITY INEQUALITY
-%nonassoc GREATER_THAN LESS_THAN GREATER_OR_EQUAL LESS_OR_EQUAL
+%nonassoc GREATER_THAN GREATER_OR_EQUAL LESS_THAN LESS_OR_EQUAL
 %left ADDITION SUBTRACTION
 %left MULTIPLICATION DIVISION MODULO
-%right NOT INCREMENT DECREMENT UNARY_MINUS
+%right NOT INCREMENT DECREMENT UMINUS
 %left DOT DOUBLE_DOT
 %left LEFT_SQUARE_BRACKET RIGHT_SQUARE_BRACKET
 %left LEFT_PARENTHESES RIGHT_PARENTHESES
@@ -162,7 +196,7 @@ statements
 
 stmt
     : expr SEMICOLON {
-
+        
     }
     | ifstmt 
     | whilestmt 
@@ -263,9 +297,13 @@ expr
             printf("expr OR expr, Line: %d\n" ,yylineno);
     }
     | term {
+<<<<<<< HEAD
             $$ = $1;
             /*symbolTable[0] = {"x","int","1",1};
             std::cout<<symbolTable[0].name << std::endl;*/
+=======
+        
+>>>>>>> master
     };
 
 term
@@ -273,17 +311,26 @@ term
         $$ = ($2);
         printf("left expr right, Line: %d\n" ,yylineno);
     }
+<<<<<<< HEAD
     | SUBTRACTION expr %prec UNARY_MINUS {
         $$ = - $2;
         printf("unary minus, Line: %d\n" ,yylineno);
+=======
+    | SUBTRACTION expr %prec UMINUS {
+
+>>>>>>> master
     }
     | NOT expr {
         $$ = not $2;
         printf("NOT expr, Line: %d\n" ,yylineno);
     }
     | INCREMENT lvalue {
+<<<<<<< HEAD
         $$ = $$ + 1;
         printf("increment lvalue, Line: %d\n" ,yylineno);
+=======
+        
+>>>>>>> master
     }
     | lvalue INCREMENT {
         $$ = $$ + 1;
@@ -303,7 +350,10 @@ term
 assignexpr
     : lvalue ASSIGNMENT expr {
         
+<<<<<<< HEAD
         symtable.insert($1);
+=======
+>>>>>>> master
     };
 primary
     : lvalue {
@@ -316,7 +366,7 @@ primary
 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {
-        $$ = FUNC;
+        
     }
     | const {
 
@@ -324,11 +374,15 @@ primary
 
 lvalue
     : ID {
+<<<<<<< HEAD
         symType type;
         if( currentScope == 0 ) type = GLOBAL_VARIABLE;
         else type = LOCAL_VARIABLE;
         
         $$ = new Symbol($1, type, yylineno, currentScope);
+=======
+        
+>>>>>>> master
     }
     | LOCAL ID {
         printf("local id, Line: %d\n" ,yylineno);
@@ -528,8 +582,10 @@ int main(int argc, char** argv) {
     }
     
     // Initialization
+    symtable = SymbolTable();
     commentStack = std::stack<unsigned int>();
     tokenCounter = 0;
+    currentScope = 0;
 
     yyparse();
 
