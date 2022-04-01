@@ -1,16 +1,16 @@
 /* Definitions */
 %{
-    /* Defines */
-    #define FUNC 1
-    #define VAR 2
-
     /* Includes */
     #include <stdio.h>
     #include <iostream>
     #include <stack>
-    #include <map>
 
-    
+    #include "../public/Symbol.hpp"
+    #include "../public/SymbolTable.hpp"
+
+    /* Defines */
+    #define FUNC 1
+    #define VAR 2
 
     /* External Variables */
     extern int yylineno;
@@ -20,19 +20,16 @@
     extern std::stack<unsigned int> commentStack;
     extern int yylex();
 
-    /* Function Declarations */
-     void yyerror (char const *s) {
+    /* Global Variables */
+    unsigned int currentScope = 0;
+    SymbolTable symtable = SymbolTable();
+
+    /* Function Definitions */
+     void yyerror (char const *s) {      
         fprintf (stderr, "%s\n", s);
+        fprintf(stderr, "at line %d,  before token: %s \n", yylineno, yytext);
+        fprintf(stderr, "INPUT NOT VALID\n");
     }
-
-    /* SymTable */
-    class SymTable {
-    public:
-        std::map<int, std::string> symbolTable;
-    private:
-
-    };
-
 %}
 
 /* Specifies the initial symbol of our grammar. */
@@ -44,6 +41,7 @@
     double real;
     char* string;
     unsigned int expression;
+    Symbol* symbol;
 }
 
 /* Terminal Symbols */
@@ -51,21 +49,23 @@
                 LOCAL TRUE FALSE NIL
 %token<string>  ASSIGNMENT ADDITION SUBTRACTION MULTIPLICATION DIVISION MODULO
                 EQUALITY INEQUALITY INCREMENT DECREMENT GREATER_THAN LESS_THAN
-                GREATER_OR_EQUAL LESS_OR_EQUAL UNARY_MINUS
+                GREATER_OR_EQUAL LESS_OR_EQUAL
+%token<string>  UNARY_MINUS
 %token<string>  LEFT_CURLY_BRACKET RIGHT_CURLY_BRACKET LEFT_SQUARE_BRACKET
                 RIGHT_SQUARE_BRACKET LEFT_PARENTHESES RIGHT_PARENTHESES
                 SEMICOLON COMMA COLON DOUBLE_COLON DOT DOUBLE_DOT
-%token<string>  STRING ID
+%token<string>  ID
 %token<integer> INTEGER
 %token<real>    REAL
+%token<string>  STRING
 %token<string>  ERROR
 
 /* Non Terminal Symbols */
-/* %type<Edw 8elei tupo enos entry ston symbol table> symbol_table_entry */
 %type<expression> expr
 %type<expression> assignexpr
 %type<expression> term
 %type<expression> primary
+/* %type<symbol> lvalue */
 
 /* Rules for priority and associativeness */
 %right ASSIGNMENT
