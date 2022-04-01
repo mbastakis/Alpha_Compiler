@@ -68,7 +68,7 @@
 %type<expression> assignexpr
 %type<expression> term
 %type<expression> primary
-/* %type<symbol> lvalue */
+%type<symbol> lvalue
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -111,7 +111,7 @@ stmt
 
     }
     | BREAK SEMICOLON {
-
+        
     }
     | CONTINUE SEMICOLON {
 
