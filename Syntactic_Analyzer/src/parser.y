@@ -21,8 +21,8 @@
     extern int yylex();
 
     /* Global Variables */
-    unsigned int currentScope = 0;
-    SymbolTable symtable = SymbolTable();
+    unsigned int currentScope;
+    SymbolTable symtable;
 
     /* Function Definitions */
      void yyerror (char const *s) {      
@@ -34,6 +34,8 @@
 
 /* Specifies the initial symbol of our grammar. */
 %start program
+/* Better error messages */
+%define parse.error verbose
 
 /* Union of all the types that a symbol can have. */
 %union {
@@ -50,7 +52,7 @@
 %token<string>  ASSIGNMENT ADDITION SUBTRACTION MULTIPLICATION DIVISION MODULO
                 EQUALITY INEQUALITY INCREMENT DECREMENT GREATER_THAN LESS_THAN
                 GREATER_OR_EQUAL LESS_OR_EQUAL
-%token<string>  UNARY_MINUS
+%token<string>  UMINUS
 %token<string>  LEFT_CURLY_BRACKET RIGHT_CURLY_BRACKET LEFT_SQUARE_BRACKET
                 RIGHT_SQUARE_BRACKET LEFT_PARENTHESES RIGHT_PARENTHESES
                 SEMICOLON COMMA COLON DOUBLE_COLON DOT DOUBLE_DOT
@@ -67,15 +69,15 @@
 %type<expression> primary
 /* %type<symbol> lvalue */
 
-/* Rules for priority and associativeness */
+/* Rules for priority and associativeness.*/
 %right ASSIGNMENT
 %left OR
 %left AND
 %nonassoc EQUALITY INEQUALITY
-%nonassoc GREATER_THAN LESS_THAN GREATER_OR_EQUAL LESS_OR_EQUAL
+%nonassoc GREATER_THAN GREATER_OR_EQUAL LESS_THAN LESS_OR_EQUAL
 %left ADDITION SUBTRACTION
 %left MULTIPLICATION DIVISION MODULO
-%right NOT INCREMENT DECREMENT UNARY_MINUS
+%right NOT INCREMENT DECREMENT UMINUS
 %left DOT DOUBLE_DOT
 %left LEFT_SQUARE_BRACKET RIGHT_SQUARE_BRACKET
 %left LEFT_PARENTHESES RIGHT_PARENTHESES
@@ -168,7 +170,7 @@ term
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
 
     }
-    | SUBTRACTION expr %prec UNARY_MINUS {
+    | SUBTRACTION expr %prec UMINUS {
 
     }
     | NOT expr {
@@ -399,8 +401,10 @@ int main(int argc, char** argv) {
     }
     
     // Initialization
+    symtable = SymbolTable();
     commentStack = std::stack<unsigned int>();
     tokenCounter = 0;
+    currentScope = 0;
 
     yyparse();
 
