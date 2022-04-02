@@ -1,9 +1,8 @@
-x=5;
-function y(z,a){
-	function v(c){
-		b=3;
-	}
-	j=1;
+function f(y) {
+	function g(x) { return x*y; } 
+	return g(x);
 }
 
-i=9;
+function g() {
+	function h() { return g(); } 
+}

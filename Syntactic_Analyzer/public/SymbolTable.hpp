@@ -45,7 +45,7 @@ public:
     bool contains(std::string id, unsigned int scope) {
         auto it = m_table.find(id);
         while (it != m_table.end()) {
-            if (it->second->getScope() == scope) return true;
+            if (it->second->getScope() == scope && it->second->getId() == id) return true;
             it++;
         }
         return false;
@@ -106,12 +106,15 @@ public:
                 isVar = -1;
             }
 
-            if(contains(symbol->getId(),symbol->getType()) != 1){
+            //std::cout<<isVar<<std::endl;
+          
+            if(contains(symbol->getId(),symbol->getType()) != 1 && contains(symbol->getId(),LOCAL_VARIABLE) != 1){
                 if(isVar == 0){
                     std::cout << "error: variable redefined as a function" << std::endl;
                     return 0;
                 }
                 else if (isVar == 1){
+                    //std::cout<<symbol->getId()<<std::endl;
                     std::cout << "error: function used as an l-value" << std::endl;
                     return 0;
                 }

@@ -27,6 +27,8 @@
     int function_open = 0;
     int stmt_open=0;
 
+    std::string prFuc; 
+
     int i = 1;
 
     /* Function Definitions */
@@ -142,13 +144,12 @@ expr
 
     }
     | expr ADDITION expr {
-        printf("expr + expr, Line: %d\n" ,yylineno);
+        
     }
     | expr SUBTRACTION expr {
         
     }
     | expr MULTIPLICATION expr {
-        
     }
     | expr DIVISION expr {
         
@@ -181,7 +182,6 @@ expr
         
     }
     | term {
-        
     };
 
 term
@@ -233,17 +233,28 @@ primary
 
 lvalue
     : ID {
+        //std::cout<<$ 1<<std::endl;
         if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1)){
+            
             if (currentScope == 0)
                 symtable.insert($1, new Symbol($1, GLOBAL_VARIABLE, yylineno, currentScope));
             else    {
                 symtable.insert($1, new Symbol($1, LOCAL_VARIABLE, yylineno, currentScope));
             }
-        }        
+        } 
+        else if(symtable.contains($1) == 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1 && symtable.contains($1,currentScope-1) != 1){
+            
+            std::cout<<"error: variable "<< $1 <<" not accessible in "<< prFuc <<std::endl;
+        } 
+        else if(symtable.contains($1,LOCAL_VARIABLE) == 1 && symtable.contains($1,currentScope) != 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1){
+            
+            std::cout<<"error: "<< $1 <<" not accessible in "<< prFuc <<std::endl;
+        }
+               
         
     }
     | LOCAL ID {
-
+        symtable.insert($2, new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
     }
     | DOUBLE_COLON ID {
 
@@ -342,13 +353,14 @@ block
     };
 
 funcdef
-    : FUNCTION {i = yylineno;} ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
+    : FUNCTION {i = yylineno; } ID {prFuc = $3;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {   
+       // std::cout<<$ 3<<std::endl;
         symtable.insert($3, new Symbol($3, USER_FUNCTION, i, currentScope));
 
     }
     | FUNCTION {i = yylineno;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
         
-        // WHAT TO DO???
+        // WHAT TO DO??? 
     };
 
 const
@@ -408,13 +420,14 @@ returnstmt
         if(function_open == 0){
             printf("Error: return outside of function, Line: %d\n" ,yylineno);
         } 
-        else {
-            printf("return, Line: %d\n" ,yylineno);
-        }
+        
         
     }
     | RETURN expr SEMICOLON {
-        printf("return expr, Line: %d\n" ,yylineno);
+        if(function_open == 0){
+            printf("Error: return outside of function, Line: %d\n" ,yylineno);
+        }
+       
     };
 %%
 

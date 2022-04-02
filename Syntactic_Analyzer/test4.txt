@@ -1,0 +1,14 @@
+
+/*function f(y) {
+	function g(x) { return x*y; }
+	
+	
+	return g(x);
+}*/
+
+
+function g() {
+	local z = 1;
+	function h() { return g(); } 
+}
+
