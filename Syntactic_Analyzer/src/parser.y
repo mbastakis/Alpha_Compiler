@@ -1,20 +1,9 @@
 /* Definitions */
 %{
-<<<<<<< HEAD
-    /* Defines */
-    #define SIZE 100
-    #define FUNC 1
-    #define VAR 2
-
-=======
->>>>>>> master
     /* Includes */
     #include <stdio.h>
     #include <iostream>
     #include <stack>
-<<<<<<< HEAD
-    #include <unordered_map>
-=======
 
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
@@ -22,7 +11,6 @@
     /* Defines */
     #define FUNC 1
     #define VAR 2
->>>>>>> master
 
     /* External Variables */
     extern int yylineno;
@@ -31,96 +19,22 @@
     extern unsigned int tokenCounter;
     extern std::stack<unsigned int> commentStack;
     extern int yylex();
-    extern int yylineno;
 
     /* Global Variables */
     unsigned int currentScope = 0;
-    unsigned int SymbolTableSize = 0;
+    SymbolTable symtable;
 
-    int found_errors = 0;
     int function_open = 0;
     int stmt_open=0;
 
     int i = 1;
 
-<<<<<<< HEAD
-    /* Function Declarations */
-=======
-    /* Global Variables */
-    unsigned int currentScope;
-    SymbolTable symtable;
-
     /* Function Definitions */
->>>>>>> master
      void yyerror (char const *s) {      
         fprintf (stderr, "%s\n", s);
         fprintf(stderr, "at line %d,  before token: %s \n", yylineno, yytext);
         fprintf(stderr, "INPUT NOT VALID\n");
-<<<<<<< HEAD
-        found_errors = 1;
     }
-    /*Enum type*/
-    typedef enum {
-        GLOBAL_VARIABLE,
-        LOCAL_VARIABLE,
-        FORMAL_ARGUMENT,
-        LIBRARY_FUNCTION,
-        USER_FUNCTION
-    } symType;
-
-    /* Symbol */
-    class Symbol {
-    private:
-        std::string id;
-        symType type;
-        unsigned int scope;
-        unsigned int line;
-    public:
-        Symbol(std::string _id, symType _type, unsigned int _scope, unsigned int _line) {
-            id = _id;
-            type = _type;
-            scope = _scope;
-            line = _line;
-        }
-
-        std::string getId() {
-            return id;
-        }
-
-        symType getType() {
-            return type;
-        }
-
-        unsigned int getLine() {
-            return line;
-        }
-
-        unsigned int getScope() {
-            return scope;
-        }
-
-
-    };
-    
-    /* SymTable */
-    class SymbolTable {
-    private:
-        std::unordered_map<int, Symbol> table;
-    public:
-        SymbolTable() {
-            table = std::unordered_map<int, Symbol>();
-        }
-
-        int insert(Symbol* symbol) {
-
-        }
-        
-    };
-    SymbolTable symtable = SymbolTable();
-
-=======
-    }
->>>>>>> master
 %}
 
 /* Specifies the initial symbol of our grammar. */
@@ -159,16 +73,7 @@
 %type<expression> assignexpr
 %type<expression> term
 %type<expression> primary
-<<<<<<< HEAD
-<<<<<<< HEAD
-%type<expression> lvalue
-%type<expression> ifprefix
-=======
-/* %type<symbol> lvalue */
->>>>>>> master
-=======
 %type<symbol> lvalue
->>>>>>> master
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -211,16 +116,13 @@ stmt
 
     }
     | BREAK SEMICOLON {
-<<<<<<< HEAD
         if(stmt_open == 0){
             printf("Error: break outside of statement, Line: %d\n" ,yylineno);
         } 
         else {
             printf("break, Line: %d\n" ,yylineno);
         }
-=======
         
->>>>>>> master
     }
     | CONTINUE SEMICOLON {
         if(stmt_open == 0){
@@ -229,7 +131,6 @@ stmt
         else {
             printf("continue, Line: %d\n" ,yylineno);
         }
-
     }
     | block 
     | funcdef
@@ -238,134 +139,84 @@ stmt
 
 expr
     : assignexpr {
-        
+
     }
-    | expr ADDITION expr {           
-            $$ = $1 + $3;
-            printf("expr + expr, Line: %d\n" ,yylineno);
+    | expr ADDITION expr {
+        printf("expr + expr, Line: %d\n" ,yylineno);
     }
     | expr SUBTRACTION expr {
-            $$ = $1 - $3;
-            printf("expr - expr, Line: %d\n" ,yylineno);
         
     }
     | expr MULTIPLICATION expr {
-            $$ = $1 * $3;
-            printf("expr * expr, Line: %d\n" ,yylineno);
         
     }
     | expr DIVISION expr {
-            $$ = $1 / $3;
-            printf("expr / expr, Line: %d\n" ,yylineno);
         
     }
     | expr MODULO expr {
-            $$ = $1 % $3;
-            printf("expr %% expr, Line: %d\n" ,yylineno);
         
     }
     | expr GREATER_THAN expr {
-            $$ = $1 > $3;
-            printf("expr > expr, Line: %d\n" ,yylineno);
         
     }
     | expr LESS_THAN expr {
-            $$ = $1 < $3;
-            printf("expr < expr, Line: %d\n" ,yylineno);
         
     }
     | expr GREATER_OR_EQUAL expr {
-            $$ = $1 >= $3;
-            printf("expr >= expr, Line: %d\n" ,yylineno);
         
     }
     | expr LESS_OR_EQUAL expr {
-            $$ = $1 <= $3;
-            printf("expr <= expr, Line: %d\n" ,yylineno);
         
     }
     | expr EQUALITY expr {
-            $$ = $1 == $3;
-            printf("expr == expr, Line: %d\n" ,yylineno);
         
     }
     | expr INEQUALITY expr {
-            $$ = $1 != $3;
-            printf("expr != expr, Line: %d\n" ,yylineno);
         
     }
     | expr AND expr {
-            $$ = $1 and $3;
-            printf("expr AND expr, Line: %d\n" ,yylineno);
         
     }
     | expr OR expr {
-            $$ = $1 or $3;
-            
-            printf("expr OR expr, Line: %d\n" ,yylineno);
+        
     }
     | term {
-<<<<<<< HEAD
-            $$ = $1;
-            /*symbolTable[0] = {"x","int","1",1};
-            std::cout<<symbolTable[0].name << std::endl;*/
-=======
         
->>>>>>> master
     };
 
 term
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
-        $$ = ($2);
-        printf("left expr right, Line: %d\n" ,yylineno);
+
     }
-<<<<<<< HEAD
-    | SUBTRACTION expr %prec UNARY_MINUS {
-        $$ = - $2;
-        printf("unary minus, Line: %d\n" ,yylineno);
-=======
     | SUBTRACTION expr %prec UMINUS {
 
->>>>>>> master
     }
     | NOT expr {
-        $$ = not $2;
-        printf("NOT expr, Line: %d\n" ,yylineno);
+
     }
     | INCREMENT lvalue {
-<<<<<<< HEAD
-        $$ = $$ + 1;
-        printf("increment lvalue, Line: %d\n" ,yylineno);
-=======
         
->>>>>>> master
     }
     | lvalue INCREMENT {
-        $$ = $$ + 1;
-        printf("lvalue increment, Line: %d\n" ,yylineno);
+
     }
     | DECREMENT lvalue {
-        $$ = $$ - 1;
-        printf("decrement lvalue, Line: %d\n" ,yylineno);
+
     }
     | lvalue DECREMENT {
-        $$ = $$ - 1;
-        printf("lvalue decrement, Line: %d\n" ,yylineno);
+
     }
     | primary {
-        
     };
+
 assignexpr
     : lvalue ASSIGNMENT expr {
         
-<<<<<<< HEAD
-        symtable.insert($1);
-=======
->>>>>>> master
     };
+
 primary
     : lvalue {
-        
+
     }
     | call {
 
@@ -382,28 +233,28 @@ primary
 
 lvalue
     : ID {
-<<<<<<< HEAD
-        symType type;
-        if( currentScope == 0 ) type = GLOBAL_VARIABLE;
-        else type = LOCAL_VARIABLE;
+        if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1)){
+            if (currentScope == 0)
+                symtable.insert($1, new Symbol($1, GLOBAL_VARIABLE, yylineno, currentScope));
+            else    {
+                symtable.insert($1, new Symbol($1, LOCAL_VARIABLE, yylineno, currentScope));
+            }
+        }        
         
-        $$ = new Symbol($1, type, yylineno, currentScope);
-=======
-        
->>>>>>> master
     }
     | LOCAL ID {
-        printf("local id, Line: %d\n" ,yylineno);
+
     }
     | DOUBLE_COLON ID {
-        
+
     }
     | member {
+
     };
 
 member
     : lvalue DOT ID {
-        
+
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_CURLY_BRACKET {
 
@@ -417,7 +268,7 @@ member
 
 call
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        
+
     }
     | lvalue callsufix {
 
@@ -437,12 +288,12 @@ callsufix
 
 normcall 
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        printf("normcall, Line: %d\n" ,yylineno);
+
     }
 
 methodcall
     : DOUBLE_DOT ID LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        printf("method call, Line: %d\n" ,yylineno);
+
     };
 
 elist
@@ -461,10 +312,10 @@ nextexpr
 
 objectdef
     : LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET {
-        printf("object elist, Line: %d\n" ,yylineno);
+
     }
     | LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
-        printf("object indexed, Line: %d\n" ,yylineno);
+
     };
 
 indexed
@@ -482,7 +333,7 @@ nextindexed
 
 indexedelem
     : LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET{
-        
+
     };
 
 block
@@ -491,61 +342,54 @@ block
     };
 
 funcdef
-    : FUNCTION {i = yylineno;} ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
-        
-        printf("function id, Line: %d\n" ,i);
+    : FUNCTION {i = yylineno;} ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
+        symtable.insert($3, new Symbol($3, USER_FUNCTION, i, currentScope));
+
     }
     | FUNCTION {i = yylineno;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
         
-        printf("function, Line: %d\n" ,i);
+        // WHAT TO DO???
     };
 
 const
     : INTEGER {
-        printf("integer, Line: %d\n" ,yylineno);
-    }   
+
+    }
     | REAL{
-        printf("real, Line: %d\n" ,yylineno);
+
     }
     | STRING{
-        printf("string, Line: %d\n" ,yylineno);
+
     }
     | NIL{
-        printf("NIL, Line: %d\n" ,yylineno);
+
     }
     | TRUE{
-        printf("true, Line: %d\n" ,yylineno);
+
     }
     | FALSE{
-        printf("false, Line: %d\n" ,yylineno);
+
     };
 
 idlist
     : ID nextid {
-
+        symtable.insert($1, new Symbol($1, FORMAL_ARGUMENT, yylineno, currentScope));
     }
     | %empty
     ;
 
 nextid
     : COMMA ID nextid {
-
+        symtable.insert($2, new Symbol($2, FORMAL_ARGUMENT, yylineno, currentScope));
     }
     | %empty
     ;
 
-/* TODO: Check if variables have been declared */
-
-ifprefix
-    : IF {i = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES {
-
-    };
-
 ifstmt
-    : ifprefix stmt {stmt_open--;} %prec PUREIF {
+    : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
         printf("pure if, Line: %d\n" ,i);
     }
-    | ifprefix stmt ELSE {stmt_open++;} stmt {stmt_open--;} {
+    | IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
         printf("if else, Line: %d\n" ,i);
     };
 
@@ -595,6 +439,19 @@ int main(int argc, char** argv) {
     tokenCounter = 0;
     currentScope = 0;
 
+    /*symtable.insert("print", new Symbol("print", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("input", new Symbol("input", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("objectmemberkeys", new Symbol("objectmemberkeys", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("objecttotalmembers", new Symbol("objecttotalmembers", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("objectcopy", new Symbol("objectcopy", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("totalarguments", new Symbol("totalarguments", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("argument", new Symbol("argument", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("typeof", new Symbol("typeof", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("strtonum", new Symbol("strtonum", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("sqrt", new Symbol("sqrt", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("cos", new Symbol("cos", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert("sin", new Symbol("sin", LIBRARY_FUNCTION, 0, 0));*/
+
     yyparse();
 
     // Ending Lexical Analysis
@@ -608,6 +465,7 @@ int main(int argc, char** argv) {
         fclose(output_file);
     } else
         /* printOutput(NULL); */
+        symtable.printSymTable();
 
     return 0;
 }

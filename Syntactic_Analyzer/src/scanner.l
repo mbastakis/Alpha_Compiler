@@ -109,7 +109,6 @@ DELIMITER                   [\r\n \t\v\r]
 STRING                      \"(\\.|[^"\\])*\"
 INCOMPLETE_STRING           \"
 UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
-
 /* Pattern Actions */
 %%
 {IF}                    {
@@ -333,17 +332,8 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                                 return (ERROR);
                             }
                         }
-<<<<<<< HEAD
-
-%%
-
-int Current_Line(){
-	return yylineno;
-}
-=======
 {LINE_COMMENT}          {
                             if( state == BLOCK_COMMENT ) unput(yytext[1]);
                             else if( state == DEFAULT ) state = LINE_COMMENT;
                         }
 %%
->>>>>>> master

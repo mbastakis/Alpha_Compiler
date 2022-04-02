@@ -32,6 +32,16 @@ public:
         return m_table.find(id) != m_table.end();
     }
 
+    bool contains(std::string id, Symbol_T type) {
+        auto it = m_table.find(id);
+        while (it != m_table.end()) {
+            if (it->second->getType() == type && it->second->getId() == id) return true;
+            it++;
+        }
+        
+        return false;
+    }
+
     bool contains(std::string id, unsigned int scope) {
         auto it = m_table.find(id);
         while (it != m_table.end()) {
@@ -84,7 +94,30 @@ public:
 
 
     int insert(std::string id, Symbol* symbol) {
+        int isVar = -1;
         if (symbol == NULL) return 0;
+
+        if(contains(symbol->getId()) == 1){
+            if(symbol->getType() == USER_FUNCTION ){
+                isVar = 0;
+            } else if((symbol->getType() == GLOBAL_VARIABLE) || (symbol->getType() == LOCAL_VARIABLE)){
+                isVar = 1;
+            } else {
+                isVar = -1;
+            }
+
+            if(contains(symbol->getId(),symbol->getType()) != 1){
+                if(isVar == 0){
+                    std::cout << "error: variable redefined as a function" << std::endl;
+                    return 0;
+                }
+                else if (isVar == 1){
+                    std::cout << "error: function used as an l-value" << std::endl;
+                    return 0;
+                }
+            } 
+        } 
+
 
         if (symbol->getScope() > maxScope)
             maxScope = symbol->getScope();

@@ -1,0 +1,9 @@
+x=5;
+function y(z,a){
+	function v(c){
+		b=3;
+	}
+	j=1;
+}
+
+i=9;

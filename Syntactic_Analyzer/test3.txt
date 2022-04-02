@@ -1,0 +1,9 @@
+function f(){} f = 10;
+
+x=3;
+
+a=5;
+function a(b,d){
+
+	x=5;
+}
