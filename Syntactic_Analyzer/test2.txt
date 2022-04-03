@@ -6,3 +6,23 @@ function f(y) {
 function g() {
 	function h() { return g(); } 
 }
+
+/*function t(){
+	function l(){}
+	
+	z=2;
+	
+	
+}
+
+l=5;
+z=10;
+
+function g() {
+	local x;
+}
+
+function x(){
+	local x =10;
+}*/
+

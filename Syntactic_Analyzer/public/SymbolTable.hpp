@@ -1,29 +1,38 @@
 #ifndef SYMBOL_TABLE_HPP
 #define SYMBOL_TABLE_HPP
 
-#include <unordered_map>
+#include <map>
 #include <list>
 
 #include "Symbol.hpp"
 
-
 class SymbolTable {
 
 private:
-    std::unordered_multimap<std::string, Symbol*> m_table;
+    std::multimap<std::string, Symbol*> m_table;
     unsigned int m_size;
     unsigned int maxScope;
 
+    static bool compare (Symbol* first, Symbol* second) {
+        return first->getLine() < second->getLine();
+    }
+
     void printSymbols(unsigned int scope) {
+        auto symList = std::list<Symbol*>();
         for (auto it = m_table.begin(); it != m_table.end(); ++it) {
             if (it->second->getScope() == scope)
-                std::cout << it->second->toString() << std::endl;
+                symList.push_back(it->second);
+        }
+        symList.sort(compare);
+
+        for (auto it = symList.begin(); it != symList.end(); ++it ) {
+            std::cout << (*it)->toString() << std::endl;
         }
     }
 
 public:
     SymbolTable() {
-        m_table = std::unordered_multimap<std::string, Symbol*>();
+        m_table = std::multimap<std::string, Symbol*>();
         m_size = 0;
         maxScope = 0;
     }
@@ -31,14 +40,13 @@ public:
     bool contains(std::string id) {
         return m_table.find(id) != m_table.end();
     }
-
+ 
     bool contains(std::string id, Symbol_T type) {
         auto it = m_table.find(id);
         while (it != m_table.end()) {
             if (it->second->getType() == type && it->second->getId() == id) return true;
             it++;
         }
-        
         return false;
     }
 
@@ -54,7 +62,7 @@ public:
     Symbol* get(std::string id, unsigned int scope) {
         auto it = m_table.find(id);
         while (it != m_table.end()) {
-            if (it->second->getScope() == scope) return (it->second);
+            if (it->second->getScope() == scope && it->second->getId().compare(id) == 0) return (it->second);
             it++;
         }
 
@@ -64,6 +72,15 @@ public:
     Symbol* get(std::string id) {
         auto search = m_table.find(id);
         return search == m_table.end() ? NULL : search->second;
+    }
+
+    Symbol* getNearestSymbol(std::string id, int scope) {
+        while (scope >= 0) {
+            Symbol* search = get(id, scope);
+            if(  search != NULL ) return search;
+            scope--;
+        }
+        return NULL;
     }
 
     unsigned int count(std::string id) {
@@ -92,40 +109,63 @@ public:
         return symList;
     }
 
+    int checkLibraryFunction(Symbol* symbol){
+        if(symbol->getId() == "print" || symbol->getId() == "input" || symbol->getId() == "objectmemberkeys" || symbol->getId() == "objecttotalmembers"
+           || symbol->getId() == "objectcopy" || symbol->getId() == "totalarguments" || symbol->getId() == "argument" || symbol->getId() == "typeof" 
+            || symbol->getId() == "strtonum"  || symbol->getId() == "sqrt" || symbol->getId() == "cos" || symbol->getId() == "sin" ) {
+            return -1;
+        }
+        return 0;
+    }
 
-    int insert(std::string id, Symbol* symbol) {
-        int isVar = -1;
+    int getScope(std::string id,Symbol_T type) {
+
+        for (auto it = m_table.begin(); it != m_table.end(); ++it) {
+            if (it->second->getType() == type && it->second->getId() == id)
+                return it->second->getScope();
+        }
+        return -1;
+    }
+
+
+    int insert(Symbol* symbol) {
+        
         if (symbol == NULL) return 0;
+
+        
 
         if(contains(symbol->getId()) == 1){
             if(symbol->getType() == USER_FUNCTION ){
-                isVar = 0;
-            } else if((symbol->getType() == GLOBAL_VARIABLE) || (symbol->getType() == LOCAL_VARIABLE)){
-                isVar = 1;
-            } else {
-                isVar = -1;
-            }
-
-            //std::cout<<isVar<<std::endl;
-          
-            if(contains(symbol->getId(),symbol->getType()) != 1 && contains(symbol->getId(),LOCAL_VARIABLE) != 1){
-                if(isVar == 0){
-                    std::cout << "error: variable redefined as a function" << std::endl;
-                    return 0;
+            
+                if(contains(symbol->getId(),symbol->getType()) != 1){  
+                    if((contains(symbol->getId(),FORMAL_ARGUMENT) == 1 && symbol->getScope() == getScope(symbol->getId(),FORMAL_ARGUMENT)) || 
+                        contains(symbol->getId(),LOCAL_VARIABLE) == 1 && symbol->getScope() == getScope(symbol->getId(),LOCAL_VARIABLE) ||
+                        contains(symbol->getId(),GLOBAL_VARIABLE) == 1){
+                        std::cout << "error: variable redefined as a function at line "<< symbol->getLine() << std::endl;
+                        return 0;
+                    }
                 }
-                else if (isVar == 1){
-                    //std::cout<<symbol->getId()<<std::endl;
-                    std::cout << "error: function used as an l-value" << std::endl;
-                    return 0;
+            } else if(symbol->getType() == GLOBAL_VARIABLE){
+                
+                if(contains(symbol->getId(),symbol->getType()) != 1 ){
+                    if((contains(symbol->getId(),USER_FUNCTION) == 1 && symbol->getScope() == getScope(symbol->getId(),USER_FUNCTION))){                       
+                        std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
+                        return 0;                       
+                    }
+                } 
+            } else if(symbol->getType() == LOCAL_VARIABLE){ // THE SAME LINE WITH GLOBAL VARIABLE
+                if(contains(symbol->getId(),symbol->getType()) != 1 ){
+                    std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
+                        return 0;
                 }
-            } 
-        } 
+            }    
+        }
 
 
         if (symbol->getScope() > maxScope)
             maxScope = symbol->getScope();
 
-        m_table.insert({ id, symbol });
+        m_table.insert({ symbol->getId(), symbol });
 
         return 0;
     }

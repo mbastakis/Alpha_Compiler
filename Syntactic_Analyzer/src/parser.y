@@ -231,30 +231,36 @@ primary
 
     };
 
-lvalue
+lvalue 
     : ID {
-        //std::cout<<$ 1<<std::endl;
-        if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1)){
+
+        if(symtable.checkLibraryFunction(new Symbol($1, USER_FUNCTION, i, currentScope)) == 0){
+
+            if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1)){
             
-            if (currentScope == 0)
-                symtable.insert($1, new Symbol($1, GLOBAL_VARIABLE, yylineno, currentScope));
-            else    {
-                symtable.insert($1, new Symbol($1, LOCAL_VARIABLE, yylineno, currentScope));
+                if (currentScope == 0)
+                    symtable.insert(new Symbol($1, GLOBAL_VARIABLE, yylineno, currentScope));
+                else    {
+                    symtable.insert(new Symbol($1, LOCAL_VARIABLE, yylineno, currentScope));
+                }
+            } 
+            else if(symtable.contains($1) == 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1 && symtable.contains($1,currentScope) != 1){
+            
+                std::cout<<"error: variable "<< $1 <<" not accessible in "<< prFuc <<std::endl;
+            } 
+            else if(symtable.contains($1,LOCAL_VARIABLE) == 1 && symtable.contains($1,currentScope) != 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1){
+            
+                std::cout<<"error: "<< $1 <<" not accessible in "<< prFuc <<std::endl;
             }
-        } 
-        else if(symtable.contains($1) == 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1 && symtable.contains($1,currentScope-1) != 1){
-            
-            std::cout<<"error: variable "<< $1 <<" not accessible in "<< prFuc <<std::endl;
-        } 
-        else if(symtable.contains($1,LOCAL_VARIABLE) == 1 && symtable.contains($1,currentScope) != 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1){
-            
-            std::cout<<"error: "<< $1 <<" not accessible in "<< prFuc <<std::endl;
+        }
+        else {
+            std::cout<<"error: variable must not have the same name as a library function at line "<<yylineno <<std::endl;
         }
                
         
     }
     | LOCAL ID {
-        symtable.insert($2, new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
+        symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
     }
     | DOUBLE_COLON ID {
 
@@ -282,7 +288,7 @@ call
 
     }
     | lvalue callsufix {
-
+        std::cout<<"hello "<<yylineno <<" "<<yytext << std::endl; 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES 
       LEFT_PARENTHESES elist RIGHT_PARENTHESES {
@@ -353,14 +359,20 @@ block
     };
 
 funcdef
-    : FUNCTION {i = yylineno; } ID {prFuc = $3;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {   
-       // std::cout<<$ 3<<std::endl;
-        symtable.insert($3, new Symbol($3, USER_FUNCTION, i, currentScope));
-
+    : FUNCTION {i = yylineno; } ID {prFuc = $3; 
+        if(symtable.checkLibraryFunction(new Symbol($3, USER_FUNCTION, i, currentScope)) == 0){
+            symtable.insert(new Symbol($3, USER_FUNCTION, i, currentScope));
+        }
+        else{
+            std::cout<<"error: function must not have the same name as a library function at line "<< i <<std::endl;  
+        }                
+        } 
+    
+    LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
+        
     }
     | FUNCTION {i = yylineno;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
         
-        // WHAT TO DO??? 
     };
 
 const
@@ -385,14 +397,14 @@ const
 
 idlist
     : ID nextid {
-        symtable.insert($1, new Symbol($1, FORMAL_ARGUMENT, yylineno, currentScope));
+        symtable.insert(new Symbol($1, FORMAL_ARGUMENT, yylineno, currentScope+1));
     }
     | %empty
     ;
 
 nextid
     : COMMA ID nextid {
-        symtable.insert($2, new Symbol($2, FORMAL_ARGUMENT, yylineno, currentScope));
+        symtable.insert(new Symbol($2, FORMAL_ARGUMENT, yylineno, currentScope+1));
     }
     | %empty
     ;
@@ -452,18 +464,18 @@ int main(int argc, char** argv) {
     tokenCounter = 0;
     currentScope = 0;
 
-    /*symtable.insert("print", new Symbol("print", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("input", new Symbol("input", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("objectmemberkeys", new Symbol("objectmemberkeys", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("objecttotalmembers", new Symbol("objecttotalmembers", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("objectcopy", new Symbol("objectcopy", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("totalarguments", new Symbol("totalarguments", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("argument", new Symbol("argument", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("typeof", new Symbol("typeof", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("strtonum", new Symbol("strtonum", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("sqrt", new Symbol("sqrt", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("cos", new Symbol("cos", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert("sin", new Symbol("sin", LIBRARY_FUNCTION, 0, 0));*/
+    symtable.insert(new Symbol("print", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("input", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("objectmemberkeys", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("objecttotalmembers", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("objectcopy", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("totalarguments", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("argument", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("typeof", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("strtonum", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("sqrt", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("cos", LIBRARY_FUNCTION, 0, 0));
+    symtable.insert(new Symbol("sin", LIBRARY_FUNCTION, 0, 0));
 
     yyparse();
 
