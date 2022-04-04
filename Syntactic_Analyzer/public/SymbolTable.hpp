@@ -109,10 +109,10 @@ public:
         return symList;
     }
 
-    int checkLibraryFunction(Symbol* symbol){
-        if(symbol->getId() == "print" || symbol->getId() == "input" || symbol->getId() == "objectmemberkeys" || symbol->getId() == "objecttotalmembers"
-           || symbol->getId() == "objectcopy" || symbol->getId() == "totalarguments" || symbol->getId() == "argument" || symbol->getId() == "typeof" 
-            || symbol->getId() == "strtonum"  || symbol->getId() == "sqrt" || symbol->getId() == "cos" || symbol->getId() == "sin" ) {
+    int checkLibraryFunction(std::string name){
+        if(name.compare("print")==0 || name.compare("input")==0 || name.compare("objectmemberkeys")==0 || name.compare("objecttotalmembers")==0
+           || name.compare("objectcopy") == 0 || name.compare("totalarguments") == 0 || name.compare("argument") == 0 || name.compare("typeof")==0
+            || name.compare("strtonum") == 0 || name.compare("sqrt") == 0 || name.compare("cos") == 0 || name.compare("sin") == 0) {
             return -1;
         }
         return 0;
@@ -145,7 +145,7 @@ public:
                         return 0;
                     }
                 }
-            } else if(symbol->getType() == GLOBAL_VARIABLE){
+            } else if(symbol->getType() == GLOBAL_VARIABLE || symbol->getType() == LOCAL_VARIABLE){
                 
                 if(contains(symbol->getId(),symbol->getType()) != 1 ){
                     if((contains(symbol->getId(),USER_FUNCTION) == 1 && symbol->getScope() == getScope(symbol->getId(),USER_FUNCTION))){                       
@@ -153,12 +153,12 @@ public:
                         return 0;                       
                     }
                 } 
-            } else if(symbol->getType() == LOCAL_VARIABLE){ // THE SAME LINE WITH GLOBAL VARIABLE
-                if(contains(symbol->getId(),symbol->getType()) != 1 ){
+            } /*else if(symbol->getType() == LOCAL_VARIABLE){ // THE SAME LINE WITH GLOBAL VARIABLE
+                if(contains(symbol->getId(),USER_FUNCTION) == 1 ){
                     std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
                         return 0;
                 }
-            }    
+            } */   
         }
 
 

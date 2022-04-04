@@ -1,5 +1,16 @@
-print = 5;
+y=5;
+function y(z){
+	local x=3;
+	function b(){
+		a=5;
+		function l() {
+			//return a;
+		}
+	}
+	a=9;
+	
+}
 
-function sin(x,y) {
-	x++;
+function m () {
+	return a;
 }

@@ -1,5 +1,10 @@
-function f(y) {
+/*function f(y) {
 	function g(x) { return x*y; } 
+	g(x);
+
+}
+
+function o() {
 	return g(x);
 }
 
@@ -7,7 +12,7 @@ function g() {
 	function h() { return g(); } 
 }
 
-/*function t(){
+function t(){
 	function l(){}
 	
 	z=2;
@@ -25,4 +30,13 @@ function g() {
 function x(){
 	local x =10;
 }*/
-
+x
+y
+x
+y
+function x(){
+	local y=4;
+}
+function x(){
+	return y;
+}
