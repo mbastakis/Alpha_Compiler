@@ -1,15 +1,16 @@
 /* Definitions */
 %{
-    /* Defines */
-    #define SIZE 100
-    #define FUNC 1
-    #define VAR 2
-
     /* Includes */
     #include <stdio.h>
     #include <iostream>
     #include <stack>
-    #include <unordered_map>
+
+    #include "../public/Symbol.hpp"
+    #include "../public/SymbolTable.hpp"
+
+    /* Defines */
+    #define FUNC 1
+    #define VAR 2
 
     /* External Variables */
     extern int yylineno;
@@ -18,61 +19,32 @@
     extern unsigned int tokenCounter;
     extern std::stack<unsigned int> commentStack;
     extern int yylex();
-    extern int Current_Line();
 
     /* Global Variables */
     unsigned int currentScope = 0;
-    unsigned int SymbolTableSize = 0;
+    SymbolTable symtable;
 
-    int found_errors = 0;
     int function_open = 0;
     int stmt_open=0;
+    int isNew=0;
+
+    std::stack<std::string> prFunction;
 
     int i = 1;
 
-    /* Function Declarations */
+    /* Function Definitions */
      void yyerror (char const *s) {      
         fprintf (stderr, "%s\n", s);
         fprintf(stderr, "at line %d,  before token: %s \n", yylineno, yytext);
         fprintf(stderr, "INPUT NOT VALID\n");
-        found_errors = 1;
     }
-
-    /* Symbol */
-    class Symbol {
-    private:
-        std::string id;
-        unsigned int scope;
-        unsigned int line;
-    public:
-        Symbol(std::string _id, unsigned int _scope, unsigned int _line) {
-            id = _id;
-            scope = _scope;
-            line = _line;
-        }
-
-        std::string getId() {
-            return id;
-        }
-
-        unsigned int getLine() {
-            return line;
-        }
-
-        unsigned int getScope() {
-            return scope;
-        }
-
-
-    };
-    
-    /* SymTable */
-    std::unordered_map<int, Symbol> SymbolTable;
-
 %}
 
 /* Specifies the initial symbol of our grammar. */
 %start program
+
+/* Better error messages */
+%define parse.error verbose
 
 /* Union of all the types that a symbol can have. */
 %union {
@@ -80,6 +52,7 @@
     double real;
     char* string;
     unsigned int expression;
+    Symbol* symbol;
 }
 
 /* Terminal Symbols */
@@ -87,33 +60,33 @@
                 LOCAL TRUE FALSE NIL
 %token<string>  ASSIGNMENT ADDITION SUBTRACTION MULTIPLICATION DIVISION MODULO
                 EQUALITY INEQUALITY INCREMENT DECREMENT GREATER_THAN LESS_THAN
-                GREATER_OR_EQUAL LESS_OR_EQUAL UNARY_MINUS
+                GREATER_OR_EQUAL LESS_OR_EQUAL
+%token<string>  UMINUS
 %token<string>  LEFT_CURLY_BRACKET RIGHT_CURLY_BRACKET LEFT_SQUARE_BRACKET
                 RIGHT_SQUARE_BRACKET LEFT_PARENTHESES RIGHT_PARENTHESES
                 SEMICOLON COMMA COLON DOUBLE_COLON DOT DOUBLE_DOT
-%token<string>  STRING ID
+%token<string>  ID
 %token<integer> INTEGER
 %token<real>    REAL
+%token<string>  STRING
 %token<string>  ERROR
 
 /* Non Terminal Symbols */
-/* %type<Edw 8elei tupo enos entry ston symbol table> symbol_table_entry */
 %type<expression> expr
 %type<expression> assignexpr
 %type<expression> term
 %type<expression> primary
-%type<expression> lvalue
-%type<expression> ifprefix
+%type<symbol> lvalue
 
-/* Rules for priority and associativeness */
+/* Rules for priority and associativeness.*/
 %right ASSIGNMENT
 %left OR
 %left AND
 %nonassoc EQUALITY INEQUALITY
-%nonassoc GREATER_THAN LESS_THAN GREATER_OR_EQUAL LESS_OR_EQUAL
+%nonassoc GREATER_THAN GREATER_OR_EQUAL LESS_THAN LESS_OR_EQUAL
 %left ADDITION SUBTRACTION
 %left MULTIPLICATION DIVISION MODULO
-%right NOT INCREMENT DECREMENT UNARY_MINUS
+%right NOT INCREMENT DECREMENT UMINUS
 %left DOT DOUBLE_DOT
 %left LEFT_SQUARE_BRACKET RIGHT_SQUARE_BRACKET
 %left LEFT_PARENTHESES RIGHT_PARENTHESES
@@ -124,6 +97,8 @@
 %%
 program
     : statements {
+        isNew=0;
+        
     };
 
 statements
@@ -134,33 +109,23 @@ statements
     ;
 
 stmt
-    : expr SEMICOLON {
-
-    }
+    : expr SEMICOLON
     | ifstmt 
     | whilestmt 
-    | forstmt {
-
-    }
+    | forstmt
     | returnstmt {
 
     }
     | BREAK SEMICOLON {
         if(stmt_open == 0){
-            printf("Error: break outside of statement, Line: %d\n" ,Current_Line());
+            printf("Error: break outside of statement, Line: %d\n" ,yylineno);
         } 
-        else {
-            printf("break, Line: %d\n" ,Current_Line());
-        }
+        
     }
     | CONTINUE SEMICOLON {
         if(stmt_open == 0){
-            printf("Error: continue outside of statement, Line: %d\n" ,Current_Line());
+            printf("Error: continue outside of statement, Line: %d\n" ,yylineno);
         } 
-        else {
-            printf("continue, Line: %d\n" ,Current_Line());
-        }
-
     }
     | block 
     | funcdef
@@ -169,119 +134,84 @@ stmt
 
 expr
     : assignexpr {
+
+    }
+    | expr ADDITION expr {
         
     }
-    | expr ADDITION expr {           
-            $$ = $1 + $3;
-            printf("expr + expr, Line: %d\n" ,Current_Line());
-    }
     | expr SUBTRACTION expr {
-            $$ = $1 - $3;
-            printf("expr - expr, Line: %d\n" ,Current_Line());
         
     }
     | expr MULTIPLICATION expr {
-            $$ = $1 * $3;
-            printf("expr * expr, Line: %d\n" ,Current_Line());
-        
     }
     | expr DIVISION expr {
-            $$ = $1 / $3;
-            printf("expr / expr, Line: %d\n" ,Current_Line());
         
     }
     | expr MODULO expr {
-            $$ = $1 % $3;
-            printf("expr %% expr, Line: %d\n" ,Current_Line());
         
     }
     | expr GREATER_THAN expr {
-            $$ = $1 > $3;
-            printf("expr > expr, Line: %d\n" ,Current_Line());
         
     }
     | expr LESS_THAN expr {
-            $$ = $1 < $3;
-            printf("expr < expr, Line: %d\n" ,Current_Line());
         
     }
     | expr GREATER_OR_EQUAL expr {
-            $$ = $1 >= $3;
-            printf("expr >= expr, Line: %d\n" ,Current_Line());
         
     }
     | expr LESS_OR_EQUAL expr {
-            $$ = $1 <= $3;
-            printf("expr <= expr, Line: %d\n" ,Current_Line());
         
     }
     | expr EQUALITY expr {
-            $$ = $1 == $3;
-            printf("expr == expr, Line: %d\n" ,Current_Line());
         
     }
     | expr INEQUALITY expr {
-            $$ = $1 != $3;
-            printf("expr != expr, Line: %d\n" ,Current_Line());
         
     }
     | expr AND expr {
-            $$ = $1 and $3;
-            printf("expr AND expr, Line: %d\n" ,Current_Line());
         
     }
     | expr OR expr {
-            $$ = $1 or $3;
-            
-            printf("expr OR expr, Line: %d\n" ,Current_Line());
+        
     }
     | term {
-            $$ = $1;
-            /*symbolTable[0] = {"x","int","1",1};
-            std::cout<<symbolTable[0].name << std::endl;*/
+        
     };
 
 term
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
-        $$ = ($2);
-        printf("left expr right, Line: %d\n" ,Current_Line());
+
     }
-    | SUBTRACTION expr %prec UNARY_MINUS {
-        $$ = - $2;
-        printf("unary minus, Line: %d\n" ,Current_Line());
+    | SUBTRACTION expr %prec UMINUS {
+
     }
     | NOT expr {
-        $$ = not $2;
-        printf("NOT expr, Line: %d\n" ,Current_Line());
+
     }
     | INCREMENT lvalue {
-        $$ = $$ + 1;
-        printf("increment lvalue, Line: %d\n" ,Current_Line());
+        
     }
     | lvalue INCREMENT {
-        $$ = $$ + 1;
-        printf("lvalue increment, Line: %d\n" ,Current_Line());
+
     }
     | DECREMENT lvalue {
-        $$ = $$ - 1;
-        printf("decrement lvalue, Line: %d\n" ,Current_Line());
+
     }
     | lvalue DECREMENT {
-        $$ = $$ - 1;
-        printf("lvalue decrement, Line: %d\n" ,Current_Line());
+
     }
     | primary {
-        
     };
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-        
+        isNew=1;
+        /*TEST 7 a=5, a=9*/
     };
 
 primary
     : lvalue {
-        
+
     }
     | call {
 
@@ -290,30 +220,74 @@ primary
 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {
-        $$ = FUNC;
+        
     }
     | const {
 
     };
 
-lvalue
+lvalue 
     : ID {
-        Symbol symbol = Symbol($1, currentScope, yylineno);
-        SymbolTable.insert(std::pair<int, Symbol>(SymbolTableSize++, symbol));
-        printf("id, Line: %d\n" , symbol.getLine());
-    }
-    | LOCAL ID {
-        printf("local id, Line: %d\n" ,Current_Line());
-    }
-    | DOUBLE_COLON ID {
+        //std::cout<<"ID"<<isNew << std::endl;
+        //if(symtable.contains($1,USER_FUNCTION)
+
+        if(symtable.checkLibraryFunction($1) == 0){
+
+            if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1 ) ){
+            
+                if (currentScope == 0)
+                    symtable.insert(new Symbol($1, GLOBAL_VARIABLE, yylineno, currentScope));
+                else    {
+                    symtable.insert(new Symbol($1, LOCAL_VARIABLE, yylineno, currentScope));
+                }
+            } 
+            else if( symtable.contains($1,GLOBAL_VARIABLE) != 1 && symtable.contains($1,currentScope) != 1){
+            
+                std::cout<<"error: variable "<< $1 <<" not accessible in "<< prFunction.top() <<std::endl;
+            } 
+            /*else if(symtable.contains($1,LOCAL_VARIABLE) == 1 && symtable.contains($1,currentScope) != 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1){
+            
+                std::cout<<"error: "<< $1 <<" not accessible in "<< prFuc <<std::endl;
+            }*/
+        }
+        else {
+            std::cout<<"error: variable must not have the same name as a library function at line "<<yylineno <<std::endl;
+        }
+               
         
     }
+    | LOCAL ID {
+        if(symtable.checkLibraryFunction($2) == 0){
+            if(symtable.contains($2) != 1 || (symtable.contains($2, USER_FUNCTION) == 1 ) ){
+                if (currentScope == 0)
+                    symtable.insert(new Symbol($2, GLOBAL_VARIABLE, yylineno, currentScope));
+                else    {
+                    symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
+                }
+            }
+            if(symtable.contains($2) == 1 && symtable.contains($2,currentScope) != 1){
+                symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
+            }
+        }
+        else {
+            std::cout<<"error: variable must not have the same name as a library function at line "<<yylineno <<std::endl;
+        }
+    }
+    | DOUBLE_COLON ID {
+        if(symtable.contains($2) != 1){
+            std::cout<<"error: variable does not exist at line: "<<yylineno<<std::endl;
+        }
+        else if(symtable.contains($2) == 1 && symtable.contains($2,GLOBAL_VARIABLE) != 1){
+            std::cout<<"error: "<<$2 <<" is not a global variable at line: "<<yylineno<<std::endl;
+        }
+    }
     | member {
+
     };
 
 member
     : lvalue DOT ID {
-        
+
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_CURLY_BRACKET {
 
@@ -327,10 +301,11 @@ member
 
 call
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        
+
     }
     | lvalue callsufix {
-
+        isNew=2;
+        std::cout<<"hello "<<yylineno <<" "<<yytext << std::endl; 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES 
       LEFT_PARENTHESES elist RIGHT_PARENTHESES {
@@ -347,12 +322,12 @@ callsufix
 
 normcall 
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        printf("normcall, Line: %d\n" ,Current_Line());
+
     }
 
 methodcall
     : DOUBLE_DOT ID LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        printf("method call, Line: %d\n" ,Current_Line());
+
     };
 
 elist
@@ -371,10 +346,10 @@ nextexpr
 
 objectdef
     : LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET {
-        printf("object elist, Line: %d\n" ,Current_Line());
+
     }
     | LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
-        printf("object indexed, Line: %d\n" ,Current_Line());
+
     };
 
 indexed
@@ -392,93 +367,91 @@ nextindexed
 
 indexedelem
     : LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET{
-        
+
     };
 
 block
-    : LEFT_CURLY_BRACKET {function_open++; stmt_open++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--;} {
+    : LEFT_CURLY_BRACKET {function_open++; stmt_open++; currentScope++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--; currentScope--; prFunction.pop();} {
         
     };
 
 funcdef
-    : FUNCTION {i = Current_Line();} ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
-        printf("function id, Line: %d\n" ,i);
+    : FUNCTION {i = yylineno; } ID {prFunction.push($3); 
+        if(symtable.checkLibraryFunction($3) == 0){
+            symtable.insert(new Symbol($3, USER_FUNCTION, i, currentScope));
+        }
+        else{
+            std::cout<<"error: function must not have the same name as a library function at line "<< i <<std::endl;  
+        }                
+        } 
+    
+    LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
+        
     }
-    | FUNCTION {i = Current_Line();} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
-        printf("function, Line: %d\n" ,i);
+    | FUNCTION {i = yylineno;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+        
     };
 
 const
     : INTEGER {
-        printf("integer, Line: %d\n" ,Current_Line());
-    }   
+
+    }
     | REAL{
-        printf("real, Line: %d\n" ,Current_Line());
+
     }
     | STRING{
-        printf("string, Line: %d\n" ,Current_Line());
+
     }
     | NIL{
-        printf("NIL, Line: %d\n" ,Current_Line());
+
     }
     | TRUE{
-        printf("true, Line: %d\n" ,Current_Line());
+
     }
     | FALSE{
-        printf("false, Line: %d\n" ,Current_Line());
+
     };
 
 idlist
     : ID nextid {
-
+        symtable.insert(new Symbol($1, FORMAL_ARGUMENT, yylineno, currentScope+1));
     }
     | %empty
     ;
 
 nextid
     : COMMA ID nextid {
-
+        symtable.insert(new Symbol($2, FORMAL_ARGUMENT, yylineno, currentScope+1));
     }
     | %empty
     ;
 
-/* TODO: Check if variables have been declared */
-
-ifprefix
-    : IF {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES {
-
-    };
-
 ifstmt
-    : ifprefix stmt {stmt_open--;} %prec PUREIF {
-        printf("pure if, Line: %d\n" ,i);
+    : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
     }
-    | ifprefix stmt ELSE {stmt_open++;} stmt {stmt_open--;} {
-        printf("if else, Line: %d\n" ,i);
+    | IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
     };
 
 whilestmt
-    : WHILE {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
-        printf("while, Line: %d\n" ,i);
+    : WHILE {i = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
     };
 
 forstmt 
-    : FOR {i = Current_Line(); stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
-        printf("for, Line: %d\n" ,i);
+    : FOR {i = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
     };
 
 returnstmt
     : RETURN SEMICOLON {
         if(function_open == 0){
-            printf("Error: return outside of function, Line: %d\n" ,Current_Line());
+            printf("Error: return outside of function, Line: %d\n" ,yylineno);
         } 
-        else {
-            printf("return, Line: %d\n" ,Current_Line());
-        }
-        
+               
     }
     | RETURN expr SEMICOLON {
-        printf("return expr, Line: %d\n" ,Current_Line());
+        if(function_open == 0){
+            printf("Error: return outside of function, Line: %d\n" ,yylineno);
+        }
+       
     };
 %%
 
@@ -498,8 +471,11 @@ int main(int argc, char** argv) {
     }
     
     // Initialization
+    symtable = SymbolTable();
     commentStack = std::stack<unsigned int>();
+    prFunction = std::stack<std::string>();
     tokenCounter = 0;
+    currentScope = 0;
 
     yyparse();
 
@@ -514,6 +490,7 @@ int main(int argc, char** argv) {
         fclose(output_file);
     } else
         /* printOutput(NULL); */
+        symtable.printSymTable();
 
     return 0;
 }

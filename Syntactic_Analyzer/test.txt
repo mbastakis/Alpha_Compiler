@@ -1,0 +1,19 @@
+a=5;
+function a(b,d){
+
+	x=5;
+	::x;
+}
+
+
+function f(y){} f = 10;
+
+function b(z){
+	function z(){}
+	b=5;
+}
+
+function c(u){
+	local l = 2;
+	function l(){}
+}

@@ -646,18 +646,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             yylval->setTokenType("DOUBLE_DOT", false);
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
-{LINE_COMMENT}          {
-                            if( state != DEFAULT ) return 0;
-                            state = LINE_COMMENT;
-                            yylval->setNumline(alpha_yylineno);
-                            yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext, true);
-                            yylval->setTokenCategory("COMMENT");
-                            yylval->setTokenType("LINE_COMMENT", false);
-                            yylval->setContentType("enumerated");
-                            return 1;
-                        }                         
+                        }                     
 {BLOCK_COMMENT_OPEN}    {
                             if( state == LINE_COMMENT ) return 0;
                             commentStack.push(alpha_yylineno);
@@ -667,8 +656,9 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
 {BLOCK_COMMENT_CLOSE}   {
                             if( state == LINE_COMMENT ) return 0;
                             if( commentStack.empty() ) {
-                                alpha_token_t* mult = new alpha_token_t(alpha_yylineno, ++tokenCounter, "*", "OPERATOR", "MULTIPLICATION", "enumerated");
-                                alpha_token_t* div = new alpha_token_t(alpha_yylineno, ++tokenCounter, "/", "OPERATOR", "DIVISION", "enumerated");
+                                alpha_token_t* mult = new alpha_token_t(alpha_yylineno, ++tokenCounter, "\"*\"", "OPERATOR", "MULTIPLICATION", "enumerated");
+                                alpha_token_t* div = new alpha_token_t(alpha_yylineno, ++tokenCounter, "\"/\"", "OPERATOR", "DIVISION", "enumerated");
+                                std::cout << "inside block comment close" << std::endl;
                                 tokenQueue.push(mult);
                                 tokenQueue.push(div);
                                 return 0;
@@ -697,7 +687,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             }
 
                             return 1;
-                        }
+                        } 
 {ID}                    {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -755,15 +745,28 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             if(state != DEFAULT) return 0;
                             std::cerr << "Error: Unknown character " << alpha_yytext << " found at line: " << alpha_yylineno << std::endl;
                             return 3;
-                        }
-
+                        } 
 <<EOF>>                 {
                             if(state != BLOCK_COMMENT && commentStack.empty()) return 2;
                             std::cerr << "Error: Comment opened in line " << commentStack.top() << " but never closed." << std::endl;
                             commentStack.pop();
                             return 3;
                         }         
-                                   
+{LINE_COMMENT}          {
+                            if( state == BLOCK_COMMENT ) unput(yytext[1]);
+                            else if( state != DEFAULT ) return 0;
+                            else {
+                                state = LINE_COMMENT;
+                                yylval->setNumline(alpha_yylineno);
+                                yylval->setNumtoken(++tokenCounter);
+                                yylval->setContent(alpha_yytext, true);
+                                yylval->setTokenCategory("COMMENT");
+                                yylval->setTokenType("LINE_COMMENT", false);
+                                yylval->setContentType("enumerated");
+                                return 1;
+                            }
+                        }
+                        
 %%
 
 int main(int argc, char** argv) {
