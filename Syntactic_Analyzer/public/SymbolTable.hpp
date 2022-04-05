@@ -11,9 +11,9 @@ class SymbolTable {
 private:
     std::multimap<std::string, Symbol*> m_table;
     unsigned int m_size;
-    unsigned int maxScope;
+    unsigned int m_maxScope;
 
-    static bool compare (Symbol* first, Symbol* second) {
+    static bool compare(Symbol* first, Symbol* second) {
         return first->getLine() < second->getLine();
     }
 
@@ -25,7 +25,7 @@ private:
         }
         symList.sort(compare);
 
-        for (auto it = symList.begin(); it != symList.end(); ++it ) {
+        for (auto it = symList.begin(); it != symList.end(); ++it) {
             std::cout << (*it)->toString() << std::endl;
         }
     }
@@ -34,13 +34,26 @@ public:
     SymbolTable() {
         m_table = std::multimap<std::string, Symbol*>();
         m_size = 0;
-        maxScope = 0;
+        m_maxScope = 0;
+
+        insert(new Symbol("print", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("input", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("objectmemberkeys", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("objecttotalmembers", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("objectcopy", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("totalarguments", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("argument", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("typeof", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("strtonum", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("sqrt", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("cos", LIBRARYFUNC, 0, 0, true));
+        insert(new Symbol("sin", LIBRARYFUNC, 0, 0, true));
     }
 
     bool contains(std::string id) {
         return m_table.find(id) != m_table.end();
     }
- 
+
     bool contains(std::string id, Symbol_T type) {
         auto it = m_table.find(id);
         while (it != m_table.end()) {
@@ -77,7 +90,7 @@ public:
     Symbol* getNearestSymbol(std::string id, int scope) {
         while (scope >= 0) {
             Symbol* search = get(id, scope);
-            if(  search != NULL ) return search;
+            if (search != NULL) return search;
             scope--;
         }
         return NULL;
@@ -109,16 +122,16 @@ public:
         return symList;
     }
 
-    int checkLibraryFunction(std::string name){
-        if(name.compare("print")==0 || name.compare("input")==0 || name.compare("objectmemberkeys")==0 || name.compare("objecttotalmembers")==0
-           || name.compare("objectcopy") == 0 || name.compare("totalarguments") == 0 || name.compare("argument") == 0 || name.compare("typeof")==0
+    int checkLibraryFunction(std::string name) {
+        if (name.compare("print") == 0 || name.compare("input") == 0 || name.compare("objectmemberkeys") == 0 || name.compare("objecttotalmembers") == 0
+            || name.compare("objectcopy") == 0 || name.compare("totalarguments") == 0 || name.compare("argument") == 0 || name.compare("typeof") == 0
             || name.compare("strtonum") == 0 || name.compare("sqrt") == 0 || name.compare("cos") == 0 || name.compare("sin") == 0) {
             return -1;
         }
         return 0;
     }
 
-    int getScope(std::string id,Symbol_T type) {
+    int getScope(std::string id, Symbol_T type) {
 
         for (auto it = m_table.begin(); it != m_table.end(); ++it) {
             if (it->second->getType() == type && it->second->getId() == id)
@@ -129,49 +142,69 @@ public:
 
 
     int insert(Symbol* symbol) {
-        
+
         if (symbol == NULL) return 0;
 
-        
 
-        if(contains(symbol->getId()) == 1){
-            if(symbol->getType() == USER_FUNCTION ){
-            
-                if(contains(symbol->getId(),symbol->getType()) != 1){  
-                    if((contains(symbol->getId(),FORMAL_ARGUMENT) == 1 && symbol->getScope() == getScope(symbol->getId(),FORMAL_ARGUMENT)) || 
-                        contains(symbol->getId(),LOCAL_VARIABLE) == 1 && symbol->getScope() == getScope(symbol->getId(),LOCAL_VARIABLE) ||
-                        contains(symbol->getId(),GLOBAL_VARIABLE) == 1){
-                        std::cout << "error: variable redefined as a function at line "<< symbol->getLine() << std::endl;
+
+        if (contains(symbol->getId()) == 1) {
+            if (symbol->getType() == USERFUNC) {
+
+                if (contains(symbol->getId(), symbol->getType()) != 1) {
+                    if ((contains(symbol->getId(), FORMAL) == 1 && symbol->getScope() == getScope(symbol->getId(), FORMAL)) ||
+                        contains(symbol->getId(), LOCAL) == 1 && symbol->getScope() == getScope(symbol->getId(), LOCAL) ||
+                        contains(symbol->getId(), GLOBAL) == 1) {
+                        std::cout << "error: variable redefined as a function at line " << symbol->getLine() << std::endl;
                         return 0;
                     }
                 }
-            } else if(symbol->getType() == GLOBAL_VARIABLE || symbol->getType() == LOCAL_VARIABLE){
-                
-                if(contains(symbol->getId(),symbol->getType()) != 1 ){
-                    if((contains(symbol->getId(),USER_FUNCTION) == 1 && symbol->getScope() == getScope(symbol->getId(),USER_FUNCTION))){                       
+            }
+            else if (symbol->getType() == GLOBAL || symbol->getType() == LOCAL) {
+
+                if (contains(symbol->getId(), symbol->getType()) != 1) {
+                    if ((contains(symbol->getId(), USERFUNC) == 1 && symbol->getScope() == getScope(symbol->getId(), USERFUNC))) {
                         std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
-                        return 0;                       
+                        return 0;
                     }
-                } 
+                }
             } /*else if(symbol->getType() == LOCAL_VARIABLE){ // THE SAME LINE WITH GLOBAL VARIABLE
                 if(contains(symbol->getId(),USER_FUNCTION) == 1 ){
                     std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
                         return 0;
                 }
-            } */   
+            } */
         }
 
 
-        if (symbol->getScope() > maxScope)
-            maxScope = symbol->getScope();
+        if (symbol->getScope() > m_maxScope)
+            m_maxScope = symbol->getScope();
 
         m_table.insert({ symbol->getId(), symbol });
 
         return 0;
     }
 
+    Symbol* lookup(std::string id) {
+        auto symList = getSymbols(id);
+
+        for (auto it = symList.begin(); it != symList.end(); it++) {
+            if ((*it)->getId().compare(id) == 0 && (*it)->isActive())
+                return (*it);
+        }
+
+        return NULL;
+    }
+
+    void hide(unsigned int scope) {
+        auto symList = getSymbols(scope);
+
+        for (auto it = symList.begin(); it != symList.end(); it++) {
+            (*it)->setActive(false);
+        }
+    }
+
     void printSymTable() {
-        for (auto i = 0; i <= maxScope; i++) {
+        for (auto i = 0; i <= m_maxScope; i++) {
             std::cout << "-----------\t Scope #" << std::to_string(i) << "\t-----------" << std::endl;
             printSymbols(i);
             std::cout << std::endl << std::endl;

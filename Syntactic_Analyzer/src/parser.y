@@ -473,21 +473,9 @@ int main(int argc, char** argv) {
     // Initialization
     symtable = SymbolTable();
     commentStack = std::stack<unsigned int>();
+    prFunction = std::stack<std::string>();
     tokenCounter = 0;
     currentScope = 0;
-
-    symtable.insert(new Symbol("print", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("input", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("objectmemberkeys", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("objecttotalmembers", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("objectcopy", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("totalarguments", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("argument", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("typeof", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("strtonum", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("sqrt", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("cos", LIBRARY_FUNCTION, 0, 0));
-    symtable.insert(new Symbol("sin", LIBRARY_FUNCTION, 0, 0));
 
     yyparse();
 
