@@ -106,14 +106,10 @@ statements
     ;
 
 stmt
-    : expr SEMICOLON {
-        
-    }
+    : expr SEMICOLON
     | ifstmt 
     | whilestmt 
-    | forstmt {
-
-    }
+    | forstmt
     | returnstmt {
 
     }
