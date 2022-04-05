@@ -1,14 +1,10 @@
-
-/*function f(y) {
-	function g(x) { return x*y; }
-	
-	
-	return g(x);
-}*/
-
-
-function g() {
-	local z = 1;
-	function h() { return g(); } 
+function f() {
+	local f = 10; 
+	function h () {
+	return f;// error, f::f (local) not accessible in h
+	return ::f(); // ok, we access global ::f
+	}
 }
+
+z=8;
 

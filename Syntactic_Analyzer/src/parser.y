@@ -26,8 +26,9 @@
 
     int function_open = 0;
     int stmt_open=0;
+    int isNew=0;
 
-    std::string prFuc; 
+    std::stack<std::string> prFunction;
 
     int i = 1;
 
@@ -96,6 +97,8 @@
 %%
 program
     : statements {
+        isNew=0;
+        
     };
 
 statements
@@ -117,18 +120,12 @@ stmt
         if(stmt_open == 0){
             printf("Error: break outside of statement, Line: %d\n" ,yylineno);
         } 
-        else {
-            printf("break, Line: %d\n" ,yylineno);
-        }
         
     }
     | CONTINUE SEMICOLON {
         if(stmt_open == 0){
             printf("Error: continue outside of statement, Line: %d\n" ,yylineno);
         } 
-        else {
-            printf("continue, Line: %d\n" ,yylineno);
-        }
     }
     | block 
     | funcdef
@@ -178,6 +175,7 @@ expr
         
     }
     | term {
+        
     };
 
 term
@@ -207,7 +205,8 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-        
+        isNew=1;
+        /*TEST 7 a=5, a=9*/
     };
 
 primary
@@ -229,10 +228,12 @@ primary
 
 lvalue 
     : ID {
+        //std::cout<<"ID"<<isNew << std::endl;
+        //if(symtable.contains($1,USER_FUNCTION)
 
-        if(symtable.checkLibraryFunction(new Symbol($1, USER_FUNCTION, i, currentScope)) == 0){
+        if(symtable.checkLibraryFunction($1) == 0){
 
-            if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1)){
+            if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1 ) ){
             
                 if (currentScope == 0)
                     symtable.insert(new Symbol($1, GLOBAL_VARIABLE, yylineno, currentScope));
@@ -240,14 +241,14 @@ lvalue
                     symtable.insert(new Symbol($1, LOCAL_VARIABLE, yylineno, currentScope));
                 }
             } 
-            else if(symtable.contains($1) == 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1 && symtable.contains($1,currentScope) != 1){
+            else if( symtable.contains($1,GLOBAL_VARIABLE) != 1 && symtable.contains($1,currentScope) != 1){
             
-                std::cout<<"error: variable "<< $1 <<" not accessible in "<< prFuc <<std::endl;
+                std::cout<<"error: variable "<< $1 <<" not accessible in "<< prFunction.top() <<std::endl;
             } 
-            else if(symtable.contains($1,LOCAL_VARIABLE) == 1 && symtable.contains($1,currentScope) != 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1){
+            /*else if(symtable.contains($1,LOCAL_VARIABLE) == 1 && symtable.contains($1,currentScope) != 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1){
             
                 std::cout<<"error: "<< $1 <<" not accessible in "<< prFuc <<std::endl;
-            }
+            }*/
         }
         else {
             std::cout<<"error: variable must not have the same name as a library function at line "<<yylineno <<std::endl;
@@ -256,10 +257,29 @@ lvalue
         
     }
     | LOCAL ID {
-        symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
+        if(symtable.checkLibraryFunction($2) == 0){
+            if(symtable.contains($2) != 1 || (symtable.contains($2, USER_FUNCTION) == 1 ) ){
+                if (currentScope == 0)
+                    symtable.insert(new Symbol($2, GLOBAL_VARIABLE, yylineno, currentScope));
+                else    {
+                    symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
+                }
+            }
+            if(symtable.contains($2) == 1 && symtable.contains($2,currentScope) != 1){
+                symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
+            }
+        }
+        else {
+            std::cout<<"error: variable must not have the same name as a library function at line "<<yylineno <<std::endl;
+        }
     }
     | DOUBLE_COLON ID {
-
+        if(symtable.contains($2) != 1){
+            std::cout<<"error: variable does not exist at line: "<<yylineno<<std::endl;
+        }
+        else if(symtable.contains($2) == 1 && symtable.contains($2,GLOBAL_VARIABLE) != 1){
+            std::cout<<"error: "<<$2 <<" is not a global variable at line: "<<yylineno<<std::endl;
+        }
     }
     | member {
 
@@ -284,6 +304,7 @@ call
 
     }
     | lvalue callsufix {
+        isNew=2;
         std::cout<<"hello "<<yylineno <<" "<<yytext << std::endl; 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES 
@@ -350,13 +371,13 @@ indexedelem
     };
 
 block
-    : LEFT_CURLY_BRACKET {function_open++; stmt_open++; currentScope++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--; currentScope--;} {
+    : LEFT_CURLY_BRACKET {function_open++; stmt_open++; currentScope++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--; currentScope--; prFunction.pop();} {
         
     };
 
 funcdef
-    : FUNCTION {i = yylineno; } ID {prFuc = $3; 
-        if(symtable.checkLibraryFunction(new Symbol($3, USER_FUNCTION, i, currentScope)) == 0){
+    : FUNCTION {i = yylineno; } ID {prFunction.push($3); 
+        if(symtable.checkLibraryFunction($3) == 0){
             symtable.insert(new Symbol($3, USER_FUNCTION, i, currentScope));
         }
         else{
@@ -407,20 +428,16 @@ nextid
 
 ifstmt
     : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
-        printf("pure if, Line: %d\n" ,i);
     }
     | IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
-        printf("if else, Line: %d\n" ,i);
     };
 
 whilestmt
     : WHILE {i = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
-        printf("while, Line: %d\n" ,i);
     };
 
 forstmt 
     : FOR {i = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
-        printf("for, Line: %d\n" ,i);
     };
 
 returnstmt
@@ -428,8 +445,7 @@ returnstmt
         if(function_open == 0){
             printf("Error: return outside of function, Line: %d\n" ,yylineno);
         } 
-        
-        
+               
     }
     | RETURN expr SEMICOLON {
         if(function_open == 0){
