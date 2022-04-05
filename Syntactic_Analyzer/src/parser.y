@@ -211,7 +211,7 @@ assignexpr
 
 primary
     : lvalue {
-
+        if($$ == symbol) insert($$);
     }
     | call {
 
@@ -230,7 +230,7 @@ lvalue
     : ID {
         //std::cout<<"ID"<<isNew << std::endl;
         //if(symtable.contains($1,USER_FUNCTION)
-
+        $$ = new Symbol(...);
         if(symtable.checkLibraryFunction($1) == 0){
 
             if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1 ) ){
@@ -304,6 +304,17 @@ call
 
     }
     | lvalue callsufix {
+        
+        auto symbol = symtable.lookup($1->getId(), $1->getScope());
+        
+        if(symbol == NULL) {
+            if(!symtable.contains($1->getId(), LIBRARYFUNC)){
+                yyerror("");
+                // symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope())); Den kanw insert.
+            }
+        } else if ()
+
+        // insert(new Symbol("onoma", func, lineno, scope, isActive->true));
         isNew=2;
         std::cout<<"hello "<<yylineno <<" "<<yytext << std::endl; 
     }
@@ -372,7 +383,7 @@ indexedelem
 
 block
     : LEFT_CURLY_BRACKET {function_open++; stmt_open++; currentScope++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--; currentScope--; prFunction.pop();} {
-        
+        symtable.hide(currentScope + 1);
     };
 
 funcdef
