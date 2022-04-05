@@ -151,15 +151,15 @@ public:
             if (symbol->getType() == USERFUNC) {
 
                 if (contains(symbol->getId(), symbol->getType()) != 1) {
-                    if ((contains(symbol->getId(), FORMAL) == 1 && symbol->getScope() == getScope(symbol->getId(), FORMAL)) ||
-                        contains(symbol->getId(), LOCAL) == 1 && symbol->getScope() == getScope(symbol->getId(), LOCAL) ||
-                        contains(symbol->getId(), GLOBAL) == 1) {
+                    if ((contains(symbol->getId(), FORMALVAR) == 1 && symbol->getScope() == getScope(symbol->getId(), FORMALVAR)) ||
+                        contains(symbol->getId(), LOCALVAR) == 1 && symbol->getScope() == getScope(symbol->getId(), LOCALVAR) ||
+                        contains(symbol->getId(), GLOBALVAR) == 1) {
                         std::cout << "error: variable redefined as a function at line " << symbol->getLine() << std::endl;
                         return 0;
                     }
                 }
             }
-            else if (symbol->getType() == GLOBAL || symbol->getType() == LOCAL) {
+            else if (symbol->getType() == GLOBALVAR || symbol->getType() == LOCALVAR) {
 
                 if (contains(symbol->getId(), symbol->getType()) != 1) {
                     if ((contains(symbol->getId(), USERFUNC) == 1 && symbol->getScope() == getScope(symbol->getId(), USERFUNC))) {
@@ -184,11 +184,11 @@ public:
         return 0;
     }
 
-    Symbol* lookup(std::string id) {
+    Symbol* lookup(std::string id, unsigned int scope) {
         auto symList = getSymbols(id);
 
         for (auto it = symList.begin(); it != symList.end(); it++) {
-            if ((*it)->getId().compare(id) == 0 && (*it)->isActive())
+            if ((*it)->getScope() == scope && (*it)->isActive())
                 return (*it);
         }
 

@@ -6,9 +6,9 @@
 #include <list>
 
 typedef enum {
-    GLOBAL = 0,
-    LOCAL,
-    FORMAL,
+    GLOBALVAR = 0,
+    LOCALVAR,
+    FORMALVAR,
     LIBRARYFUNC,
     USERFUNC
 } Symbol_T;
