@@ -209,11 +209,12 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-        //if(symtable.contains($2)) break;
+        if(symtable.contains($2, USERFUNC) == 1){
+            yyerror("Error: Function used as an l-value ");
+        }
+        if(symtable.contains($2)) break;
         if(symtable.contains($2, LOCALVAR) == 1){
             break; /* LOCALs have already been inserted */
-        } else if(symtable.contains($2, USERFUNC) == 1){
-            yyerror("Error: Function used as an l-value ");
         }
         else if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR ) {
             
@@ -227,6 +228,7 @@ primary
     : lvalue {  
        if(is_double!=1 || is_call!=1){
         if($1->getType()>=0 && $1->getType()<=4){
+            
             if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {   
                 if(!$1->getId().empty()){      
                     symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
@@ -252,6 +254,7 @@ primary
 
 lvalue 
     : ID {
+        
         is_double=0;
         if (symtable.getScopeSymbol($1, currentScope)==-1){ //the symbol does not exist
             if (currentScope == 0){
@@ -263,8 +266,8 @@ lvalue
             Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
             if (symtable.getScopeSymbol($1, currentScope)>0) { //the symbol exist but it is not global
                 if(symtable.contains($1,currentScope) != 1 && symtable.contains($1,LIBRARYFUNC) != 1 && is_call!=1){            
-                std::cout<<"Error: variable "<< $1 <<" not accessible in "<< prFunction.top() << " at line "<<yylineno <<std::endl;
-            }
+                    std::cout<<"Error: variable "<< $1 <<" not accessible in "<< prFunction.top() << " at line "<<yylineno <<std::endl;
+                }
                 if (symbol->getType()==USERFUNC){
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
@@ -274,8 +277,8 @@ lvalue
                 if (symbol->getType()==LIBRARYFUNC) {
                     $$ = new Symbol($1, LIBRARYFUNC, yylineno, currentScope, true);
                 } else {
-                    
-                $$ = NULL;
+                   
+                    $$ = NULL;
                 }
             }
             
@@ -340,6 +343,8 @@ call
            yyerror("Error: This function does not exist");
         }
         }
+        
+        
 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES 
@@ -357,12 +362,11 @@ callsufix
 
 normcall 
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        
     }
 
 methodcall
     : DOUBLE_DOT ID LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-
+        
     };
 
 elist
