@@ -57,7 +57,7 @@ public:
     bool contains(std::string id, Symbol_T type) {
         auto it = m_table.find(id);
         while (it != m_table.end()) {
-            if (it->second->getType() == type && it->second->getId() == id) return true;
+            if (it->second->getType() == type && it->second->getId() == id && it->second->isActive()) return true;
             it++;
         }
         return false;
@@ -66,7 +66,7 @@ public:
     bool contains(std::string id, unsigned int scope) {
         auto it = m_table.find(id);
         while (it != m_table.end()) {
-            if (it->second->getScope() == scope && it->second->getId() == id) return true;
+            if (it->second->getScope() == scope && it->second->getId() == id && it->second->isActive()) return true;
             it++;
         }
         return false;
@@ -90,17 +90,17 @@ public:
     Symbol* getNearestSymbol(std::string id, int scope) {
         while (scope >= 0) {
             Symbol* search = get(id, scope);
-            if (search != NULL) return search;
+            if (search != NULL && search->isActive()) return search;
             scope--;
         }
         return NULL;
     }
 
-    int getScopeSymbol(std::string id, int scope) {
+    int recursiveLookup(std::string id, int scope) {
         //if symbol exist in a not global scope
         while (scope > 0) {
             Symbol* search = get(id, scope);
-            if (search != NULL) return scope;
+            if (search != NULL && search->isActive()) return scope;
             scope--;
         }
         //if symbol exist in global scope
@@ -116,7 +116,7 @@ public:
         auto symList = std::list<Symbol*>();
 
         for (auto it = m_table.begin(); it != m_table.end(); ++it) {
-            if (it->second->getScope() == scope)
+            if (it->second->getScope() == scope )
                 symList.push_back(it->second);
         }
 
@@ -133,15 +133,6 @@ public:
 
         return symList;
     }
-
-    /*int checkLibraryFunction(std::string name) {
-        if (name.compare("print") == 0 || name.compare("input") == 0 || name.compare("objectmemberkeys") == 0 || name.compare("objecttotalmembers") == 0
-            || name.compare("objectcopy") == 0 || name.compare("totalarguments") == 0 || name.compare("argument") == 0 || name.compare("typeof") == 0
-            || name.compare("strtonum") == 0 || name.compare("sqrt") == 0 || name.compare("cos") == 0 || name.compare("sin") == 0) {
-            return -1;
-        }
-        return 0;
-    }*/
 
     int getScope(std::string id, Symbol_T type) {
         for (auto it = m_table.begin(); it != m_table.end(); ++it) {

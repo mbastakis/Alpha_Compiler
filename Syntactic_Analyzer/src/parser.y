@@ -42,7 +42,6 @@
      void yyerror (char const *s) {      
         fprintf (stderr, "%s ", s);
         fprintf(stderr, "at line %d.\n", yylineno);
-        //fprintf(stderr, "at line %d, in token: %s.\n", yylineno, yytext);
     }
 %}
 
@@ -269,19 +268,19 @@ lvalue
         is_dot=0;
         is_double=0;
         
-        if (symtable.getScopeSymbol($1, currentScope)==-1){ //the symbol does not exist
+        if (symtable.recursiveLookup($1, currentScope)==-1){ //the symbol does not exist
             if (currentScope == 0){ 
                     $$ = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
-                } else {
+            } else {
                     $$ = new Symbol($1, LOCALVAR, yylineno, currentScope, true);
-                }
+            }
         } else {
             
             Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
-            if (symtable.getScopeSymbol($1, currentScope)>0) { //the symbol exist but it is not global
-                if(symtable.contains($1,currentScope) != 1 && symtable.contains($1,LIBRARYFUNC) != 1  && is_call!=1){            
-                    std::cout<<"Error: variable "<< $1 <<" not accessible in "<< prFunction.top() << " at line "<<yylineno <<std::endl;
-                }
+            if (symtable.recursiveLookup($1, currentScope)>0) { //the symbol exist but it is not global
+                // if(symtable.contains($1,currentScope) != 1 && symtable.contains($1,LIBRARYFUNC) != 1  && is_call!=1){            
+                //     std::cout<<"Error: variable "<< $1 <<" not accessible in "<< prFunction.top() << " at line "<<yylineno <<std::endl;
+                // }
                 if (symbol->getType()==USERFUNC){
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
@@ -303,7 +302,7 @@ lvalue
         is_dot=0;
         is_double=0;
         if (symtable.lookup($2, currentScope) == NULL){          
-            if (symtable.contains($2, LIBRARYFUNC) != 1) {
+            if (!symtable.contains($2, LIBRARYFUNC)) {
                 if (currentScope == 0) {
                     symtable.insert(new Symbol($2, GLOBALVAR, yylineno, currentScope, true));
                 } else {
@@ -319,12 +318,12 @@ lvalue
         is_dot=0;
         is_double=1;
         is_call=0;
-        if(symtable.contains($2) != 1){
+        if(!symtable.contains($2))
             yyerror("Error: variable does not exist");
-        }
-        else if(symtable.contains($2,0) != 1){
+        
+        else if(!symtable.contains($2,0))
             yyerror("Error: the variable is not global");
-        }
+        
         
         
     }
@@ -446,10 +445,10 @@ block
     };
 
 funcdef
-    : FUNCTION {currentLine = yylineno; } ID {prFunction.push($3); 
-        if(symtable.contains($3, LIBRARYFUNC) == 1) {
+    : FUNCTION {currentLine = yylineno; } ID { prFunction.push($3);
+        if(symtable.contains($3, LIBRARYFUNC)) {
             yyerror("Error: function shadows library function");
-        } else if (symtable.lookup($3, currentScope) !=NULL) {
+        } else if (symtable.lookup($3, currentScope) != NULL) {
             yyerror("Error: function already exists");
         } else {
             symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
@@ -487,9 +486,9 @@ const
 
 idlist
     : ID nextid {
-        if(symtable.contains($1, LIBRARYFUNC) == 1) {
+        if(symtable.contains($1, LIBRARYFUNC)) {
             yyerror("Error: formal argument shadows library function");
-        } else if (symtable.lookup($1, currentScope+1) !=NULL){
+        } else if (symtable.lookup($1, currentScope+1) != NULL){
             yyerror("Error: formal argument redeclaration");
         } else {
             symtable.insert(new Symbol($1, FORMALVAR, yylineno, currentScope+1, true));
@@ -500,9 +499,9 @@ idlist
 
 nextid
     : COMMA ID nextid {
-        if(symtable.contains($2, LIBRARYFUNC) == 1) {
+        if(symtable.contains($2, LIBRARYFUNC)) {
             yyerror("Error: formal argument shadows library function");
-        } else if (symtable.lookup($2, currentScope+1) !=NULL){
+        } else if (symtable.lookup($2, currentScope+1) != NULL){
             yyerror("Error: formal argument redeclaration");
         } else {
             symtable.insert(new Symbol($2, FORMALVAR, yylineno, currentScope+1, true));
