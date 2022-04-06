@@ -217,7 +217,7 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {  
-        
+       if(is_double!=1 && is_dot!=1 && is_stmt!=1){ 
         if(symtable.contains($2, LOCALVAR) == 1){
             break; /* LOCALs have already been inserted */
         }
@@ -232,6 +232,7 @@ assignexpr
         }else {
             yyerror("Error: Not valid variable ");
         }
+       }
             
     };
 
