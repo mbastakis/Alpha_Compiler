@@ -32,16 +32,22 @@
     int is_stmt=0;
 
     std::stack<std::string> prFunction;
+    std::stack<std::list<std::string>> blockStack;
+    std::list<std::string> errorList;
 
     int currentLine = 1;
     int newNameFunction=1;
     std::string newName="";
 
 
+
     /* Function Definitions */
      void yyerror (char const *s) {      
         fprintf (stderr, "%s ", s);
         fprintf(stderr, "at line %d.\n", yylineno);
+    }
+    void printError (std::string str) {
+        std::cerr << str <<  std::endl;
     }
 %}
 
@@ -82,7 +88,6 @@
 %type<expression> term
 %type<expression> primary
 %type<symbol> lvalue
-//%type<integer> block
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -285,6 +290,7 @@ lvalue
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
                     /*CHECK IF IT EXIST IN A BLOCK WITH NO FUNCTION AND IF IT ISNT PRINT ERROR*/
+                    blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
                 }
             } else {
                 if (symbol->getType()==LIBRARYFUNC) {
@@ -433,15 +439,13 @@ indexedelem
 block
     : LEFT_CURLY_BRACKET {currentScope++;
 
-       // std::cout<< "hello"<<std::endl;
-        /*if ($$==1)) {
-            std::cout<<"We have a function at line "<< currentLine <<std::endl;
-        } else {
-            std::cout<<"We do not have a function at line "<< currentLine <<std::endl;
-        }*/
+        blockStack.push(std::list<std::string>());
+
     
     } statements RIGHT_CURLY_BRACKET { currentScope--; } {
         symtable.hide(currentScope + 1);
+        errorList = blockStack.top();
+        blockStack.pop();
     };
 
 funcdef
@@ -453,7 +457,15 @@ funcdef
         } else {
             symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
         }
-        } LEFT_PARENTHESES idlist RIGHT_PARENTHESES { function_open++; } block { /*$9=1;*/ function_open--; prFunction.pop();} {        
+        } LEFT_PARENTHESES idlist RIGHT_PARENTHESES { function_open++; } block { 
+                function_open--; 
+                prFunction.pop();
+                if( !errorList.empty() ) {
+                    for(auto it = errorList.begin(); it != errorList.end(); it++) {
+                        printError((*it));
+                    }
+                }
+            } {        
         
     }
     | FUNCTION {currentLine = yylineno; newName= "_f" + std::to_string(newNameFunction++);
@@ -560,6 +572,7 @@ int main(int argc, char** argv) {
     symtable = SymbolTable();
     commentStack = std::stack<unsigned int>();
     prFunction = std::stack<std::string>();
+    blockStack = std::stack<std::list<std::string>>();
     tokenCounter = 0;
     currentScope = 0;
 
