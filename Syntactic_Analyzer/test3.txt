@@ -1,20 +1,8 @@
-input(x);
-//print(typeof(x));
-::print(::typeof(::x));
-function g(x,y) {
-print(x+y);
-local print = y;
-::print(print);
-function h() {
-return x+y;
+x = input();
+ function g(x, y) {
+ local z = x + y;
+ print(z);
+ return(function f(a, b) {
+ return a + b;
+ });
 }
-return h;
-}
-add = (function(x,y){return x+y; });
-{
-local x = ::x;
-local f = (function(){return x; });
-}
-
-function f(a,b)
-{ local a = local b; }
