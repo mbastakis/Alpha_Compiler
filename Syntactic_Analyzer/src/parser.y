@@ -221,6 +221,7 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {  
+        //std::cout<<$2<<std::endl;
        if(is_double!=1 && is_dot!=1){ 
         if(symtable.contains($2, LOCALVAR) == 1){
             break; /* LOCALs have already been inserted */
@@ -241,8 +242,9 @@ assignexpr
     };
 
 primary
-    : lvalue {       
-       if(is_double!=1 && is_dot!=1 && is_stmt!=1){
+    : lvalue {      
+        //std::cout<<"hello"<<std::endl; 
+       /*if(is_double!=1 && is_dot!=1 && is_stmt!=1){
         if($1->getType()>=0 && $1->getType()<=4){
             
             if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {   
@@ -253,7 +255,7 @@ primary
                 yyerror("Error: Not valid variable");
             }
         }
-       }
+       }*/
     }
     | call {
 
@@ -280,9 +282,9 @@ lvalue
                     $$ = new Symbol($1, LOCALVAR, yylineno, currentScope, true);
             }
         } else {
-            
             Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
             if (symtable.recursiveLookup($1, currentScope)>0) { //the symbol exist but it is not global
+             
                 // if(symtable.contains($1,currentScope) != 1 && symtable.contains($1,LIBRARYFUNC) != 1  && is_call!=1){            
                 //     std::cout<<"Error: variable "<< $1 <<" not accessible in "<< prFunction.top() << " at line "<<yylineno <<std::endl;
                 // }
@@ -290,7 +292,9 @@ lvalue
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
                     /*CHECK IF IT EXIST IN A BLOCK WITH NO FUNCTION AND IF IT ISNT PRINT ERROR*/
-                    blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
+                    if(!symtable.contains($1,currentScope)){
+                        blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
+                   }
                 }
             } else {
                 if (symbol->getType()==LIBRARYFUNC) {

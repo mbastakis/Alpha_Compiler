@@ -1,4 +1,4 @@
-
+a=1;
 function x() {
     a;  // list1.push(error)
     a=10; // list1.push(error)
