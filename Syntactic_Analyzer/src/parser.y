@@ -26,7 +26,8 @@
 
     int function_open = 0;
     int stmt_open=0;
-    int isNew=0;
+    int is_double=0;
+    int is_call=0;
 
     std::stack<std::string> prFunction;
 
@@ -101,7 +102,6 @@
 %%
 program
     : statements {
-        isNew=0;
         
     };
 
@@ -209,16 +209,33 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-        
+        //if(symtable.contains($2)) break;
+        if(symtable.contains($2, LOCALVAR) == 1){
+            break; /* LOCALs have already been inserted */
+        } else if(symtable.contains($2, USERFUNC) == 1){
+            yyerror("Error: Function used as an l-value ");
+        }
+        else if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR ) {
+            
+            symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
+        }else {
+            yyerror("Error: Not valid variable ");
+        }
     };
 
 primary
-    : lvalue {
-        if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {
-            symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
-        }else {
-            yyerror("Error: Not valid variable.");
+    : lvalue {  
+       if(is_double!=1 || is_call!=1){
+        if($1->getType()>=0 && $1->getType()<=4){
+            if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {   
+                if(!$1->getId().empty()){      
+                    symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
+                }
+             }else {
+                yyerror("Error: Not valid variable");
+            }
         }
+       }
     }
     | call {
 
@@ -230,11 +247,12 @@ primary
         
     }
     | const {
-
+        
     };
 
 lvalue 
     : ID {
+        is_double=0;
         if (symtable.getScopeSymbol($1, currentScope)==-1){ //the symbol does not exist
             if (currentScope == 0){
                     $$ = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
@@ -244,7 +262,9 @@ lvalue
         } else {
             Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
             if (symtable.getScopeSymbol($1, currentScope)>0) { //the symbol exist but it is not global
-            
+                if(symtable.contains($1,currentScope) != 1 && symtable.contains($1,LIBRARYFUNC) != 1 && is_call!=1){            
+                std::cout<<"Error: variable "<< $1 <<" not accessible in "<< prFunction.top() << " at line "<<yylineno <<std::endl;
+            }
                 if (symbol->getType()==USERFUNC){
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
@@ -254,13 +274,18 @@ lvalue
                 if (symbol->getType()==LIBRARYFUNC) {
                     $$ = new Symbol($1, LIBRARYFUNC, yylineno, currentScope, true);
                 } else {
+                    
                 $$ = NULL;
                 }
             }
+            
         }
+        is_call=0;
     }
     | LOCAL ID {
-        if (symtable.lookup($2, currentScope) != NULL){
+        
+        is_double=0;
+        if (symtable.lookup($2, currentScope) == NULL){          
             if (symtable.contains($2, LIBRARYFUNC) != 1) {
                 if (currentScope == 0) {
                     symtable.insert(new Symbol($2, GLOBALVAR, yylineno, currentScope, true));
@@ -271,14 +296,19 @@ lvalue
                 yyerror("Error: trying to shadow library function");
             }
         }
+        is_call=0;
     }
     | DOUBLE_COLON ID {
+        is_double=1;
+        is_call=0;
         if(symtable.contains($2) != 1){
             yyerror("Error: variable does not exist");
         }
         else if(symtable.contains($2,0) != 1){
             yyerror("Error: the variable is not global");
         }
+        
+        
     }
     | member {
 
@@ -304,8 +334,11 @@ call
     }
     | lvalue callsufix {
         
-        if($1->getType() != USERFUNC || $1->getType() != LIBRARYFUNC ) {
-            yyerror("Error: This function does not exist");
+        is_call=1;
+        if(!$1->getId().empty()){
+        if(symtable.contains($1->getId(),USERFUNC) != 1 && symtable.contains($1->getId(),LIBRARYFUNC) != 1 && is_double!=1) {
+           yyerror("Error: This function does not exist");
+        }
         }
 
     }
@@ -316,7 +349,7 @@ call
 
 callsufix
     : normcall {
-
+        
     }
     | methodcall {
 
@@ -324,7 +357,7 @@ callsufix
 
 normcall 
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-
+        
     }
 
 methodcall
@@ -374,6 +407,8 @@ indexedelem
 
 block
     : LEFT_CURLY_BRACKET {currentScope++;
+
+       // std::cout<< "hello"<<std::endl;
         /*if ($$==1)) {
             std::cout<<"We have a function at line "<< currentLine <<std::endl;
         } else {
