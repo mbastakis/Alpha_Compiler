@@ -96,6 +96,18 @@ public:
         return NULL;
     }
 
+    int getScopeSymbol(std::string id, int scope) {
+        //if symbol exist in a not global scope
+        while (scope > 0) {
+            Symbol* search = get(id, scope);
+            if (search != NULL) return scope;
+            scope--;
+        }
+        //if symbol exist in global scope
+        if (contains(id, scope)) return 0; 
+        return -1;
+    }
+
     unsigned int count(std::string id) {
         return m_table.count(id);
     }
@@ -122,17 +134,16 @@ public:
         return symList;
     }
 
-    int checkLibraryFunction(std::string name) {
+    /*int checkLibraryFunction(std::string name) {
         if (name.compare("print") == 0 || name.compare("input") == 0 || name.compare("objectmemberkeys") == 0 || name.compare("objecttotalmembers") == 0
             || name.compare("objectcopy") == 0 || name.compare("totalarguments") == 0 || name.compare("argument") == 0 || name.compare("typeof") == 0
             || name.compare("strtonum") == 0 || name.compare("sqrt") == 0 || name.compare("cos") == 0 || name.compare("sin") == 0) {
             return -1;
         }
         return 0;
-    }
+    }*/
 
     int getScope(std::string id, Symbol_T type) {
-
         for (auto it = m_table.begin(); it != m_table.end(); ++it) {
             if (it->second->getType() == type && it->second->getId() == id)
                 return it->second->getScope();
@@ -142,10 +153,7 @@ public:
 
 
     int insert(Symbol* symbol) {
-
-        if (symbol == NULL) return 0;
-
-
+        /*if (symbol == NULL) return 0;
 
         if (contains(symbol->getId()) == 1) {
             if (symbol->getType() == USERFUNC) {
@@ -167,14 +175,13 @@ public:
                         return 0;
                     }
                 }
-            } /*else if(symbol->getType() == LOCAL_VARIABLE){ // THE SAME LINE WITH GLOBAL VARIABLE
+            } else if(symbol->getType() == LOCAL_VARIABLE){ // THE SAME LINE WITH GLOBAL VARIABLE
                 if(contains(symbol->getId(),USER_FUNCTION) == 1 ){
                     std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
                         return 0;
                 }
-            } */
-        }
-
+            } 
+        }*/
 
         if (symbol->getScope() > m_maxScope)
             m_maxScope = symbol->getScope();

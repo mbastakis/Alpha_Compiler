@@ -30,13 +30,16 @@
 
     std::stack<std::string> prFunction;
 
-    int i = 1;
+    int currentLine = 1;
+    int newNameFunction=1;
+    std::string newName="";
+
 
     /* Function Definitions */
      void yyerror (char const *s) {      
-        fprintf (stderr, "%s\n", s);
-        fprintf(stderr, "at line %d,  before token: %s \n", yylineno, yytext);
-        fprintf(stderr, "INPUT NOT VALID\n");
+        fprintf (stderr, "%s ", s);
+        fprintf(stderr, "at line %d.\n", yylineno);
+        //fprintf(stderr, "at line %d, in token: %s.\n", yylineno, yytext);
     }
 %}
 
@@ -77,6 +80,7 @@
 %type<expression> term
 %type<expression> primary
 %type<symbol> lvalue
+//%type<integer> block
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -205,13 +209,16 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-        isNew=1;
-        /*TEST 7 a=5, a=9*/
+        
     };
 
 primary
     : lvalue {
-        if($$ == symbol) insert($$);
+        if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {
+            symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
+        }else {
+            yyerror("Error: Not valid variable.");
+        }
     }
     | call {
 
@@ -228,57 +235,49 @@ primary
 
 lvalue 
     : ID {
-        //std::cout<<"ID"<<isNew << std::endl;
-        //if(symtable.contains($1,USER_FUNCTION)
-        $$ = new Symbol(...);
-        if(symtable.checkLibraryFunction($1) == 0){
-
-            if(symtable.contains($1) != 1 || (symtable.contains($1, USER_FUNCTION) == 1 ) ){
-            
-                if (currentScope == 0)
-                    symtable.insert(new Symbol($1, GLOBAL_VARIABLE, yylineno, currentScope));
-                else    {
-                    symtable.insert(new Symbol($1, LOCAL_VARIABLE, yylineno, currentScope));
+        if (symtable.getScopeSymbol($1, currentScope)==-1){ //the symbol does not exist
+            if (currentScope == 0){
+                    $$ = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
+                } else {
+                    $$ = new Symbol($1, LOCALVAR, yylineno, currentScope, true);
                 }
-            } 
-            else if( symtable.contains($1,GLOBAL_VARIABLE) != 1 && symtable.contains($1,currentScope) != 1){
+        } else {
+            Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
+            if (symtable.getScopeSymbol($1, currentScope)>0) { //the symbol exist but it is not global
             
-                std::cout<<"error: variable "<< $1 <<" not accessible in "<< prFunction.top() <<std::endl;
-            } 
-            /*else if(symtable.contains($1,LOCAL_VARIABLE) == 1 && symtable.contains($1,currentScope) != 1 && symtable.contains($1,GLOBAL_VARIABLE) != 1){
-            
-                std::cout<<"error: "<< $1 <<" not accessible in "<< prFuc <<std::endl;
-            }*/
+                if (symbol->getType()==USERFUNC){
+                    $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
+                } else {
+                    /*CHECK IF IT EXIST IN A BLOCK WITH NO FUNCTION AND IF IT ISNT PRINT ERROR*/
+                }
+            } else {
+                if (symbol->getType()==LIBRARYFUNC) {
+                    $$ = new Symbol($1, LIBRARYFUNC, yylineno, currentScope, true);
+                } else {
+                $$ = NULL;
+                }
+            }
         }
-        else {
-            std::cout<<"error: variable must not have the same name as a library function at line "<<yylineno <<std::endl;
-        }
-               
-        
     }
     | LOCAL ID {
-        if(symtable.checkLibraryFunction($2) == 0){
-            if(symtable.contains($2) != 1 || (symtable.contains($2, USER_FUNCTION) == 1 ) ){
-                if (currentScope == 0)
-                    symtable.insert(new Symbol($2, GLOBAL_VARIABLE, yylineno, currentScope));
-                else    {
-                    symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
+        if (symtable.lookup($2, currentScope) != NULL){
+            if (symtable.contains($2, LIBRARYFUNC) != 1) {
+                if (currentScope == 0) {
+                    symtable.insert(new Symbol($2, GLOBALVAR, yylineno, currentScope, true));
+                } else {
+                    symtable.insert(new Symbol($2, LOCALVAR, yylineno, currentScope, true));
                 }
+            } else {
+                yyerror("Error: trying to shadow library function");
             }
-            if(symtable.contains($2) == 1 && symtable.contains($2,currentScope) != 1){
-                symtable.insert(new Symbol($2, LOCAL_VARIABLE, yylineno, currentScope));
-            }
-        }
-        else {
-            std::cout<<"error: variable must not have the same name as a library function at line "<<yylineno <<std::endl;
         }
     }
     | DOUBLE_COLON ID {
         if(symtable.contains($2) != 1){
-            std::cout<<"error: variable does not exist at line: "<<yylineno<<std::endl;
+            yyerror("Error: variable does not exist");
         }
-        else if(symtable.contains($2) == 1 && symtable.contains($2,GLOBAL_VARIABLE) != 1){
-            std::cout<<"error: "<<$2 <<" is not a global variable at line: "<<yylineno<<std::endl;
+        else if(symtable.contains($2,0) != 1){
+            yyerror("Error: the variable is not global");
         }
     }
     | member {
@@ -305,18 +304,10 @@ call
     }
     | lvalue callsufix {
         
-        auto symbol = symtable.lookup($1->getId(), $1->getScope());
-        
-        if(symbol == NULL) {
-            if(!symtable.contains($1->getId(), LIBRARYFUNC)){
-                yyerror("");
-                // symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope())); Den kanw insert.
-            }
-        } else if ()
+        if($1->getType() != USERFUNC || $1->getType() != LIBRARYFUNC ) {
+            yyerror("Error: This function does not exist");
+        }
 
-        // insert(new Symbol("onoma", func, lineno, scope, isActive->true));
-        isNew=2;
-        std::cout<<"hello "<<yylineno <<" "<<yytext << std::endl; 
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES 
       LEFT_PARENTHESES elist RIGHT_PARENTHESES {
@@ -382,24 +373,34 @@ indexedelem
     };
 
 block
-    : LEFT_CURLY_BRACKET {function_open++; stmt_open++; currentScope++;} statements RIGHT_CURLY_BRACKET {function_open--; stmt_open--; currentScope--; prFunction.pop();} {
+    : LEFT_CURLY_BRACKET {currentScope++;
+        /*if ($$==1)) {
+            std::cout<<"We have a function at line "<< currentLine <<std::endl;
+        } else {
+            std::cout<<"We do not have a function at line "<< currentLine <<std::endl;
+        }*/
+    
+    } statements RIGHT_CURLY_BRACKET { currentScope--; } {
         symtable.hide(currentScope + 1);
     };
 
 funcdef
-    : FUNCTION {i = yylineno; } ID {prFunction.push($3); 
-        if(symtable.checkLibraryFunction($3) == 0){
-            symtable.insert(new Symbol($3, USER_FUNCTION, i, currentScope));
+    : FUNCTION {currentLine = yylineno; } ID {prFunction.push($3); 
+        if(symtable.contains($3, LIBRARYFUNC) == 1) {
+            yyerror("Error: function shadows library function");
+        } else if (symtable.lookup($3, currentScope) !=NULL) {
+            yyerror("Error: function already exists");
+        } else {
+            symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
         }
-        else{
-            std::cout<<"error: function must not have the same name as a library function at line "<< i <<std::endl;  
-        }                
-        } 
-    
-    LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
+        } LEFT_PARENTHESES idlist RIGHT_PARENTHESES { function_open++; } block { /*$9=1;*/ function_open--; prFunction.pop();} {        
         
     }
-    | FUNCTION {i = yylineno;} LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+    | FUNCTION {currentLine = yylineno; newName= "_f" + std::to_string(newNameFunction++);
+        prFunction.push(newName);
+        symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
+        
+        } LEFT_PARENTHESES idlist RIGHT_PARENTHESES { function_open++; } block { function_open--; prFunction.pop();} {
         
     };
 
@@ -425,14 +426,26 @@ const
 
 idlist
     : ID nextid {
-        symtable.insert(new Symbol($1, FORMAL_ARGUMENT, yylineno, currentScope+1));
+        if(symtable.contains($1, LIBRARYFUNC) == 1) {
+            yyerror("Error: formal argument shadows library function");
+        } else if (symtable.lookup($1, currentScope+1) !=NULL){
+            yyerror("Error: formal argument redeclaration");
+        } else {
+            symtable.insert(new Symbol($1, FORMALVAR, yylineno, currentScope+1, true));
+        }
     }
     | %empty
     ;
 
 nextid
     : COMMA ID nextid {
-        symtable.insert(new Symbol($2, FORMAL_ARGUMENT, yylineno, currentScope+1));
+        if(symtable.contains($2, LIBRARYFUNC) == 1) {
+            yyerror("Error: formal argument shadows library function");
+        } else if (symtable.lookup($2, currentScope+1) !=NULL){
+            yyerror("Error: formal argument redeclaration");
+        } else {
+            symtable.insert(new Symbol($2, FORMALVAR, yylineno, currentScope+1, true));
+        }
     }
     | %empty
     ;
@@ -444,11 +457,11 @@ ifstmt
     };
 
 whilestmt
-    : WHILE {i = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : WHILE {currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
     };
 
 forstmt 
-    : FOR {i = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : FOR {currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
     };
 
 returnstmt

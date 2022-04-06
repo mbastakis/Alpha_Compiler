@@ -83,6 +83,8 @@ public:
         return false;
     }
 
+    /*number of arguments in a function*/
+
     std::string toString() {
         std::string qm = "\"";
         std::string lb = "[";

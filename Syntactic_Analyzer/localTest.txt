@@ -1,0 +1,9 @@
+function f() {}
+local f;
+local print;
+local x;
+{
+	local f;
+	local print;
+}
+function g(a, b) { local a = local b;}

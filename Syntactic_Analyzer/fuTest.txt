@@ -1,0 +1,6 @@
+x=y=1;
+function f(z) {
+	x=2;
+	a=3;
+	function g(i) { return f(i); }
+}
