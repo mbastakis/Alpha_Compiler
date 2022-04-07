@@ -6,4 +6,7 @@ for(i=0; i < 10; i++) {
 
 }
 
-if(i==0 and i!=0 or y == 0){}
+if(i==0 and i!=0 or y == 0 and k = 3 or local e = 3){
+    local vw = 3;
+}
+

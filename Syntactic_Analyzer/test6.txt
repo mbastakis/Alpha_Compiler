@@ -1,0 +1,11 @@
+
+::prit(x);
+print(x);
+
+function e() {
+    x;
+    function k() {
+        x;
+    }
+    ::print(y);
+}

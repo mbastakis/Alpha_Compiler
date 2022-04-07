@@ -35,6 +35,7 @@
 
     int currentLine = 1;
     int newNameFunction=1;
+    bool isCall = false;
     std::string newName="";
 
     /* Function Definitions */
@@ -261,7 +262,11 @@ term
     }
     | primary {
         $$ = $1;
-    };
+    }
+    | ERROR {
+        YYABORT;
+    }
+    ;
 
 assignexpr
     : lvalue ASSIGNMENT expr {  
@@ -282,9 +287,9 @@ assignexpr
 primary
     : lvalue {      
         /*NEW*/
-        /*if($1 != NULL && !symtable.contains($1->getId())){
+        if($1 != NULL && !symtable.contains($1->getId())){
             symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
-        }*/
+        }
        if($1 != NULL && ($1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC))
             $$ = FUNC;
         currentSymbol = $1;
@@ -304,6 +309,7 @@ primary
 
 lvalue 
     : ID {       
+        
         if (symtable.recursiveLookup($1, currentScope)==-1){ //the symbol does not exist
             
             if (currentScope == 0){ 
@@ -365,7 +371,13 @@ lvalue
         
         else if(!symtable.contains($2,0))
             yyerror("Error: the variable is not global");
+        
+        if(symtable.contains($2,LIBRARYFUNC) || symtable.contains($2, USERFUNC)) {
+            isCall = true;
+        }
+
         $$ = NULL;
+
     }
     | member {
 
@@ -389,8 +401,12 @@ call
         
     }
     | lvalue callsufix {
-        if( $1 == NULL )
+        if(isCall) {
+            isCall = false;
+        }
+        else if( $1 == NULL ){
             yyerror("Error: This variable cannot be called");
+        }
         else{
             if($1->getType() ==  GLOBALVAR)
                 symtable.insert($1);
@@ -409,7 +425,7 @@ callsufix
         
     }
     | methodcall {
-
+        
     };
 
 normcall 
@@ -418,7 +434,6 @@ normcall
 
 methodcall
     : DOUBLE_DOT ID LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        
     };
 
 elist
