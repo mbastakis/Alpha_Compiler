@@ -1,0 +1,37 @@
+read(a,a,b,g,c);
+
+function road(a,a){} // error
+
+i++; 
+
+local y;
+y++;
+
+function f(){}
+f++; // error
+
+print++; // error
+
+
+function k(ol){
+    ol++; 
+}
+k = 1; // error;
+
+f + k;
+f - k;
+f * k;
+f / k;
+f % k;
+f > k;
+f >= k;
+f < k;
+f <= k;
+f == k;
+f != k;
+f and k;
+f or k;
+
+x[x];
+
+example = function (a,b) { return a + b; }

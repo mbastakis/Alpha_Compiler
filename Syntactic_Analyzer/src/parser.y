@@ -10,7 +10,6 @@
 
     /* Defines */
     #define FUNC 1
-    #define VAR 2
 
     /* External Variables */
     extern int yylineno;
@@ -34,6 +33,9 @@
     std::stack<std::string> prFunction;
     std::stack<std::list<std::string>> blockStack;
     std::list<std::string> errorList;
+
+    Symbol* argumentsSymbol;
+    Symbol* currentSymbol;
 
     int currentLine = 1;
     int newNameFunction=1;
@@ -153,45 +155,86 @@ expr
 
     }
     | expr ADDITION expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot add functions");
+        }
     }
     | expr SUBTRACTION expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot subtract functions");
+        }
     }
     | expr MULTIPLICATION expr {
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot multiply functions");
+        }
     }
     | expr DIVISION expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot divide functions");
+        }
     }
     | expr MODULO expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot mod functions");
+        }
     }
     | expr GREATER_THAN expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | expr LESS_THAN expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | expr GREATER_OR_EQUAL expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | expr LESS_OR_EQUAL expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | expr EQUALITY expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | expr INEQUALITY expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | expr AND expr {
-        
+        // if( argumentsSymbol != NULL ) {
+        //     if( argumentsSymbol->getType() == GLOBALVAR || argumentsSymbol->getType() == LOCALVAR) {
+        //         symtable.insert(argumentsSymbol);
+        //     }else if( argumentsSymbol->getType() == USERFUNC || argumentsSymbol->getType() == LIBRARYFUNC ) {
+        //         yyerror("Error: Cannot compare function");
+        //     }
+        // }
+        // if( $3 != NULL ) {
+        //     if( $3->getType() == GLOBALVAR || $3->getType() == LOCALVAR) {
+        //         symtable.insert($3);
+        //     }else if( $3->getType() == USERFUNC || $3->getType() == LIBRARYFUNC ) {
+        //         yyerror("Error: Cannot compare function");
+        //     }
+        // }
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | expr OR expr {
-        
+        if($1 == FUNC || $3 == FUNC) {
+            yyerror("Error: cannot compare functions");
+        }
     }
     | term {
-        
+        $$ = $1;
     };
 
 term
@@ -205,39 +248,58 @@ term
 
     }
     | INCREMENT lvalue {
-        
+        if( $2 != NULL ) {
+            if( $2->getType() == GLOBALVAR || $2->getType() == LOCALVAR) {
+                symtable.insert($2);
+            }else if( $2->getType() == USERFUNC || $2->getType() == LIBRARYFUNC ) {
+                yyerror("Error: Cannot increment function");
+            }
+        }
     }
     | lvalue INCREMENT {
-
+        if( $1 != NULL ) {
+            if( $1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {
+                symtable.insert($1);
+            }else if( $1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC ) {
+                yyerror("Error: Cannot increment function");
+            }
+        }
     }
     | DECREMENT lvalue {
-
+        if( $2 != NULL ) {
+            if( $2->getType() == GLOBALVAR || $2->getType() == LOCALVAR) {
+                symtable.insert($2);
+            }else if( $2->getType() == USERFUNC || $2->getType() == LIBRARYFUNC ) {
+                yyerror("Error: Cannot decrement function");
+            }
+        }
     }
     | lvalue DECREMENT {
-
+        if( $1 != NULL ) {
+            if( $1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {
+                symtable.insert($1);
+            }else if( $1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC ) {
+                yyerror("Error: Cannot decrement function");
+            }
+        }
     }
     | primary {
+        $$ = $1;
     };
 
 assignexpr
     : lvalue ASSIGNMENT expr {  
-        //std::cout<<$2<<std::endl;
-       if(is_double!=1 && is_dot!=1){ 
-        if(symtable.contains($2, LOCALVAR) == 1){
-            break; /* LOCALs have already been inserted */
+       if( $1 != NULL ) {
+            if( $1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {
+                if($3 == FUNC){
+                    Symbol_T type = symtable.contains($1->getId(), LIBRARYFUNC) ? LIBRARYFUNC : USERFUNC;
+                    symtable.insert(new Symbol($1->getId(), type, $1->getLine(), $1->getScope(), true));
+                }else 
+                    symtable.insert($1);
+            }else if( $1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC ) {
+                yyerror("Error: Cannot assign to a function");
+            }
         }
-        if(symtable.contains($2, USERFUNC) == 1){
-            yyerror("Error: Function used as an l-value ");
-        }
-        if(symtable.contains($2)) break;
-        
-        else if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {
-            
-            symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
-        }else {
-            yyerror("Error: Not valid variable ");
-        }
-       }
             
     };
 
@@ -256,6 +318,9 @@ primary
             }
         }
        }*/
+       if($1 != NULL && ($1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC))
+            $$ = FUNC;
+        currentSymbol = $1;
     }
     | call {
 
@@ -276,10 +341,13 @@ lvalue
         is_double=0;
         
         if (symtable.recursiveLookup($1, currentScope)==-1){ //the symbol does not exist
+            
             if (currentScope == 0){ 
                     $$ = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
+                    argumentsSymbol = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
             } else {
                     $$ = new Symbol($1, LOCALVAR, yylineno, currentScope, true);
+                    argumentsSymbol = new Symbol($1, LOCALVAR, yylineno, currentScope, true);
             }
         } else {
             Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
@@ -290,18 +358,28 @@ lvalue
                 // }
                 if (symbol->getType()==USERFUNC){
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
+                    argumentsSymbol = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
                     /*CHECK IF IT EXIST IN A BLOCK WITH NO FUNCTION AND IF IT ISNT PRINT ERROR*/
                     if(!symtable.contains($1,currentScope)){
                         blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
                    }
+                   $$ = NULL;
+                   argumentsSymbol = NULL;
                 }
             } else {
                 if (symbol->getType()==LIBRARYFUNC) {
                     $$ = new Symbol($1, LIBRARYFUNC, yylineno, currentScope, true);
+                    argumentsSymbol = new Symbol($1, LIBRARYFUNC, yylineno, currentScope, true);
                 } else {
-                   
-                    $$ = NULL;
+                   if( symbol->getType() == USERFUNC){
+                        $$ = new Symbol($1, USERFUNC, yylineno, 0, true);
+                        argumentsSymbol = new Symbol($1, USERFUNC, yylineno, 0, true);
+                   }
+                    else {
+                        $$ = NULL;
+                        argumentsSymbol = NULL;
+                    }
                 }
             }
             
@@ -322,7 +400,7 @@ lvalue
                 yyerror("Error: trying to shadow library function");
             }
         }
-        is_call=0;
+        $$ = NULL;
     }
     | DOUBLE_COLON ID {
         is_dot=0;
@@ -333,9 +411,7 @@ lvalue
         
         else if(!symtable.contains($2,0))
             yyerror("Error: the variable is not global");
-        
-        
-        
+        $$ = NULL;
     }
     | member {
 
@@ -345,7 +421,7 @@ member
     : lvalue DOT ID {
         is_dot=1;
     }
-    | lvalue LEFT_SQUARE_BRACKET expr RIGHT_CURLY_BRACKET {
+    | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
 
     }
     | call DOT ID {
@@ -360,20 +436,28 @@ call
         
     }
     | lvalue callsufix {
-        is_call=1;
-               
-        if(!$1->getId().empty()){
-            if(is_stmt==0 && symtable.contains($1->getId(),USERFUNC) != 1){
-                if (currentScope == 0) {
-                        symtable.insert(new Symbol($1->getId(), GLOBALVAR, yylineno, currentScope, true));
-                    } else {
-                        symtable.insert(new Symbol($1->getId(), LOCALVAR, yylineno, currentScope, true));
-                    }
-                } 
-            else if(symtable.contains($1->getId(),USERFUNC) != 1 && symtable.contains($1->getId(),LIBRARYFUNC) != 1 && is_double!=1) {
-                yyerror("Error: This function does not exist");
-            }
+        // is_call=1;
+        if( $1 == NULL )
+            yyerror("Error: This variable cannot be called");
+        else{
+            if($1->getType() ==  GLOBALVAR)
+                symtable.insert($1);
+            else if($1->getType() ==  LOCALVAR)
+                symtable.insert($1);
         }
+
+        // if(!$1->getId().empty()){
+            // if(is_stmt==0 && symtable.contains($1->getId(),USERFUNC) != 1){
+            //     if (currentScope == 0) {
+                        
+            //         } else {
+                        
+            //         }
+            //     } 
+            // else if(symtable.contains($1->getId(),USERFUNC) != 1 && symtable.contains($1->getId(),LIBRARYFUNC) != 1 && is_double!=1) {
+            //     yyerror("Error: This function does not exist");
+            // }
+        // }
         
         
 
@@ -402,14 +486,23 @@ methodcall
 
 elist
     : expr nextexpr {
-
+        if(argumentsSymbol != NULL && (argumentsSymbol->getType() == GLOBALVAR || argumentsSymbol->getType() == LOCALVAR)){
+            if(!symtable.contains(argumentsSymbol->getId(), argumentsSymbol->getScope()))
+                symtable.insert(argumentsSymbol);
+        }
     }
     | %empty
     ;
 
 nextexpr
     : COMMA expr nextexpr {
+        
+        if(argumentsSymbol != NULL && (argumentsSymbol->getType() == GLOBALVAR || argumentsSymbol->getType() == LOCALVAR)){
+            if(!symtable.contains(argumentsSymbol->getId(), argumentsSymbol->getScope()))
+                symtable.insert(argumentsSymbol);
+        }
 
+            
     }
     | %empty
     ;
@@ -596,4 +689,15 @@ int main(int argc, char** argv) {
         symtable.printSymTable();
 
     return 0;
+}
+
+
+void checkAndInsert(Symbol* symbol) {
+    if( symbol != NULL ) {
+            if( symbol->getType() == GLOBALVAR || symbol->getType() == LOCALVAR) {
+                symtable.insert(symbol);
+            }else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) {
+                yyerror("Error: Cannot increment function");
+            }
+    }
 }

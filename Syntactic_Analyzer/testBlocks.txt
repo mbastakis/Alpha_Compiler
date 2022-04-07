@@ -1,17 +1,18 @@
-a=1;
+local a;
+
 function x() {
     a;  // list1.push(error)
-    a=10; // list1.push(error)
-    {
-        a; // list2.push(error)
+    local a=10; // list1.push(error)
+    function ao(){
+        local a; // list2.push(error)
         function k() {
-            a=10; // list3.push(error)
+            local a=10; // list3.push(error)
 
             b = 20;
             { // list4
                 { // list5
-                    { // list6
-                        a = 1; // list6.push()
+                    function ql(){ // list6
+                        local a = 1; // list6.push()
                         { //  list7
                             a=10; // list7.push
                         } // list7
