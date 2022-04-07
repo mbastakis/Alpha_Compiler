@@ -9,7 +9,7 @@
     #include "../public/SymbolTable.hpp"
 
     /* Defines */
-    #define FUNC 1
+    #define FUNC 1000
 
     /* External Variables */
     extern int yylineno;
@@ -272,6 +272,7 @@ assignexpr
     : lvalue ASSIGNMENT expr {  
        if( $1 != NULL ) {
             if( $1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {
+                
                 if($3 == FUNC){
                     Symbol_T type = symtable.contains($1->getId(), LIBRARYFUNC) ? LIBRARYFUNC : USERFUNC;
                     symtable.insert(new Symbol($1->getId(), type, $1->getLine(), $1->getScope(), true));
@@ -285,8 +286,7 @@ assignexpr
     };
 
 primary
-    : lvalue {      
-        /*NEW*/
+    : lvalue {    
         if($1 != NULL && !symtable.contains($1->getId())){
             symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
         }
@@ -309,9 +309,7 @@ primary
 
 lvalue 
     : ID {       
-        
         if (symtable.recursiveLookup($1, currentScope)==-1){ //the symbol does not exist
-            
             if (currentScope == 0){ 
                     $$ = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
                     argumentsSymbol = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
@@ -326,7 +324,7 @@ lvalue
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                     argumentsSymbol = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
-                    /*checki if it exists in a block with no function and if it isn't print error */
+                    /*check if it exists in a block with no function and if it isn't print error */
                     if(!symtable.contains($1,currentScope)){
                         blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
                    }
@@ -366,6 +364,8 @@ lvalue
         $$ = NULL;
     }
     | DOUBLE_COLON ID {
+
+        
         if(!symtable.contains($2))
             yyerror("Error: variable does not exist");
         
@@ -403,17 +403,16 @@ call
     | lvalue callsufix {
         if(isCall) {
             isCall = false;
-        }
+        }      
         else if( $1 == NULL ){
             yyerror("Error: This variable cannot be called");
         }
-        else{
-            if($1->getType() ==  GLOBALVAR)
-                symtable.insert($1);
-            else if($1->getType() ==  LOCALVAR)
-                symtable.insert($1);
+        else{           
+            if($1->getType() ==  GLOBALVAR && !symtable.contains($1->getId())){
+                symtable.insert($1);}
+            else if($1->getType() ==  LOCALVAR && !symtable.contains($1->getId())){
+                symtable.insert($1);}
         }
-        
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES 
       LEFT_PARENTHESES elist RIGHT_PARENTHESES {
