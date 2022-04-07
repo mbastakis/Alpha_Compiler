@@ -144,36 +144,6 @@ public:
 
 
     int insert(Symbol* symbol) {
-        /*if (symbol == NULL) return 0;
-
-        if (contains(symbol->getId()) == 1) {
-            if (symbol->getType() == USERFUNC) {
-
-                if (contains(symbol->getId(), symbol->getType()) != 1) {
-                    if ((contains(symbol->getId(), FORMALVAR) == 1 && symbol->getScope() == getScope(symbol->getId(), FORMALVAR)) ||
-                        contains(symbol->getId(), LOCALVAR) == 1 && symbol->getScope() == getScope(symbol->getId(), LOCALVAR) ||
-                        contains(symbol->getId(), GLOBALVAR) == 1) {
-                        std::cout << "error: variable redefined as a function at line " << symbol->getLine() << std::endl;
-                        return 0;
-                    }
-                }
-            }
-            else if (symbol->getType() == GLOBALVAR || symbol->getType() == LOCALVAR) {
-
-                if (contains(symbol->getId(), symbol->getType()) != 1) {
-                    if ((contains(symbol->getId(), USERFUNC) == 1 && symbol->getScope() == getScope(symbol->getId(), USERFUNC))) {
-                        std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
-                        return 0;
-                    }
-                }
-            } else if(symbol->getType() == LOCAL_VARIABLE){ // THE SAME LINE WITH GLOBAL VARIABLE
-                if(contains(symbol->getId(),USER_FUNCTION) == 1 ){
-                    std::cout << "error: function used as an l-value at line " << symbol->getLine() << std::endl;
-                        return 0;
-                }
-            } 
-        }*/
-
         if (symbol->getScope() > m_maxScope)
             m_maxScope = symbol->getScope();
 

@@ -25,10 +25,6 @@
 
     int function_open = 0;
     int stmt_open=0;
-    int is_double=0;
-    int is_call=0;
-    int is_dot=0;
-    int is_stmt=0;
 
     std::stack<std::string> prFunction;
     std::stack<std::list<std::string>> blockStack;
@@ -40,8 +36,6 @@
     int currentLine = 1;
     int newNameFunction=1;
     std::string newName="";
-
-
 
     /* Function Definitions */
      void yyerror (char const *s) {      
@@ -123,16 +117,12 @@ statements
 stmt
     : expr SEMICOLON
     | ifstmt {
-        is_stmt=0;
     }
     | whilestmt {
-        is_stmt=0;
     }
     | forstmt{
-        is_stmt=0;
     }
     | returnstmt {
-        is_stmt=0;
     }
     | BREAK SEMICOLON {
         if(stmt_open == 0){
@@ -210,20 +200,6 @@ expr
         }
     }
     | expr AND expr {
-        // if( argumentsSymbol != NULL ) {
-        //     if( argumentsSymbol->getType() == GLOBALVAR || argumentsSymbol->getType() == LOCALVAR) {
-        //         symtable.insert(argumentsSymbol);
-        //     }else if( argumentsSymbol->getType() == USERFUNC || argumentsSymbol->getType() == LIBRARYFUNC ) {
-        //         yyerror("Error: Cannot compare function");
-        //     }
-        // }
-        // if( $3 != NULL ) {
-        //     if( $3->getType() == GLOBALVAR || $3->getType() == LOCALVAR) {
-        //         symtable.insert($3);
-        //     }else if( $3->getType() == USERFUNC || $3->getType() == LIBRARYFUNC ) {
-        //         yyerror("Error: Cannot compare function");
-        //     }
-        // }
         if($1 == FUNC || $3 == FUNC) {
             yyerror("Error: cannot compare functions");
         }
@@ -305,19 +281,10 @@ assignexpr
 
 primary
     : lvalue {      
-        //std::cout<<"hello"<<std::endl; 
-       /*if(is_double!=1 && is_dot!=1 && is_stmt!=1){
-        if($1->getType()>=0 && $1->getType()<=4){
-            
-            if($1->getType() == GLOBALVAR || $1->getType() == LOCALVAR) {   
-                if(!$1->getId().empty()){      
-                    symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
-                }
-             }else {
-                yyerror("Error: Not valid variable");
-            }
-        }
-       }*/
+        /*NEW*/
+        /*if($1 != NULL && !symtable.contains($1->getId())){
+            symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
+        }*/
        if($1 != NULL && ($1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC))
             $$ = FUNC;
         currentSymbol = $1;
@@ -336,10 +303,7 @@ primary
     };
 
 lvalue 
-    : ID {
-        is_dot=0;
-        is_double=0;
-        
+    : ID {       
         if (symtable.recursiveLookup($1, currentScope)==-1){ //the symbol does not exist
             
             if (currentScope == 0){ 
@@ -352,15 +316,11 @@ lvalue
         } else {
             Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
             if (symtable.recursiveLookup($1, currentScope)>0) { //the symbol exist but it is not global
-             
-                // if(symtable.contains($1,currentScope) != 1 && symtable.contains($1,LIBRARYFUNC) != 1  && is_call!=1){            
-                //     std::cout<<"Error: variable "<< $1 <<" not accessible in "<< prFunction.top() << " at line "<<yylineno <<std::endl;
-                // }
                 if (symbol->getType()==USERFUNC){
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                     argumentsSymbol = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
-                    /*CHECK IF IT EXIST IN A BLOCK WITH NO FUNCTION AND IF IT ISNT PRINT ERROR*/
+                    /*checki if it exists in a block with no function and if it isn't print error */
                     if(!symtable.contains($1,currentScope)){
                         blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
                    }
@@ -384,11 +344,8 @@ lvalue
             }
             
         }
-        is_call=0;
     }
     | LOCAL ID {
-        is_dot=0;
-        is_double=0;
         if (symtable.lookup($2, currentScope) == NULL){          
             if (!symtable.contains($2, LIBRARYFUNC)) {
                 if (currentScope == 0) {
@@ -403,9 +360,6 @@ lvalue
         $$ = NULL;
     }
     | DOUBLE_COLON ID {
-        is_dot=0;
-        is_double=1;
-        is_call=0;
         if(!symtable.contains($2))
             yyerror("Error: variable does not exist");
         
@@ -419,7 +373,6 @@ lvalue
 
 member
     : lvalue DOT ID {
-        is_dot=1;
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
 
@@ -436,7 +389,6 @@ call
         
     }
     | lvalue callsufix {
-        // is_call=1;
         if( $1 == NULL )
             yyerror("Error: This variable cannot be called");
         else{
@@ -445,22 +397,7 @@ call
             else if($1->getType() ==  LOCALVAR)
                 symtable.insert($1);
         }
-
-        // if(!$1->getId().empty()){
-            // if(is_stmt==0 && symtable.contains($1->getId(),USERFUNC) != 1){
-            //     if (currentScope == 0) {
-                        
-            //         } else {
-                        
-            //         }
-            //     } 
-            // else if(symtable.contains($1->getId(),USERFUNC) != 1 && symtable.contains($1->getId(),LIBRARYFUNC) != 1 && is_double!=1) {
-            //     yyerror("Error: This function does not exist");
-            // }
-        // }
         
-        
-
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES 
       LEFT_PARENTHESES elist RIGHT_PARENTHESES {
@@ -626,23 +563,22 @@ ifstmt
     };
 
 whilestmt
-    : WHILE {currentLine = yylineno; stmt_open++;is_stmt=1;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : WHILE {currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
     };
 
 forstmt 
-    : FOR {currentLine = yylineno; stmt_open++;is_stmt=1;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : FOR {currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
         
     };
 
 returnstmt
     : RETURN SEMICOLON {
-        is_stmt=1;
         if(function_open == 0){
             printf("Error: return outside of function, Line: %d\n" ,yylineno);
         } 
                
     }
-    | RETURN{is_stmt=1;} expr SEMICOLON {
+    | RETURN expr SEMICOLON {
         if(function_open == 0){
             printf("Error: return outside of function, Line: %d\n" ,yylineno);
         }
