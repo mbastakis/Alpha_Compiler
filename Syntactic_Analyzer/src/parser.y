@@ -287,11 +287,13 @@ assignexpr
 
 primary
     : lvalue {    
-        if($1 != NULL && !symtable.contains($1->getId())){
-            symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
-        }
-       if($1 != NULL && ($1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC))
+        
+        if($1 != NULL && ($1->getType() == USERFUNC || $1->getType() == LIBRARYFUNC))
             $$ = FUNC;
+        else if($1 != NULL )
+            symtable.insert(new Symbol($1->getId(), $1->getType(), $1->getLine(), $1->getScope(), true));
+        
+        
         currentSymbol = $1;
     }
     | call {
@@ -309,7 +311,6 @@ primary
 
 lvalue 
     : ID {       
-        std::cout << symtable.recursiveLookup($1, currentScope) << "------------ " << $1 << std::endl;
         if (symtable.recursiveLookup($1, currentScope)==-1){ //the symbol does not exist
             if (currentScope == 0){ 
                     $$ = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
@@ -326,7 +327,6 @@ lvalue
                     argumentsSymbol = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
                     /*check if it exists in a block with no function and if it isn't print error */
-                    std::cout << "in else 328 " << symbol->getId() << std::endl;
                     if(!symtable.contains($1,currentScope)){
                         blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
                    }
@@ -608,7 +608,6 @@ returnstmt
         if(function_open == 0){
             printf("Error: return outside of function, Line: %d\n" ,yylineno);
         }
-       
     };
 %%
 
