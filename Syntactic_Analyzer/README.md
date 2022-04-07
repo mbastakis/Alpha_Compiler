@@ -1,13 +1,12 @@
-# Tested Cases
-- 
+--------------------
+AM 4398 Marileni Sinioraki
+AM 4361 Eva Chrisostomaki
+AM 4406 Mike Bastakis
+--------------------
 
-# Tested Grammar Rules
-- 
-- 
 
-# Insert a Symbol
-- Prepei na min einai null
-- Prepei sto scope na min uparxei allo symbol me to idio name
-    -
-    -
-- 
+How to build:
+	$ make
+	
+How to run:
+	$ ./dist/asa [fileInput] [fileOuput]

@@ -4,6 +4,7 @@
     #include <stdio.h>
     #include <iostream>
     #include <stack>
+    #include <fstream>
 
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
@@ -14,6 +15,7 @@
     /* External Variables */
     extern int yylineno;
     extern char* yytext;
+    extern FILE* yyout;
     extern FILE* yyin;
     extern unsigned int tokenCounter;
     extern std::stack<unsigned int> commentStack;
@@ -35,7 +37,6 @@
 
     int currentLine = 1;
     int newNameFunction=1;
-    bool isCall = false;
     std::string newName="";
 
     /* Function Definitions */
@@ -321,6 +322,7 @@ lvalue
             }
         } else {
             Symbol* symbol=symtable.getNearestSymbol($1, currentScope);
+
             if (symtable.recursiveLookup($1, currentScope)>0) { //the symbol exist but it is not global
                 if (symbol->getType()==USERFUNC){
                     $$ = new Symbol($1, USERFUNC, yylineno, currentScope, true);
@@ -363,10 +365,8 @@ lvalue
             } else {
                 yyerror("Error: trying to shadow library function");
             }
-            $$ = NULL;
-        }else
-            $$ = symtable.lookup($2, currentScope);
-        
+        }
+        $$ = NULL;
     }
     | DOUBLE_COLON ID {
 
@@ -378,7 +378,7 @@ lvalue
             yyerror("Error: the variable is not global");
         
         if(symtable.contains($2,LIBRARYFUNC) || symtable.contains($2, USERFUNC)) {
-            isCall = true;
+            
             $$ = symtable.getNearestSymbol($2, currentScope);
         }else
             $$ = NULL;
@@ -611,6 +611,8 @@ returnstmt
     };
 %%
 
+
+
 int main(int argc, char** argv) {
     // Argument Checking.
     if(argc > 3) {
@@ -642,16 +644,14 @@ int main(int argc, char** argv) {
         fclose(yyin);
 
     if ( argc == 3) {
-        FILE *output_file;
-        output_file = fopen(argv[2], "w");
-        /* printOutput(output_file); */
-        fclose(output_file);
+        symtable.printSymbolsInFile(argv[2]);
     } else
-        /* printOutput(NULL); */
         symtable.printSymTable();
 
     return 0;
 }
+
+
 
 
 void checkAndInsert(Symbol* symbol) {

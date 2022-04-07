@@ -3,6 +3,7 @@
 
 #include <map>
 #include <list>
+#include <fstream>
 
 #include "Symbol.hpp"
 
@@ -177,6 +178,32 @@ public:
             printSymbols(i);
             std::cout << std::endl << std::endl;
         }
+    }
+
+    void printSymbolsInFile(char* argv) {
+        std::ofstream myfile;
+        myfile.open(argv);
+
+        for (auto i = 0; i <= m_maxScope; i++) {
+            myfile << "-----------\t Scope #" << std::to_string(i) << "\t-----------" << std::endl;
+
+
+            auto symList = std::list<Symbol*>();
+            for (auto it = m_table.begin(); it != m_table.end(); ++it) {
+                if (it->second->getScope() == i)
+                    symList.push_back(it->second);
+            }
+            symList.sort(compare);
+
+            for (auto it = symList.begin(); it != symList.end(); ++it) {
+                myfile << (*it)->toString() << std::endl;
+            }
+
+
+            myfile << std::endl << std::endl;
+        }
+
+        myfile.close();
     }
 
 };
