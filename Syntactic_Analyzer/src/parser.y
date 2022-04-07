@@ -309,6 +309,7 @@ primary
 
 lvalue 
     : ID {       
+        std::cout << symtable.recursiveLookup($1, currentScope) << "------------ " << $1 << std::endl;
         if (symtable.recursiveLookup($1, currentScope)==-1){ //the symbol does not exist
             if (currentScope == 0){ 
                     $$ = new Symbol($1, GLOBALVAR, yylineno, currentScope, true);
@@ -325,6 +326,7 @@ lvalue
                     argumentsSymbol = new Symbol($1, USERFUNC, yylineno, currentScope, true);
                 } else {
                     /*check if it exists in a block with no function and if it isn't print error */
+                    std::cout << "in else 328 " << symbol->getId() << std::endl;
                     if(!symtable.contains($1,currentScope)){
                         blockStack.top().push_front(std::string("Error: Cannot access ") + std::string($1) + std::string(" in scope ") + std::to_string(currentScope) + std::string(" at line ") + std::to_string(yylineno) + ".");
                    }
@@ -357,11 +359,14 @@ lvalue
                 } else {
                     symtable.insert(new Symbol($2, LOCALVAR, yylineno, currentScope, true));
                 }
+             
             } else {
                 yyerror("Error: trying to shadow library function");
             }
-        }
-        $$ = NULL;
+            $$ = NULL;
+        }else
+            $$ = symtable.lookup($2, currentScope);
+        
     }
     | DOUBLE_COLON ID {
 
@@ -374,9 +379,9 @@ lvalue
         
         if(symtable.contains($2,LIBRARYFUNC) || symtable.contains($2, USERFUNC)) {
             isCall = true;
-        }
-
-        $$ = NULL;
+            $$ = symtable.getNearestSymbol($2, currentScope);
+        }else
+            $$ = NULL;
 
     }
     | member {
@@ -401,13 +406,11 @@ call
         
     }
     | lvalue callsufix {
-        if(isCall) {
-            isCall = false;
-        }      
-        else if( $1 == NULL ){
+        
+        if( $1 == NULL ){
             yyerror("Error: This variable cannot be called");
         }
-        else{           
+        else{
             if($1->getType() ==  GLOBALVAR && !symtable.contains($1->getId())){
                 symtable.insert($1);}
             else if($1->getType() ==  LOCALVAR && !symtable.contains($1->getId())){
@@ -497,13 +500,14 @@ block
     };
 
 funcdef
-    : FUNCTION {currentLine = yylineno; } ID { prFunction.push($3);
-        if(symtable.contains($3, LIBRARYFUNC)) {
-            yyerror("Error: function shadows library function");
-        } else if (symtable.lookup($3, currentScope) != NULL) {
-            yyerror("Error: function already exists");
-        } else {
-            symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
+    : FUNCTION {currentLine = yylineno; } ID { 
+            prFunction.push($3);
+            if(symtable.contains($3, LIBRARYFUNC)) {
+                yyerror("Error: function shadows library function");
+            } else if (symtable.lookup($3, currentScope) != NULL) {
+                yyerror("Error: function already exists");
+            } else {
+                symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
         }
         } LEFT_PARENTHESES idlist RIGHT_PARENTHESES { function_open++; } block { 
                 function_open--; 
@@ -520,7 +524,15 @@ funcdef
         prFunction.push(newName);
         symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
         
-        } LEFT_PARENTHESES idlist RIGHT_PARENTHESES { function_open++; } block { function_open--; prFunction.pop();} {
+        } LEFT_PARENTHESES idlist RIGHT_PARENTHESES { function_open++; } block { 
+                function_open--; 
+                prFunction.pop(); 
+                if( !errorList.empty() ) {
+                    for(auto it = errorList.begin(); it != errorList.end(); it++) {
+                        printError((*it));
+                    }
+                }
+            } {
         
     };
 
@@ -624,6 +636,7 @@ int main(int argc, char** argv) {
     currentScope = 0;
 
     yyparse();
+    
 
     // Ending Lexical Analysis
     if ( argc > 1)

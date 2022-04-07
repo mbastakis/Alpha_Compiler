@@ -1,0 +1,12 @@
+
+
+
+
+
+add = (function(x,y){ }); 
+
+x;
+{
+local x = ::x;
+local f = (function(){return x; });
+}

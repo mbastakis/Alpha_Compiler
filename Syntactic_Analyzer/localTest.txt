@@ -1,5 +1,5 @@
 function f() {}
-local f;
+local f = 10;
 local print;
 local x;
 {

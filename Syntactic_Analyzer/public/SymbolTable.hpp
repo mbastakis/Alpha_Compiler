@@ -104,7 +104,7 @@ public:
             scope--;
         }
         //if symbol exist in global scope
-        if (contains(id, scope)) return 0; 
+        if (contains(id, scope)) return 0;
         return -1;
     }
 
@@ -116,7 +116,7 @@ public:
         auto symList = std::list<Symbol*>();
 
         for (auto it = m_table.begin(); it != m_table.end(); ++it) {
-            if (it->second->getScope() == scope )
+            if (it->second->getScope() == scope)
                 symList.push_back(it->second);
         }
 
