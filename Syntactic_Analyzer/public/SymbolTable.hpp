@@ -144,21 +144,22 @@ public:
     }
 
 
-    int insert(Symbol* symbol) {
+    void insert(Symbol* symbol) {
         if (symbol->getScope() > m_maxScope)
             m_maxScope = symbol->getScope();
 
         m_table.insert({ symbol->getId(), symbol });
-
-        return 0;
     }
 
-    Symbol* lookup(std::string id, unsigned int scope) {
-        auto symList = getSymbols(id);
+    Symbol* lookup(std::string id, int currentScope) {
 
-        for (auto it = symList.begin(); it != symList.end(); it++) {
-            if ((*it)->getScope() == scope && (*it)->isActive())
-                return (*it);
+        while (currentScope >= 0) {
+
+            auto symList = getSymbols(currentScope);
+            for (auto it = symList.begin(); it != symList.end(); it++) {
+                if ((*it)->isActive() && (*it)->getId().compare(id) == 0) return (*it);
+            }
+            currentScope--;
         }
 
         return NULL;

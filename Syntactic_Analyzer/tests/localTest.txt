@@ -1,9 +1,0 @@
-function f() {}
-local f = 10;
-local print;
-local x;
-{
-	local f;
-	local print;
-}
-function g(a, b) { local a = local b;}

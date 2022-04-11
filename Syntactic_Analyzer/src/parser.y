@@ -22,11 +22,15 @@
 
     /* Global Variables */
     SymbolTable symtable;
+    std::stack<std::string> functionStack;
+    unsigned int currentScope;
     
 
 
     /* Function Definitions */
-     void yyerror (char const *s) {}
+     void yyerror (const std::string errorMsg) {
+         std::cout << "Error: at line: " << yylineno << ", " << errorMsg << std::endl;
+     }
 %}
 
 /* Specifies the initial symbol of our grammar. */
@@ -170,12 +174,48 @@ term
     | NOT expr {
     }
     | INCREMENT lvalue {
+        Symbol* symbol = $2;
+
+        if( symbol == NULL ); // An error came up, ignore.
+        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+            yyerror("cannot increment the value of a function.");
+        }else if ( !symbol->isActive() ) {
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     }
     | lvalue INCREMENT {
+        Symbol* symbol = $1;
+
+        if( symbol == NULL ); // An error came up, ignore.
+        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+            yyerror("cannot increment the value of a function.");
+        }else if ( !symbol->isActive() ) {
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     }
     | DECREMENT lvalue {
+        Symbol* symbol = $2;
+
+        if( symbol == NULL ); // An error came up, ignore.
+        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+            yyerror("cannot decrement the value of a function.");
+        }else if ( !symbol->isActive() ) {
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     }
     | lvalue DECREMENT {
+        Symbol* symbol = $1;
+
+        if( symbol == NULL ); // An error came up, ignore.
+        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+            yyerror("cannot decrement the value of a function.");
+        }else if ( !symbol->isActive() ) {
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     }
     | primary {
     }
@@ -184,11 +224,22 @@ term
     ;
 
 assignexpr
-    : lvalue ASSIGNMENT expr {       
+    : lvalue ASSIGNMENT expr {
+        Symbol* symbol = $1;
+
+        if( symbol == NULL ); // An error came up, ignore.
+        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC)
     };
 
 primary
-    : lvalue {    
+    : lvalue {
+        Symbol* symbol = $1;
+
+        if( symbol == NULL ); // An error came up ignore.
+        else if( !symbol->isActive() ) {
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     }
     | call {
     }
@@ -201,19 +252,71 @@ primary
 
 lvalue 
     : ID {
+        Symbol* search = symtable.lookup($1, currentScope);
+        Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
+
+        if( search == NULL ) // If no symbol was found.
+            $$ = new Symbol($1, type, yylineno, currentScope, false);
+        else if( !functionStack.empty() ) { // If we are in a function.
+            if ( search->getScope() == 0 || 
+                    search->getScope() == currentScope || 
+                    search->getType() == USERFUNC ||
+                    search->getType() == LIBRARYFUNC)
+            {
+                $$ = search;
+            }
+            else {
+                yyerror("unable to access this variable.");
+                $$ = NULL;
+            } 
+        } else // If not in a function and the symbol was found.
+            $$ = search;
+        
     }
     | LOCAL ID {
+        Symbol* search = symtable.lookup($2, currentScope);
+        Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
+
+        if( search != NULL && search->getScope() == currentScope )
+            $$ = search;
+        else if( !symtable.contains($2, LIBRARYFUNC) )
+            $$ = new Symbol($2, type, yylineno, currentScope, false);
+        else if( symtable.contains($2, LIBRARYFUNC) )
+            yyerror("trying to shadow a Library Function.");
+
     }
     | DOUBLE_COLON ID {
+        Symbol* search = symtable.get($2, 0);
+
+        if( search == NULL ){
+            yyerror("the global symbol you are trying to access doesn't exist.");
+            $$ = NULL;
+        } else
+            $$ = search;
+            
     }
     | member {
-
+        $$ = NULL;
     };
 
 member
     : lvalue DOT ID {
+        Symbol* symbol = $1;
+
+        if( symbol == NULL ); // An error came up, ignore.
+        else if( !symbol->isActive() ) { // If the symbol doesn't exist.
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
+        Symbol* symbol = $1;
+
+        if( symbol == NULL ); // An error came up, ignore.
+        else if( !symbol->isActive() ) { // If the symbol doesn't exist.
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     }
     | call DOT ID {
     }
@@ -222,9 +325,16 @@ member
 
 call
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        
     }
     | lvalue callsufix {
+        Symbol* symbol = $1;
+
+        if ( symbol == NULL ); // An error came up ignore.
+        else if( !symbol->isActive() ) { // Symbol we are trying to call doesn't exist so we create it.
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        } 
+
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {
     };
@@ -280,15 +390,18 @@ indexedelem
     };
 
 block
-    : LEFT_CURLY_BRACKET statements RIGHT_CURLY_BRACKET {
+    : LEFT_CURLY_BRACKET {currentScope++;} statements RIGHT_CURLY_BRACKET {symtable.hide(currentScope--);} {
     };
 
 funcdef
-    : FUNCTION ID LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
+    : FUNCTION ID {
+        // TODO: check if valid function.
+        functionStack.push($2);
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
         
     }
     | FUNCTION LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
-        
+        functionStack.pop();
     };
 
 const
@@ -362,6 +475,8 @@ int main(int argc, char** argv) {
     
     // Initialization
     symtable = SymbolTable();
+    functionStack = std::stack<std::string>();
+    currentScope = 0;
 
     yyparse();
     

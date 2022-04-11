@@ -63,6 +63,22 @@ public:
         m_isActive = boolean;
     }
 
+    void setId(std::string id) {
+        m_id = id;
+    }
+
+    void setType(Symbol_T type) {
+        m_type = type;
+    }
+
+    void setLine(unsigned int line) {
+        m_line = line;
+    }
+
+    void setScope(unsigned int scope) {
+        m_scope = scope;
+    }
+
     void insertArgument(Symbol* symbol) {
         m_argsList.push_back(symbol);
     }
