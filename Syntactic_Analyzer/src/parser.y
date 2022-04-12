@@ -137,7 +137,6 @@ expr
 
     }
     | expr MODULO expr {
-
     }
     | expr GREATER_THAN expr {
 
@@ -228,7 +227,12 @@ assignexpr
         Symbol* symbol = $1;
 
         if( symbol == NULL ); // An error came up, ignore.
-        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC)
+        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC) { // The symbol is a function.
+            yyerror("cannot change the value of a function.");
+        } else if( !symbol->isActive() ) { // The symbol didn't exist.
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
     };
 
 primary
