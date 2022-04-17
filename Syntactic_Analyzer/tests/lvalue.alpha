@@ -12,3 +12,15 @@ local print;
 
 local a = print;
 local b = print();
+
+
+function lol() {
+    local e;
+    function lal() {
+        {
+            {
+                e = 2;
+            }
+        }
+    }
+}

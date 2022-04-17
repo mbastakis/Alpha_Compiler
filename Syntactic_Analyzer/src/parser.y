@@ -10,6 +10,9 @@
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
 
+    /* Defines */
+    #define FUNCTION_TYPE 6969
+
     /* External Variables */
     extern int yylineno;
     extern char* yytext;
@@ -23,11 +26,11 @@
     std::stack<std::string> functionStack;
     unsigned int currentScope;
 
-    int functionOpen = 0;
-    int stmt_open=0;
+    int functionOpen;
+    int stmt_open;
     int currentLine;
-    int newNameFunction=1;
-    std::string newName="";
+    int newNameFunction;
+    std::string newName;
     
 
 
@@ -133,44 +136,60 @@ expr
     : assignexpr {
     }
     | expr ADDITION expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot add with a function");
     }
     | expr SUBTRACTION expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot subtract with a function");
     }
     | expr MULTIPLICATION expr {
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot multiply with a function");
 
     }
     | expr DIVISION expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot divide with a function");
     }
     | expr MODULO expr {
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot do the mod operation with a function");
     }
     | expr GREATER_THAN expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | expr LESS_THAN expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | expr GREATER_OR_EQUAL expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | expr LESS_OR_EQUAL expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | expr EQUALITY expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | expr INEQUALITY expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | expr AND expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | expr OR expr {
-
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+            yyerror("Cannot compare with a function");
     }
     | term {
+        $$ = $1;
     };
 
 term
@@ -225,6 +244,7 @@ term
         }
     }
     | primary {
+        $$ = $1;
     }
     | ERROR {
     }
@@ -252,6 +272,9 @@ primary
             symbol->setActive(true);
             symtable.insert(symbol);
         }
+
+        if( symbol != NULL && (symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ))
+            $$ = FUNCTION_TYPE;
     }
     | call {
     }
@@ -273,7 +296,7 @@ lvalue
             if ( search->getScope() == 0 || 
                     search->getScope() == currentScope || 
                     search->getType() == USERFUNC ||
-                    search->getType() == LIBRARYFUNC)
+                    search->getType() == LIBRARYFUNC )
             {
                 $$ = search;
             }
@@ -283,7 +306,6 @@ lvalue
             } 
         } else // If not in a function and the symbol was found.
             $$ = search;
-        
     }
     | LOCAL ID {
         Symbol* search = symtable.lookup($2, currentScope);
@@ -416,7 +438,7 @@ funcdef
             }
         
     } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++;} block {    
-        functionOpen--;     
+        functionOpen--;
         functionStack.pop();
     }
     | FUNCTION{
@@ -523,6 +545,11 @@ int main(int argc, char** argv) {
     symtable = SymbolTable();
     functionStack = std::stack<std::string>();
     currentScope = 0;
+    functionOpen = 0;
+    stmt_open = 0;
+    newNameFunction = 1;
+    newName = "";
+
 
     yyparse();
     

@@ -1,0 +1,10 @@
+function lol() {
+    local e;
+    function lal() {
+        {
+            {
+                e = 2;
+            }
+        }
+    }
+}
