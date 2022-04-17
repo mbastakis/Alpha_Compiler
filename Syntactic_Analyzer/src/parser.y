@@ -22,6 +22,12 @@
     SymbolTable symtable;
     std::stack<std::string> functionStack;
     unsigned int currentScope;
+
+    int functionOpen = 0;
+    int stmt_open=0;
+    int currentLine;
+    int newNameFunction=1;
+    std::string newName="";
     
 
 
@@ -108,8 +114,12 @@ stmt
     | returnstmt {
     }
     | BREAK SEMICOLON {
+        if(stmt_open == 0)
+            yyerror("break outside of statement");
     }
     | CONTINUE SEMICOLON {
+        if(stmt_open == 0)
+            yyerror("continue outside of statement");
     }
     | block {
     }
@@ -395,13 +405,28 @@ block
     };
 
 funcdef
-    : FUNCTION ID {
-        // TODO: check if valid function.
-        functionStack.push($2);
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {        
+    : FUNCTION {currentLine = yylineno;} ID {
+        functionStack.push($3);
+        if(symtable.contains($3, LIBRARYFUNC)) {
+                yyerror("function shadows library function");
+            } else if (symtable.lookup($3, currentScope) != NULL) {
+                yyerror("function already exists");
+            } else {
+                symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
+            }
         
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++;} block {    
+        functionOpen--;     
+        functionStack.pop();
     }
-    | FUNCTION LEFT_PARENTHESES idlist RIGHT_PARENTHESES block {
+    | FUNCTION{
+        currentLine = yylineno; 
+        newName= "_f" + std::to_string(newNameFunction++);
+        functionStack.push(newName);
+        symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
+
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++;} block {
+        functionOpen--;
         functionStack.pop();
     };
 
@@ -427,12 +452,26 @@ const
 
 idlist
     : ID nextid {
+        if(symtable.contains($1, LIBRARYFUNC)) {
+            yyerror("formal argument shadows library function");
+        } else if (symtable.lookup($1, currentScope+1) != NULL){
+            yyerror("formal argument redeclaration");
+        } else {
+            symtable.insert(new Symbol($1, FORMALVAR, yylineno, currentScope+1, true));
+        }
     }
     | %empty
     ;
 
 nextid
     : COMMA ID nextid {
+        if(symtable.contains($2, LIBRARYFUNC)) {
+            yyerror("formal argument shadows library function");
+        } else if (symtable.lookup($2, currentScope+1) != NULL){
+            yyerror("formal argument redeclaration");
+        } else {
+            symtable.insert(new Symbol($2, FORMALVAR, yylineno, currentScope+1, true));
+        }
     }
     | %empty
     ;
@@ -444,18 +483,24 @@ ifstmt
     };
 
 whilestmt
-    : WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {
+    : WHILE{currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
     };
 
 forstmt 
-    : FOR LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {
+    : FOR{currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
         
     };
 
 returnstmt
-    : RETURN SEMICOLON {        
+    : RETURN SEMICOLON {       
+        if(functionOpen == 0)
+            yyerror("return outside of function");
+          
     }
     | RETURN expr SEMICOLON {
+        if(functionOpen == 0)
+            yyerror("return outside of function");
+        
     };
 %%
 
