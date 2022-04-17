@@ -10,8 +10,6 @@
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
 
-    #define DEBUG true
-
     /* External Variables */
     extern int yylineno;
     extern char* yytext;
@@ -337,8 +335,7 @@ call
         else if( !symbol->isActive() ) { // Symbol we are trying to call doesn't exist so we create it.
             symbol->setActive(true);
             symtable.insert(symbol);
-        } 
-
+        }
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {
     };
