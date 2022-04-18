@@ -99,15 +99,33 @@ public:
     }
 
     Symbol* recursiveLookup(std::string id, int scope, std::stack<bool> blockStack) {
-        //if symbol exist in a not global scope
-        while (scope > 0 || blockStack.top() != false) {
-            Symbol* search = get(id, scope);
-            if (search != NULL && search->isActive()) return scope;
-            scope--;
+        Symbol* search = lookup(id, scope); // Search for a symbol with id.
+        if (search == NULL) return NULL;    // It doesn't exist.
+
+        int activeScope = scope;
+        bool isFunctionBlock = blockStack.top();
+        blockStack.pop();
+        while (!blockStack.empty() && isFunctionBlock != true) {    // Calculate the minimum scope that we can access.
+            activeScope--;
+            isFunctionBlock = blockStack.top();
+            blockStack.pop();
         }
-        //if symbol exist in global scope
-        if (contains(id, scope)) return 0;
-        return -1;
+
+        if (search->getScope() < activeScope && // Check if we don't have access to that scope and return error.
+            search->getScope() != 0 &&
+            search->getType() != USERFUNC &&
+            search->getType() != LIBRARYFUNC)
+            return new Symbol("_Error_", SYMERROR, 0, 0, false);
+        else
+            return search;  // We have access return the variable.
+    }
+
+    Symbol* scopeLookup(std::string id, int currentScope) {
+        auto symList = getSymbols(currentScope);
+        for (auto it = symList.begin(); it != symList.end(); it++) {
+            if ((*it)->isActive() && (*it)->getId().compare(id) == 0) return (*it);
+        }
+        return NULL;
     }
 
     unsigned int count(std::string id) {

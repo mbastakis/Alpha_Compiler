@@ -1,3 +1,5 @@
+
+e;
 function lol() {
     local e;
     function lal() {
@@ -8,3 +10,11 @@ function lol() {
         }
     }
 }
+
+
+function f() {
+    function f(){}
+    function f(){}
+}
+
+function c(a,a,b,a,b,b,c,d){}

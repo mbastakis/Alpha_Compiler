@@ -33,12 +33,23 @@
     int currentLine;
     int newNameFunction;
     std::string newName;
+    std::string currentFunctionName;
     
 
 
     /* Function Definitions */
+     void red() {
+         std::cout << "\033[0;31m";
+     }
+
+     void reset() {
+         std::cout << "\033[0;37m";
+     }
+
      void yyerror (const std::string errorMsg) {
+         red();
          std::cout << "Error: at line: " << yylineno << ", " << errorMsg << std::endl;
+         reset();
      }
 %}
 
@@ -289,25 +300,18 @@ primary
 
 lvalue 
     : ID {
-        Symbol* search = symtable.recursivelookup($1, currentScope, blockStack);
+        Symbol* search = symtable.recursiveLookup($1, currentScope, blockStack);
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) // If no symbol was found.
             $$ = new Symbol($1, type, yylineno, currentScope, false);
-        else if( !functionStack.empty() ) { // If we are in a function.
-            if ( search->getScope() == 0 || 
-                    search->getScope() == currentScope || 
-                    search->getType() == USERFUNC ||
-                    search->getType() == LIBRARYFUNC )
-            {
-                $$ = search;
-            }
-            else {
-                yyerror("unable to access this variable.");
+        else {
+            if( search->getType() == SYMERROR ) {
+                yyerror("cannot access this variable.");
                 $$ = NULL;
-            } 
-        } else // If not in a function and the symbol was found.
-            $$ = search;
+            }else
+                $$ = search;
+        }
     }
     | LOCAL ID {
         Symbol* search = symtable.lookup($2, currentScope);
@@ -430,16 +434,19 @@ block
 
 funcdef
     : FUNCTION {currentLine = yylineno;} ID {
+        currentFunctionName = "_Error_";
         functionStack.push($3);
         if(symtable.contains($3, LIBRARYFUNC)) {
-            yyerror("function shadows library function");
-        } else if (symtable.lookup($3, currentScope) != NULL) {
-            yyerror("function already exists");
+            yyerror("function shadows library function.");
+        } else if (symtable.scopeLookup($3, currentScope) != NULL) {
+            yyerror("function already exists.");
         } else {
             symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
+            currentFunctionName = $3;
         }
+
         
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true} block {    
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {    
         functionOpen--;
         functionStack.pop();
     }
@@ -448,18 +455,17 @@ funcdef
         newName= "_f" + std::to_string(newNameFunction++);
         functionStack.push(newName);
         symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
+        currentFunctionName = newName;
 
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true} block {
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
         functionOpen--;
         functionStack.pop();
     };
 
 const
     : INTEGER {
-
     }
     | REAL{
-
     }
     | STRING{
 
@@ -476,12 +482,17 @@ const
 
 idlist
     : ID nextid {
-        if(symtable.contains($1, LIBRARYFUNC)) {
-            yyerror("formal argument shadows library function");
-        } else if (symtable.lookup($1, currentScope+1) != NULL){
-            yyerror("formal argument redeclaration");
-        } else {
-            symtable.insert(new Symbol($1, FORMALVAR, yylineno, currentScope+1, true));
+        if(currentFunctionName.compare("_Error_") != 0) {
+                Symbol* function = symtable.lookup(currentFunctionName, currentScope);
+            if(symtable.contains($1, LIBRARYFUNC)) {
+                yyerror("formal argument shadows library function.");
+            } else if (function->containsArgument($1)){
+                yyerror("formal argument redeclaration.");
+            } else {
+                Symbol* newSym = new Symbol($1, FORMALVAR, yylineno, currentScope+1, true);
+                symtable.insert(newSym);
+                function->insertArgument(newSym);
+            }
         }
     }
     | %empty
@@ -489,12 +500,17 @@ idlist
 
 nextid
     : COMMA ID nextid {
-        if(symtable.contains($2, LIBRARYFUNC)) {
-            yyerror("formal argument shadows library function");
-        } else if (symtable.lookup($2, currentScope+1) != NULL){
-            yyerror("formal argument redeclaration");
-        } else {
-            symtable.insert(new Symbol($2, FORMALVAR, yylineno, currentScope+1, true));
+        if( currentFunctionName.compare("_Error_") != 0 ) {
+            Symbol* function = symtable.lookup(currentFunctionName, currentScope);
+            if(symtable.contains($2, LIBRARYFUNC)) {
+                yyerror("formal argument shadows library function.");
+            } else if (function->containsArgument($1)){
+                yyerror("formal argument redeclaration.");
+            } else {
+                Symbol* newSym = new Symbol($2, FORMALVAR, yylineno, currentScope+1, true);
+                symtable.insert(newSym);
+                function->insertArgument(newSym);
+            }
         }
     }
     | %empty

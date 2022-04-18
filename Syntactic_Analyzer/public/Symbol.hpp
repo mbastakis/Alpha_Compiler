@@ -10,11 +10,12 @@ typedef enum {
     LOCALVAR,
     FORMALVAR,
     LIBRARYFUNC,
-    USERFUNC
+    USERFUNC,
+    SYMERROR
 } Symbol_T;
 
 static const char* enum_str[] =
-{ "global variable", "local variable", "formal argument", "library function", "user function" };
+{ "global variable", "local variable", "formal argument", "library function", "user function", "error" };
 
 class Symbol {
 
