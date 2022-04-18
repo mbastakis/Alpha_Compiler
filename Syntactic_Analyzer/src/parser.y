@@ -504,7 +504,7 @@ nextid
             Symbol* function = symtable.lookup(currentFunctionName, currentScope);
             if(symtable.contains($2, LIBRARYFUNC)) {
                 yyerror("formal argument shadows library function.");
-            } else if (function->containsArgument($1)){
+            } else if (function->containsArgument($2)){
                 yyerror("formal argument redeclaration.");
             } else {
                 Symbol* newSym = new Symbol($2, FORMALVAR, yylineno, currentScope+1, true);
