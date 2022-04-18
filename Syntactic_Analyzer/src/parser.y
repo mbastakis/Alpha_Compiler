@@ -24,8 +24,10 @@
     /* Global Variables */
     SymbolTable symtable;
     std::stack<std::string> functionStack;
+    std::stack<bool> blockStack;
     unsigned int currentScope;
 
+    bool isFunc;
     int functionOpen;
     int stmt_open;
     int currentLine;
@@ -287,7 +289,7 @@ primary
 
 lvalue 
     : ID {
-        Symbol* search = symtable.lookup($1, currentScope);
+        Symbol* search = symtable.recursivelookup($1, currentScope, blockStack);
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) // If no symbol was found.
@@ -423,21 +425,21 @@ indexedelem
     };
 
 block
-    : LEFT_CURLY_BRACKET {currentScope++;} statements RIGHT_CURLY_BRACKET {symtable.hide(currentScope--);} {
+    : LEFT_CURLY_BRACKET {currentScope++; blockStack.push(isFunc); isFunc = false;} statements RIGHT_CURLY_BRACKET {symtable.hide(currentScope--);} {
     };
 
 funcdef
     : FUNCTION {currentLine = yylineno;} ID {
         functionStack.push($3);
         if(symtable.contains($3, LIBRARYFUNC)) {
-                yyerror("function shadows library function");
-            } else if (symtable.lookup($3, currentScope) != NULL) {
-                yyerror("function already exists");
-            } else {
-                symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
-            }
+            yyerror("function shadows library function");
+        } else if (symtable.lookup($3, currentScope) != NULL) {
+            yyerror("function already exists");
+        } else {
+            symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
+        }
         
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++;} block {    
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true} block {    
         functionOpen--;
         functionStack.pop();
     }
@@ -447,7 +449,7 @@ funcdef
         functionStack.push(newName);
         symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
 
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++;} block {
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true} block {
         functionOpen--;
         functionStack.pop();
     };
@@ -544,11 +546,13 @@ int main(int argc, char** argv) {
     // Initialization
     symtable = SymbolTable();
     functionStack = std::stack<std::string>();
+    blockStack = std::stack<bool>();
     currentScope = 0;
     functionOpen = 0;
     stmt_open = 0;
     newNameFunction = 1;
     newName = "";
+    isFunc = false;
 
 
     yyparse();

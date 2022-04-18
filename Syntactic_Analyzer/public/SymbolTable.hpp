@@ -3,6 +3,7 @@
 
 #include <map>
 #include <list>
+#include <stack>
 #include <fstream>
 
 #include "Symbol.hpp"
@@ -97,9 +98,9 @@ public:
         return NULL;
     }
 
-    int recursiveLookup(std::string id, int scope) {
+    Symbol* recursiveLookup(std::string id, int scope, std::stack<bool> blockStack) {
         //if symbol exist in a not global scope
-        while (scope > 0) {
+        while (scope > 0 || blockStack.top() != false) {
             Symbol* search = get(id, scope);
             if (search != NULL && search->isActive()) return scope;
             scope--;
