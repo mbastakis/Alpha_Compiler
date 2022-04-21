@@ -321,8 +321,12 @@ lvalue
             $$ = search;
         else if( !symtable.contains($2, LIBRARYFUNC) )
             $$ = new Symbol($2, type, yylineno, currentScope, false);
-        else if( symtable.contains($2, LIBRARYFUNC) )
+        else if( symtable.contains($2, LIBRARYFUNC) ) {
             yyerror("trying to shadow a Library Function.");
+            $$ = NULL;
+        }
+            
+
 
     }
     | DOUBLE_COLON ID {
