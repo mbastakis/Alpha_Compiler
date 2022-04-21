@@ -12,7 +12,15 @@
     enum { DEFAULT = 0, LINE_COMMENT = 1, BLOCK_COMMENT = 2 } state = DEFAULT;
     std::stack<unsigned int> commentStack;
 
-    //Functions 
+    //Functions
+    void yellow() {
+         std::cout << "\033[0;33m";
+    }
+
+    void resetLex() {
+         std::cout << "\033[0;37m";
+     }
+
     char* formatEscapedCharacters(char* string){
         int stringSize = strlen(string);
         char* formatedString = new char[stringSize + 1];
@@ -38,7 +46,9 @@
                         i++;
                         break;    
                     default:
+                        yellow();
                         std::cerr << "Warning: In line " << yylineno << " invalid escape character found!" << std::endl;
+                        resetLex();
                         return NULL;
                 }
             }
