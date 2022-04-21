@@ -644,18 +644,18 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[111] =
     {   0,
-        0,    0,   53,   52,   48,   51,   50,   51,   21,   34,
-       35,   19,   17,   37,   18,   40,   20,   46,   38,   36,
-       27,   16,   26,   45,   32,   33,   45,   45,   45,   45,
-       45,   45,   45,   45,   45,   45,   45,   45,   30,   31,
-       23,    0,   49,    0,   44,   24,   25,   41,   47,   43,
-       42,    0,   46,   39,   29,   22,   28,   45,   45,   45,
-       45,   45,   45,   45,   45,    1,   45,   45,   45,   11,
-       45,   45,   45,    9,   45,   45,   45,   45,    4,   45,
-       45,   15,   10,   45,   45,   45,   45,   45,    2,   45,
-       45,   45,   45,   13,   45,    7,   45,   14,   45,   12,
+        0,    0,   53,   52,   47,   50,   49,   50,   21,   34,
+       35,   19,   17,   37,   18,   40,   20,   45,   38,   36,
+       27,   16,   26,   44,   32,   33,   44,   44,   44,   44,
+       44,   44,   44,   44,   44,   44,   44,   44,   30,   31,
+       23,    0,   48,    0,   43,   24,   25,   41,   46,   42,
+       51,    0,   45,   39,   29,   22,   28,   44,   44,   44,
+       44,   44,   44,   44,   44,    1,   44,   44,   44,   11,
+       44,   44,   44,    9,   44,   44,   44,   44,    4,   44,
+       44,   15,   10,   44,   44,   44,   44,   44,    2,   44,
+       44,   44,   44,   13,   44,    7,   44,   14,   44,   12,
 
-       45,    3,   45,   45,    6,   45,   45,    8,    5,    0
+       44,    3,   44,   44,    6,   44,   44,    8,    5,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -782,7 +782,7 @@ static const flex_int32_t yy_rule_can_match_eol[53] =
     {   0,
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0,     };
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,     };
 
 static yy_state_type yy_last_accepting_state;
 static char *yy_last_accepting_cpos;
@@ -1837,26 +1837,11 @@ YY_RULE_SETUP
                             yylval->setTokenType("DOUBLE_DOT", false);
                             yylval->setContentType("enumerated");
                             return 1;
-                        }
+                        }                     
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
 #line 650 "lexical_scanner.l"
-{
-                            if( state != DEFAULT ) return 0;
-                            state = LINE_COMMENT;
-                            yylval->setNumline(alpha_yylineno);
-                            yylval->setNumtoken(++tokenCounter);
-                            yylval->setContent(alpha_yytext, true);
-                            yylval->setTokenCategory("COMMENT");
-                            yylval->setTokenType("LINE_COMMENT", false);
-                            yylval->setContentType("enumerated");
-                            return 1;
-                        }                         
-	YY_BREAK
-case 43:
-YY_RULE_SETUP
-#line 661 "lexical_scanner.l"
 {
                             if( state == LINE_COMMENT ) return 0;
                             commentStack.push(alpha_yylineno);
@@ -1864,14 +1849,15 @@ YY_RULE_SETUP
                             return 0;
                         }
 	YY_BREAK
-case 44:
+case 43:
 YY_RULE_SETUP
-#line 667 "lexical_scanner.l"
+#line 656 "lexical_scanner.l"
 {
                             if( state == LINE_COMMENT ) return 0;
                             if( commentStack.empty() ) {
-                                alpha_token_t* mult = new alpha_token_t(alpha_yylineno, ++tokenCounter, "*", "OPERATOR", "MULTIPLICATION", "enumerated");
-                                alpha_token_t* div = new alpha_token_t(alpha_yylineno, ++tokenCounter, "/", "OPERATOR", "DIVISION", "enumerated");
+                                alpha_token_t* mult = new alpha_token_t(alpha_yylineno, ++tokenCounter, "\"*\"", "OPERATOR", "MULTIPLICATION", "enumerated");
+                                alpha_token_t* div = new alpha_token_t(alpha_yylineno, ++tokenCounter, "\"/\"", "OPERATOR", "DIVISION", "enumerated");
+                                std::cout << "inside block comment close" << std::endl;
                                 tokenQueue.push(mult);
                                 tokenQueue.push(div);
                                 return 0;
@@ -1900,11 +1886,11 @@ YY_RULE_SETUP
                             }
 
                             return 1;
-                        }
+                        } 
 	YY_BREAK
-case 45:
+case 44:
 YY_RULE_SETUP
-#line 701 "lexical_scanner.l"
+#line 691 "lexical_scanner.l"
 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -1916,9 +1902,9 @@ YY_RULE_SETUP
                             return 1;
                         }                       
 	YY_BREAK
-case 46:
+case 45:
 YY_RULE_SETUP
-#line 711 "lexical_scanner.l"
+#line 701 "lexical_scanner.l"
 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -1930,9 +1916,9 @@ YY_RULE_SETUP
                             return 1;
                         }                       
 	YY_BREAK
-case 47:
+case 46:
 YY_RULE_SETUP
-#line 721 "lexical_scanner.l"
+#line 711 "lexical_scanner.l"
 {
                             if( state != DEFAULT ) return 0;
                             yylval->setNumline(alpha_yylineno);
@@ -1944,10 +1930,10 @@ YY_RULE_SETUP
                             return 1;
                         }
 	YY_BREAK
-case 48:
-/* rule 48 can match eol */
+case 47:
+/* rule 47 can match eol */
 YY_RULE_SETUP
-#line 731 "lexical_scanner.l"
+#line 721 "lexical_scanner.l"
 {
                             if(strcmp(alpha_yytext, "\n") == 0 && state == LINE_COMMENT) {
                                     state = DEFAULT;
@@ -1955,10 +1941,10 @@ YY_RULE_SETUP
                             return 0;
                         }
 	YY_BREAK
-case 49:
-/* rule 49 can match eol */
+case 48:
+/* rule 48 can match eol */
 YY_RULE_SETUP
-#line 737 "lexical_scanner.l"
+#line 727 "lexical_scanner.l"
 {
                             if( state != DEFAULT ) return 0;
                             char* formatedString =  formatEscapedCharacters(alpha_yytext);
@@ -1972,26 +1958,26 @@ YY_RULE_SETUP
                             return 1;
                         }
 	YY_BREAK
-case 50:
+case 49:
 YY_RULE_SETUP
-#line 749 "lexical_scanner.l"
+#line 739 "lexical_scanner.l"
 {
                             if(state != DEFAULT) return 0;
                             std::cerr << "Error: Incomplete string was detected at line: " << alpha_yylineno << std::endl;
                             return 3;
                         }
 	YY_BREAK
-case 51:
+case 50:
 YY_RULE_SETUP
-#line 754 "lexical_scanner.l"
+#line 744 "lexical_scanner.l"
 {
                             if(state != DEFAULT) return 0;
                             std::cerr << "Error: Unknown character " << alpha_yytext << " found at line: " << alpha_yylineno << std::endl;
                             return 3;
-                        }
+                        } 
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 760 "lexical_scanner.l"
+#line 749 "lexical_scanner.l"
 {
                             if(state != BLOCK_COMMENT && commentStack.empty()) return 2;
                             std::cerr << "Error: Comment opened in line " << commentStack.top() << " but never closed." << std::endl;
@@ -1999,12 +1985,30 @@ case YY_STATE_EOF(INITIAL):
                             return 3;
                         }         
 	YY_BREAK
+case 51:
+YY_RULE_SETUP
+#line 755 "lexical_scanner.l"
+{
+                            if( state == BLOCK_COMMENT ) unput(yytext[1]);
+                            else if( state != DEFAULT ) return 0;
+                            else {
+                                state = LINE_COMMENT;
+                                yylval->setNumline(alpha_yylineno);
+                                yylval->setNumtoken(++tokenCounter);
+                                yylval->setContent(alpha_yytext, true);
+                                yylval->setTokenCategory("COMMENT");
+                                yylval->setTokenType("LINE_COMMENT", false);
+                                yylval->setContentType("enumerated");
+                                return 1;
+                            }
+                        }
+	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 767 "lexical_scanner.l"
+#line 770 "lexical_scanner.l"
 ECHO;
 	YY_BREAK
-#line 2008 "alpha_lexical_scanner.c"
+#line 2012 "alpha_lexical_scanner.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -3019,7 +3023,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 767 "lexical_scanner.l"
+#line 770 "lexical_scanner.l"
 
 
 int main(int argc, char** argv) {
