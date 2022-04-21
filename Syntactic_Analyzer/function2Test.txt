@@ -1,9 +1,0 @@
-function (x,y){
-local x;
-local l;
-}
-
-local p;
-function (o,u) {
-}
-

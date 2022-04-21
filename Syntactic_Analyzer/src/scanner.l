@@ -11,7 +11,6 @@
     // Globals
     enum { DEFAULT = 0, LINE_COMMENT = 1, BLOCK_COMMENT = 2 } state = DEFAULT;
     std::stack<unsigned int> commentStack;
-    unsigned int tokenCounter;
 
     //Functions 
     char* formatEscapedCharacters(char* string){
@@ -289,6 +288,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             }
                         }
 {ID}                    {
+                            
                             if( state == DEFAULT) {
                                 std::string str = std::string(yytext);
                                 char * cStr = strcpy(new char[str.length() + 1], str.c_str());

@@ -10,11 +10,12 @@ typedef enum {
     LOCALVAR,
     FORMALVAR,
     LIBRARYFUNC,
-    USERFUNC
+    USERFUNC,
+    SYMERROR
 } Symbol_T;
 
 static const char* enum_str[] =
-{ "global variable", "local variable", "formal argument", "library function", "user function" };
+{ "global variable", "local variable", "formal argument", "library function", "user function", "error" };
 
 class Symbol {
 
@@ -61,6 +62,22 @@ public:
 
     void setActive(bool boolean) {
         m_isActive = boolean;
+    }
+
+    void setId(std::string id) {
+        m_id = id;
+    }
+
+    void setType(Symbol_T type) {
+        m_type = type;
+    }
+
+    void setLine(unsigned int line) {
+        m_line = line;
+    }
+
+    void setScope(unsigned int scope) {
+        m_scope = scope;
     }
 
     void insertArgument(Symbol* symbol) {

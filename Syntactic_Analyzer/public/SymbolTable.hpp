@@ -3,6 +3,8 @@
 
 #include <map>
 #include <list>
+#include <stack>
+#include <fstream>
 
 #include "Symbol.hpp"
 
@@ -96,16 +98,34 @@ public:
         return NULL;
     }
 
-    int recursiveLookup(std::string id, int scope) {
-        //if symbol exist in a not global scope
-        while (scope > 0) {
-            Symbol* search = get(id, scope);
-            if (search != NULL && search->isActive()) return scope;
-            scope--;
+    Symbol* recursiveLookup(std::string id, int scope, std::stack<bool> blockStack) {
+        Symbol* search = lookup(id, scope); // Search for a symbol with id.
+        if (search == NULL) return NULL;    // It doesn't exist.
+
+        int activeScope = scope;
+        bool isFunctionBlock = blockStack.top();
+        blockStack.pop();
+        while (!blockStack.empty() && isFunctionBlock != true) {    // Calculate the minimum scope that we can access.
+            activeScope--;
+            isFunctionBlock = blockStack.top();
+            blockStack.pop();
         }
-        //if symbol exist in global scope
-        if (contains(id, scope)) return 0; 
-        return -1;
+
+        if (search->getScope() < activeScope && // Check if we don't have access to that scope and return error.
+            search->getScope() != 0 &&
+            search->getType() != USERFUNC &&
+            search->getType() != LIBRARYFUNC)
+            return new Symbol("_Error_", SYMERROR, 0, 0, false);
+        else
+            return search;  // We have access return the variable.
+    }
+
+    Symbol* scopeLookup(std::string id, int currentScope) {
+        auto symList = getSymbols(currentScope);
+        for (auto it = symList.begin(); it != symList.end(); it++) {
+            if ((*it)->isActive() && (*it)->getId().compare(id) == 0) return (*it);
+        }
+        return NULL;
     }
 
     unsigned int count(std::string id) {
@@ -116,7 +136,7 @@ public:
         auto symList = std::list<Symbol*>();
 
         for (auto it = m_table.begin(); it != m_table.end(); ++it) {
-            if (it->second->getScope() == scope )
+            if (it->second->getScope() == scope)
                 symList.push_back(it->second);
         }
 
@@ -143,21 +163,22 @@ public:
     }
 
 
-    int insert(Symbol* symbol) {
+    void insert(Symbol* symbol) {
         if (symbol->getScope() > m_maxScope)
             m_maxScope = symbol->getScope();
 
         m_table.insert({ symbol->getId(), symbol });
-
-        return 0;
     }
 
-    Symbol* lookup(std::string id, unsigned int scope) {
-        auto symList = getSymbols(id);
+    Symbol* lookup(std::string id, int currentScope) {
 
-        for (auto it = symList.begin(); it != symList.end(); it++) {
-            if ((*it)->getScope() == scope && (*it)->isActive())
-                return (*it);
+        while (currentScope >= 0) {
+
+            auto symList = getSymbols(currentScope);
+            for (auto it = symList.begin(); it != symList.end(); it++) {
+                if ((*it)->isActive() && (*it)->getId().compare(id) == 0) return (*it);
+            }
+            currentScope--;
         }
 
         return NULL;
@@ -177,6 +198,32 @@ public:
             printSymbols(i);
             std::cout << std::endl << std::endl;
         }
+    }
+
+    void printSymbolsInFile(char* argv) {
+        std::ofstream myfile;
+        myfile.open(argv);
+
+        for (auto i = 0; i <= m_maxScope; i++) {
+            myfile << "-----------\t Scope #" << std::to_string(i) << "\t-----------" << std::endl;
+
+
+            auto symList = std::list<Symbol*>();
+            for (auto it = m_table.begin(); it != m_table.end(); ++it) {
+                if (it->second->getScope() == i)
+                    symList.push_back(it->second);
+            }
+            symList.sort(compare);
+
+            for (auto it = symList.begin(); it != symList.end(); ++it) {
+                myfile << (*it)->toString() << std::endl;
+            }
+
+
+            myfile << std::endl << std::endl;
+        }
+
+        myfile.close();
     }
 
 };
