@@ -103,12 +103,14 @@ public:
         if (search == NULL) return NULL;    // It doesn't exist.
 
         int activeScope = scope;
-        bool isFunctionBlock = blockStack.top();
-        blockStack.pop();
-        while (!blockStack.empty() && isFunctionBlock != true) {    // Calculate the minimum scope that we can access.
-            activeScope--;
-            isFunctionBlock = blockStack.top();
+        if (!blockStack.empty()) {
+            bool isFunctionBlock = blockStack.top();
             blockStack.pop();
+            while (!blockStack.empty() && isFunctionBlock != true) {    // Calculate the minimum scope that we can access.
+                activeScope--;
+                isFunctionBlock = blockStack.top();
+                blockStack.pop();
+            }
         }
 
         if (search->getScope() < activeScope && // Check if we don't have access to that scope and return error.
