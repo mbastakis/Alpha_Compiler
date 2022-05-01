@@ -9,6 +9,7 @@
 
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
+    #include "../public/IntermediateCode.hpp"
 
     /* Defines */
     #define FUNCTION_TYPE 6969
@@ -567,6 +568,7 @@ int main(int argc, char** argv) {
     symtable = SymbolTable();
     functionStack = std::stack<std::string>();
     blockStack = std::stack<bool>();
+
     currentScope = 0;
     functionOpen = 0;
     stmt_open = 0;
@@ -574,7 +576,7 @@ int main(int argc, char** argv) {
     newName = "";
     isFunc = false;
 
-
+    // Start the parser
     yyparse();
     
 
