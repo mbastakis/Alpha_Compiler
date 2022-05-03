@@ -202,6 +202,13 @@ public:
         }
     }
 
+    void removeSymbol(std::string id, unsigned int scope) {
+        for (auto it = m_table.begin(); it != m_table.end(); ++it) {
+            if (it->second->getScope() == scope && it->second->getId().compare(id) == 0)
+                m_table.erase(it);
+        }
+    }
+
     void printSymbolsInFile(char* argv) {
         std::ofstream myfile;
         myfile.open(argv);

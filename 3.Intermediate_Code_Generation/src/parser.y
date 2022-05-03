@@ -6,6 +6,7 @@
     #include <stack>
     #include <fstream>
     #include <stack>
+    #include <vector>
 
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
@@ -30,12 +31,21 @@
 
     bool isFunc;
     int functionOpen;
-    int stmt_open;
+    int stmtOpen;
     int currentLine;
     int newNameFunction;
     std::string newName;
     std::string currentFunctionName;
-    
+
+    /* Offset Usage */
+    /* Note, isws xreiastoume kapoio stack apo offsets gia emfolebmenes sunartisis */
+    unsigned int programVarOffset;
+    unsigned int functionLocalOffset;
+    unsigned int formalArgOffset;
+    unsigned int scopeSpaceCounter;
+
+    /* Quad */
+    std::vector<Quad*> Quads;
 
 
     /* Function Definitions */
@@ -90,6 +100,7 @@
 %type<expression> assignexpr
 %type<expression> term
 %type<expression> primary
+%type<expression> const
 %type<symbol> lvalue
 
 /* Rules for priority and associativeness.*/
@@ -131,11 +142,11 @@ stmt
     | returnstmt {
     }
     | BREAK SEMICOLON {
-        if(stmt_open == 0)
+        if(stmtOpen == 0)
             yyerror("break outside of statement");
     }
     | CONTINUE SEMICOLON {
-        if(stmt_open == 0)
+        if(stmtOpen == 0)
             yyerror("continue outside of statement");
     }
     | block {
@@ -150,25 +161,25 @@ expr
     : assignexpr {
     }
     | expr ADDITION expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
-            yyerror("Cannot add with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot add non numeric value");
     }
     | expr SUBTRACTION expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
-            yyerror("Cannot subtract with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot subtract non numeric value");
     }
     | expr MULTIPLICATION expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
-            yyerror("Cannot multiply with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot multiply non numeric value");
 
     }
     | expr DIVISION expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
-            yyerror("Cannot divide with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot divide non numeric value");
     }
     | expr MODULO expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
-            yyerror("Cannot do the mod operation with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot do the mod operation with non numeric value");
     }
     | expr GREATER_THAN expr {
         if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
@@ -219,7 +230,7 @@ term
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot increment the value of a function.");
-        }else if ( !symbol->isActive() ) {
+        } else if ( !symbol->isActive() ) {
             symbol->setActive(true);
             symtable.insert(symbol);
         }
@@ -241,7 +252,7 @@ term
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot decrement the value of a function.");
-        }else if ( !symbol->isActive() ) {
+        } else if ( !symbol->isActive() ) {
             symbol->setActive(true);
             symtable.insert(symbol);
         }
@@ -252,7 +263,7 @@ term
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot decrement the value of a function.");
-        }else if ( !symbol->isActive() ) {
+        } else if ( !symbol->isActive() ) {
             symbol->setActive(true);
             symtable.insert(symbol);
         }
@@ -287,8 +298,12 @@ primary
             symtable.insert(symbol);
         }
 
-        if( symbol != NULL && (symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ))
-            $$ = FUNCTION_TYPE;
+        if( symbol != NULL && symbol->getType() == USERFUNC)
+            $$ = USERFUNCTION_EXPR;
+        else if(symbol != NULL && symbol->getType() == LIBRARYFUNC)
+            $$ = LIBRARYFUNCTION_EXPR;
+        else 
+            $$ = VAR_EXPR;
     }
     | call {
     }
@@ -297,6 +312,7 @@ primary
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {
     }
     | const {
+        $$ = $1;
     };
 
 lvalue 
@@ -469,20 +485,22 @@ funcdef
 
 const
     : INTEGER {
+        $$ = CONST_NUMBER_EXPR;
     }
     | REAL{
+        $$ = CONST_NUMBER_EXPR;
     }
     | STRING{
-
+        $$ = CONST_STRING_EXPR;
     }
     | NIL{
-
+        $$ = NIL_EXPR;
     }
     | TRUE{
-
+        $$ = CONST_BOOLEAN_EXPR;
     }
     | FALSE{
-
+        $$ = CONST_BOOLEAN_EXPR;
     };
 
 idlist
@@ -528,11 +546,11 @@ ifstmt
     };
 
 whilestmt
-    : WHILE{currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : WHILE{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmtOpen--;} {
     };
 
 forstmt 
-    : FOR{currentLine = yylineno; stmt_open++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmt_open--;} {
+    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
         
     };
 
@@ -571,10 +589,17 @@ int main(int argc, char** argv) {
 
     currentScope = 0;
     functionOpen = 0;
-    stmt_open = 0;
+    stmtOpen = 0;
     newNameFunction = 1;
     newName = "";
     isFunc = false;
+
+    programVarOffset = 0;
+    functionLocalOffset = 0;
+    formalArgOffset = 0;
+    scopeSpaceCounter = 1;
+
+    Quads = std::vector<Quad*>();
 
     // Start the parser
     yyparse();

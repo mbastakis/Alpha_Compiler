@@ -14,6 +14,12 @@ typedef enum {
     SYMERROR
 } Symbol_T;
 
+typedef enum {
+    PROGRAM_VAR,
+    FUNCTION_LOCAL,
+    FORMAL_ARG
+} Scopespace_T;
+
 static const char* enum_str[] =
 { "global variable", "local variable", "formal argument", "library function", "user function", "error" };
 
@@ -26,6 +32,8 @@ private:
     unsigned int m_line;
     bool m_isActive;
     std::list<Symbol*> m_argsList;
+    Scopespace_T m_space;
+    unsigned int m_offset;
 
 public:
     Symbol() = default;
@@ -38,6 +46,22 @@ public:
         m_line = line;
         m_isActive = isActive;
         m_argsList = std::list<Symbol*>();
+    }
+
+    unsigned int getOffset() {
+        return m_offset;
+    }
+
+    void setOffset(unsigned int offset) {
+        m_offset = offset;
+    }
+
+    Scopespace_T getScopespace() {
+        return m_space;
+    }
+
+    void setScopespace(Scopespace_T space) {
+        m_space = space;
     }
 
     std::string getId() {
