@@ -1,0 +1,42 @@
+
+if( 2 == 4 and 2 != 4 or 2 <= 1) {
+    while( 2 >= 4) {
+        break;
+    }
+}else {
+    for( i = 13; i < 20; i++)
+        continue;
+}
+
+function () {
+    if(not 0)
+    local;
+    while(true)
+    while(false);
+
+    return nil;
+}
+
+function math( a, b) {
+    c = a + b * (a / b) + (a % b);
+    a--;
+    a[2] = 2,3;
+}
+
+/*
+This is a comment 
+// this should not appear
+/* comment inside comment omg inception */
+
+2 3 4
+*/
+
+std::cout << al.method(), al..method(), al:this << std::endl;
+
+this_is_an_id_3
+3_id_without_3
+"this is string"
+2
+3.3
+"hello\t <- that was a tab\n we are a line down"
+end
