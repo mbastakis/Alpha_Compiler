@@ -26,6 +26,7 @@
     /* Global Variables */
     SymbolTable symtable;
     std::stack<std::string> functionStack;
+    std::stack<unsigned int> scopeOffsetStack;
     std::stack<bool> blockStack;
     unsigned int currentScope;
 
@@ -102,6 +103,10 @@
 %type<expression> primary
 %type<expression> const
 %type<symbol> lvalue
+// EVA
+// %type<unsigned int> funcbody
+// %type<symbol> funcprefix
+// %type<symbol> funcdef
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -125,7 +130,7 @@ program
     };
 
 statements
-    : statements stmt {   
+    : statements stmt {
     }
     | %empty
     ;
@@ -302,7 +307,7 @@ primary
             $$ = USERFUNCTION_EXPR;
         else if(symbol != NULL && symbol->getType() == LIBRARYFUNC)
             $$ = LIBRARYFUNCTION_EXPR;
-        else 
+        else
             $$ = VAR_EXPR;
     }
     | call {
@@ -315,7 +320,7 @@ primary
         $$ = $1;
     };
 
-lvalue 
+lvalue
     : ID {
         Symbol* search = symtable.recursiveLookup($1, currentScope, blockStack);
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
@@ -342,7 +347,7 @@ lvalue
             yyerror("trying to shadow a Library Function.");
             $$ = NULL;
         }
-            
+
 
 
     }
@@ -354,7 +359,7 @@ lvalue
             $$ = NULL;
         } else
             $$ = search;
-            
+
     }
     | member {
         $$ = NULL;
@@ -401,13 +406,13 @@ call
 
 callsufix
     : normcall {
-        
+
     }
     | methodcall {
-        
+
     };
 
-normcall 
+normcall
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
     }
 
@@ -422,7 +427,7 @@ elist
     ;
 
 nextexpr
-    : COMMA expr nextexpr {        
+    : COMMA expr nextexpr {
     }
     | %empty
     ;
@@ -453,6 +458,68 @@ block
     : LEFT_CURLY_BRACKET {currentScope++; blockStack.push(isFunc); isFunc = false;} statements RIGHT_CURLY_BRACKET {symtable.hide(currentScope--); blockStack.pop();} {
     };
 
+// EVA
+// funcname
+//     : ID {
+//         currentFunctionName = $1;
+//     }
+//     | %empty {
+//         currentFunctionName = "_f" + std::to_string(newNameFunction++);
+//     }
+//     ;
+
+// funcprefix
+//     : FUNCTION {currentLine = yylineno;} funcname {
+//         scopeOffsetStack.push(getCurrentScopeOffset());
+//         incCurrentScopeOffset();
+//         resetFormalArgsOffset();
+
+//         if(symtable.contains(currentFunctionName, LIBRARYFUNC)) {
+//             yyerror("function shadows library function.");
+//         } else if (symtable.scopeLookup(currentFunctionName, currentScope) != NULL) {
+//             yyerror("function already exists.");
+//         } else {
+//             functionStack.push(currentFunctionName);
+//             Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
+//             symtable.insert(function_symbol);
+//             $$ = function_symbol;
+//             emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol) , nextQuadLabel(), yylineno);
+//             scopeOffsetStack.push(getCurrentScopeOffset());
+//             incCurrentScopeOffset();
+//         }
+//     }
+//     ;
+
+// funcargs
+//     : LEFT_PARENTHESES {
+//         enterScopespace();
+//         scopeOffsetStack.push(getCurrentScopeOffset());
+//     } idlist {functionOpen++; isFunc = true; resetFunctionLocalOffset(); } RIGHT_PARENTHESES {
+//         functionOpen--;
+//     }
+//     ;
+
+// funcbody
+//     : block {
+//         functionOpen--;
+//         functionStack.pop();
+//         // $$ = getCurrentScopeOffset();
+//         exitScopepace();
+//     }
+//     ;
+
+// funcdef
+//     : funcprefix funcargs {
+//         enterScopespace();
+//         resetFunctionLocalOffset();
+//     } funcbody {
+//         exitScopepace();
+//         functionOpen--;
+
+//         // todo
+//     }
+//     ;
+
 funcdef
     : FUNCTION {currentLine = yylineno;} ID {
         currentFunctionName = "_Error_";
@@ -466,13 +533,13 @@ funcdef
             currentFunctionName = $3;
         }
 
-        
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {    
+
+    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
         functionOpen--;
         functionStack.pop();
     }
     | FUNCTION{
-        currentLine = yylineno; 
+        currentLine = yylineno;
         newName= "_f" + std::to_string(newNameFunction++);
         functionStack.push(newName);
         symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
@@ -549,21 +616,21 @@ whilestmt
     : WHILE{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmtOpen--;} {
     };
 
-forstmt 
+forstmt
     : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
-        
+
     };
 
 returnstmt
-    : RETURN SEMICOLON {       
+    : RETURN SEMICOLON {
         if(functionOpen == 0)
             yyerror("return outside of function");
-          
+
     }
     | RETURN expr SEMICOLON {
         if(functionOpen == 0)
             yyerror("return outside of function");
-        
+
     };
 %%
 
@@ -581,7 +648,7 @@ int main(int argc, char** argv) {
     } else {
         yyin = stdin;
     }
-    
+
     // Initialization
     symtable = SymbolTable();
     functionStack = std::stack<std::string>();
@@ -603,7 +670,10 @@ int main(int argc, char** argv) {
 
     // Start the parser
     yyparse();
-    
+
+    // EVA
+    printQuads();
+
 
     // Ending Lexical Analysis
     if ( argc > 1)
