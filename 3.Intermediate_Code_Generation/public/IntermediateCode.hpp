@@ -170,4 +170,91 @@ bool isValidArithmeticOperation(unsigned int e1, unsigned int e2) {
     return false;
 }
 
+// EVA
+void resetFormalArgsOffset() {
+    formalArgOffset = 0;
+}
+
+void resetFunctionLocalOffset() {
+    functionLocalOffset = 0;
+}
+
+void restoreCurrentScopeOffset(unsigned int offset) {
+    switch (getCurrentScopespace()) {
+        case PROGRAM_VAR: programVarOffset = offset;
+        case FORMAL_ARG: formalArgOffset = offset;
+        case FUNCTION_LOCAL: functionLocalOffset = offset;
+        default: assert(0);
+    }
+}
+
+std::string opcodeToString(Opcode opcode) {
+    switch (opcode) {
+        case OP_ASSIGN: return "assign";
+        case OP_ADD: return "add";
+        case OP_SUB: return "sub";
+        case OP_MUL: return "mul";
+        case OP_DIV: return "div";
+        case OP_MOD: return "mod";
+        case OP_UMINUS: return "uminus";
+        case OP_AND: return "and";
+        case OP_OR: return "or";
+        case OP_NOT: return "not";
+        case OP_IF_EQ: return "if_eq";
+        case OP_IF_NOTEQ: return "if_noteq";
+        case OP_IF_LESSEQ: return "if_lesseq";
+        case OP_IF_GREATEQ: return "if_greatereq";
+        case OP_IF_LESS: return "if_less";
+        case OP_IF_GREATER: return "if_greater";
+        case OP_JUMP: return "jump";
+        case OP_CALL: return "call";
+        case OP_PARAM: return "param";
+        case OP_RET: return "return";
+        case OP_GETRETVAL: return "getretval";
+        case OP_FUNCSTART: return "funcstart";
+        case OP_FUNCEND: return "funcend";
+        case OP_TABLECREATE: return "tablecreate";
+        case OP_TABLEGETELEM: return "tablegetelem";
+        case OP_TABLESETELEM: return "tablesetelem";
+        default: return "UNKNOWN";
+    }
+}
+
+// Extend for other cases
+Expr* symbolToExpr(Symbol* symbol) {
+    Expr* newExpr = new Expr;
+
+    switch(symbol->getType()) {
+        case USERFUNC: {
+            newExpr->type = USERFUNCTION_EXPR;
+            newExpr->value = symbol->getId();
+        }
+        default: break;
+    }
+
+    return newExpr;
+}
+
+unsigned int nextQuadLabel() {
+    return Quads.size();
+}
+
+void printQuads() {
+    std::cout << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;
+    std::cout << "=============================================================================" << std::endl;
+
+    for (auto it = Quads.begin(); it != Quads.end(); ++it) {
+        Quad* quad = *it;
+        std::cout << quad->label << ':';
+        std::cout << '\t' << opcodeToString(quad->opcode);
+
+        if (quad->result != NULL) std::cout << '\t' << std::get<std::string>(quad->result->value);
+        // Extend code for other fields
+
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl;
+}
+
 #endif
