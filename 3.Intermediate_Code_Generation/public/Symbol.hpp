@@ -137,7 +137,8 @@ public:
         return (qm + m_id + qm + sp + \
             lb + enum_str[m_type] + rb + sp + \
             lp + "line " + std::to_string(m_line) + rp + sp + \
-            lp + "scope " + std::to_string(m_scope) + rp + sp
+            lp + "scope " + std::to_string(m_scope) + rp + sp + \
+            lp + "offset " + std::to_string(m_offset) + rp + sp
             );
     }
 

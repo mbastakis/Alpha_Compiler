@@ -51,6 +51,8 @@ typedef enum {   //expression type
 
 typedef struct {
     Expr_T type;
+    Symbol* symbol;
+    //Expr* next;
     std::variant<std::string, double, bool> value;
 } Expr;
 
@@ -107,7 +109,7 @@ void exitScopepace() {
 }
 
 void incCurrentScopeOffset() {
-    switch (getCurrentScopeOffset()) {
+    switch (getCurrentScopespace()) {
     case PROGRAM_VAR:
         ++programVarOffset;
         break;
@@ -181,9 +183,15 @@ void resetFunctionLocalOffset() {
 
 void restoreCurrentScopeOffset(unsigned int offset) {
     switch (getCurrentScopespace()) {
-        case PROGRAM_VAR: programVarOffset = offset;
-        case FORMAL_ARG: formalArgOffset = offset;
-        case FUNCTION_LOCAL: functionLocalOffset = offset;
+        case PROGRAM_VAR:
+            programVarOffset = offset;
+            break;
+        case FORMAL_ARG:
+            formalArgOffset = offset;
+            break;
+        case FUNCTION_LOCAL:
+            functionLocalOffset = offset;
+            break;
         default: assert(0);
     }
 }
@@ -227,6 +235,7 @@ Expr* symbolToExpr(Symbol* symbol) {
     switch(symbol->getType()) {
         case USERFUNC: {
             newExpr->type = USERFUNCTION_EXPR;
+            newExpr->symbol = symbol;
             newExpr->value = symbol->getId();
         }
         default: break;
@@ -240,6 +249,7 @@ unsigned int nextQuadLabel() {
 }
 
 void printQuads() {
+    std::cout << std::endl;
     std::cout << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;
     std::cout << "=============================================================================" << std::endl;
 
