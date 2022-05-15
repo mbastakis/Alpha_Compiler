@@ -36,7 +36,7 @@ typedef enum {
     OP_TABLESETELEM
 } Opcode;
 
-typedef enum {
+typedef enum {   //expression type
     CONST_NUMBER_EXPR,
     NUMBER_EXPR,
     CONST_BOOLEAN_EXPR,
