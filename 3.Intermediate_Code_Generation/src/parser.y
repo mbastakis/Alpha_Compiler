@@ -328,7 +328,6 @@ lvalue
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) {// If no symbol was found.
-            std::cout << "New id: " << $1 << " scopespace: " << getCurrentScopespace() << std::endl;
             $$ = new Symbol($1, type, yylineno, currentScope, false);
             $$->setOffset(getCurrentScopeOffset());
             incCurrentScopeOffset();
@@ -493,7 +492,6 @@ funcprefix
             symtable.insert(function_symbol);
             $$ = function_symbol;
             emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol) , nextQuadLabel(), yylineno);
-            std::cout << "Entering function " << currentFunctionName << " curr offset " << getCurrentScopeOffset() << std::endl;
             incCurrentScopeOffset();
         }
     }
@@ -596,7 +594,6 @@ idlist
             } else if (function->containsArgument($1)){
                 yyerror("formal argument redeclaration.");
             } else {
-                std::cout << "new formal: " << $1 << std::endl;
                 Symbol* newSym = new Symbol($1, FORMALVAR, yylineno, currentScope+1, true);
                 newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);
@@ -617,7 +614,6 @@ nextid
             } else if (function->containsArgument($2)){
                 yyerror("formal argument redeclaration.");
             } else {
-                std::cout << "new formal: " << $2 << std::endl;
                 Symbol* newSym = new Symbol($2, FORMALVAR, yylineno, currentScope+1, true);
                 newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);

@@ -112,15 +112,12 @@ void incCurrentScopeOffset() {
     switch (getCurrentScopespace()) {
     case PROGRAM_VAR:
         ++programVarOffset;
-        std::cout << "Incremented current program offset: " << programVarOffset << std::endl;
         break;
     case FORMAL_ARG:
         ++formalArgOffset;
-        std::cout << "Incremented current formal offset: " << formalArgOffset << std::endl;
         break;
     case FUNCTION_LOCAL:
         ++functionLocalOffset;
-        std::cout << "Incremented current local offset: " << functionLocalOffset << std::endl;
         break;
     default:
         assert(0);
