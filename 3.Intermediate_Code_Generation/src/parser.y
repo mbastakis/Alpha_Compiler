@@ -77,6 +77,7 @@
     double real;
     char* string;
     unsigned int expression;
+    //Expr* expression;
     Symbol* symbol;
 }
 
@@ -104,9 +105,10 @@
 %type<expression> const
 %type<symbol> lvalue
 // EVA
-// %type<unsigned int> funcbody
-// %type<symbol> funcprefix
-// %type<symbol> funcdef
+// %type<string> funcname
+%type<integer> funcbody
+%type<symbol> funcprefix
+%type<symbol> funcdef
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -325,8 +327,12 @@ lvalue
         Symbol* search = symtable.recursiveLookup($1, currentScope, blockStack);
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
-        if( search == NULL ) // If no symbol was found.
+        if( search == NULL ) {// If no symbol was found.
+            std::cout << "New id: " << $1 << " scopespace: " << getCurrentScopespace() << std::endl;
             $$ = new Symbol($1, type, yylineno, currentScope, false);
+            $$->setOffset(getCurrentScopeOffset());
+            incCurrentScopeOffset();
+        }
         else {
             if( search->getType() == SYMERROR ) {
                 yyerror("cannot access this variable.");
@@ -348,7 +354,7 @@ lvalue
             $$ = NULL;
         }
 
-
+        incCurrentScopeOffset();
 
     }
     | DOUBLE_COLON ID {
@@ -459,96 +465,107 @@ block
     };
 
 // EVA
-// funcname
-//     : ID {
-//         currentFunctionName = $1;
-//     }
-//     | %empty {
-//         currentFunctionName = "_f" + std::to_string(newNameFunction++);
-//     }
-//     ;
+funcname
+    : ID {
+        currentFunctionName = $1;
+    }
+    | %empty {
+        currentFunctionName = "_f" + std::to_string(newNameFunction++);
+    }
+    ;
 
-// funcprefix
-//     : FUNCTION {currentLine = yylineno;} funcname {
-//         scopeOffsetStack.push(getCurrentScopeOffset());
-//         incCurrentScopeOffset();
-//         resetFormalArgsOffset();
+funcprefix
+    : FUNCTION {currentLine = yylineno;} funcname {
+        // currentFunctionName = "_Error_";
+        // functionStack.push($3);
+        scopeOffsetStack.push(getCurrentScopeOffset());
+        incCurrentScopeOffset();
+        resetFormalArgsOffset();
 
-//         if(symtable.contains(currentFunctionName, LIBRARYFUNC)) {
-//             yyerror("function shadows library function.");
-//         } else if (symtable.scopeLookup(currentFunctionName, currentScope) != NULL) {
-//             yyerror("function already exists.");
-//         } else {
-//             functionStack.push(currentFunctionName);
-//             Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
-//             symtable.insert(function_symbol);
-//             $$ = function_symbol;
-//             emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol) , nextQuadLabel(), yylineno);
-//             scopeOffsetStack.push(getCurrentScopeOffset());
-//             incCurrentScopeOffset();
-//         }
-//     }
-//     ;
-
-// funcargs
-//     : LEFT_PARENTHESES {
-//         enterScopespace();
-//         scopeOffsetStack.push(getCurrentScopeOffset());
-//     } idlist {functionOpen++; isFunc = true; resetFunctionLocalOffset(); } RIGHT_PARENTHESES {
-//         functionOpen--;
-//     }
-//     ;
-
-// funcbody
-//     : block {
-//         functionOpen--;
-//         functionStack.pop();
-//         // $$ = getCurrentScopeOffset();
-//         exitScopepace();
-//     }
-//     ;
-
-// funcdef
-//     : funcprefix funcargs {
-//         enterScopespace();
-//         resetFunctionLocalOffset();
-//     } funcbody {
-//         exitScopepace();
-//         functionOpen--;
-
-//         // todo
-//     }
-//     ;
-
-funcdef
-    : FUNCTION {currentLine = yylineno;} ID {
-        currentFunctionName = "_Error_";
-        functionStack.push($3);
-        if(symtable.contains($3, LIBRARYFUNC)) {
+        if(symtable.contains(currentFunctionName, LIBRARYFUNC)) {
             yyerror("function shadows library function.");
-        } else if (symtable.scopeLookup($3, currentScope) != NULL) {
+        } else if (symtable.scopeLookup(currentFunctionName, currentScope) != NULL) {
             yyerror("function already exists.");
         } else {
-            symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
-            currentFunctionName = $3;
+            functionStack.push(currentFunctionName);
+            Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
+            // function_symbol->setOffset(getCurrentScopeOffset());
+            symtable.insert(function_symbol);
+            $$ = function_symbol;
+            emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol) , nextQuadLabel(), yylineno);
+            std::cout << "Entering function " << currentFunctionName << " curr offset " << getCurrentScopeOffset() << std::endl;
+            incCurrentScopeOffset();
         }
-
-
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
-        functionOpen--;
-        functionStack.pop();
     }
-    | FUNCTION{
-        currentLine = yylineno;
-        newName= "_f" + std::to_string(newNameFunction++);
-        functionStack.push(newName);
-        symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
-        currentFunctionName = newName;
+    ;
 
-    } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
+funcargs
+    : LEFT_PARENTHESES {
+        enterScopespace();
+        scopeOffsetStack.push(getCurrentScopeOffset());
+    } idlist {
+        resetFunctionLocalOffset();
+    } RIGHT_PARENTHESES {
+        functionOpen++;
+        isFunc = true;
+        enterScopespace();
+        resetFunctionLocalOffset();
+    }
+    ;
+
+funcbody
+    : block {
+        restoreCurrentScopeOffset(scopeOffsetStack.top());
+        scopeOffsetStack.pop();
+        exitScopepace();
+        $$ = getCurrentScopeOffset();
+    }
+    ;
+
+funcdef
+    : funcprefix funcargs {
+        enterScopespace();
+        resetFunctionLocalOffset();
+    } funcbody {
+        exitScopepace();
         functionOpen--;
+        Symbol* function_symbol = new Symbol(functionStack.top(), USERFUNC, currentLine, currentScope, true);
         functionStack.pop();
-    };
+        emit(OP_FUNCEND, NULL, NULL, symbolToExpr(function_symbol), nextQuadLabel(), yylineno);
+        restoreCurrentScopeOffset(scopeOffsetStack.top());
+        scopeOffsetStack.pop();
+    }
+    ;
+
+// funcdef
+//     : FUNCTION {currentLine = yylineno;} ID {
+//         currentFunctionName = "_Error_";
+//         functionStack.push($3);
+//         if(symtable.contains($3, LIBRARYFUNC)) {
+//             yyerror("function shadows library function.");
+//         } else if (symtable.scopeLookup($3, currentScope) != NULL) {
+//             yyerror("function already exists.");
+//         } else {
+//             symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
+//             currentFunctionName = $3;
+//         }
+
+
+//     } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
+//         functionOpen--;
+//         functionStack.pop();
+//     }
+//     | FUNCTION{
+//         currentLine = yylineno;
+//         newName= "_f" + std::to_string(newNameFunction++);
+//         functionStack.push(newName);
+//         symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
+//         currentFunctionName = newName;
+
+//     } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
+//         functionOpen--;
+//         functionStack.pop();
+//     };
 
 const
     : INTEGER {
@@ -579,9 +596,12 @@ idlist
             } else if (function->containsArgument($1)){
                 yyerror("formal argument redeclaration.");
             } else {
+                std::cout << "new formal: " << $1 << std::endl;
                 Symbol* newSym = new Symbol($1, FORMALVAR, yylineno, currentScope+1, true);
+                newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);
                 function->insertArgument(newSym);
+                incCurrentScopeOffset();
             }
         }
     }
@@ -597,9 +617,12 @@ nextid
             } else if (function->containsArgument($2)){
                 yyerror("formal argument redeclaration.");
             } else {
+                std::cout << "new formal: " << $2 << std::endl;
                 Symbol* newSym = new Symbol($2, FORMALVAR, yylineno, currentScope+1, true);
+                newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);
                 function->insertArgument(newSym);
+                incCurrentScopeOffset();
             }
         }
     }

@@ -1,0 +1,18 @@
+a = 1;
+b = 2;
+c = 3;
+d = 4;
+
+function (k, l, m, n) {}
+
+
+function () {}
+function f() {}
+function f2(x, y) {
+	z = 1;
+	w = 1;
+	q = 1;
+}
+
+e = 5;
+
