@@ -105,7 +105,7 @@
 %type<expression> const
 %type<symbol> lvalue
 // EVA
-// %type<string> funcname
+// %type<string> funcname  //!!!!!
 %type<integer> funcbody
 %type<symbol> funcprefix
 %type<symbol> funcdef
@@ -139,6 +139,7 @@ statements
 
 stmt
     : expr SEMICOLON {
+        std::cout << $1 << std::endl;
     }
     | ifstmt {
     }
@@ -166,10 +167,15 @@ stmt
 
 expr
     : assignexpr {
+      //  std::cout std::endl;
     }
     | expr ADDITION expr {
-        if( !isValidArithmeticOperation($1, $3) )
+         std::cout << "now" <<  $1 << std::endl;
+        if( !isValidArithmeticOperation($1, $3) ) //search for quad result type
             yyerror("Cannot add non numeric value");
+        else {
+
+        }
     }
     | expr SUBTRACTION expr {
         if( !isValidArithmeticOperation($1, $3) )
@@ -213,7 +219,7 @@ expr
             yyerror("Cannot compare with a function");
     }
     | expr AND expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE) //den isxuei, tha einai true
             yyerror("Cannot compare with a function");
     }
     | expr OR expr {
@@ -284,6 +290,7 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
+         std::cout << "assignexpr" << std::endl;
         Symbol* symbol = $1;
 
         if( symbol == NULL ); // An error came up, ignore.
@@ -297,6 +304,7 @@ assignexpr
 
 primary
     : lvalue {
+        std::cout << "primary" << std::endl;
         Symbol* symbol = $1;
 
         if( symbol == NULL ); // An error came up ignore.
@@ -320,16 +328,18 @@ primary
     }
     | const {
         $$ = $1;
+        std::cout << "primary: " << $$ << std::endl;
     };
 
 lvalue
     : ID {
+         std::cout << "id" << std::endl;
         Symbol* search = symtable.recursiveLookup($1, currentScope, blockStack);
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) {// If no symbol was found.
-            $$ = new Symbol($1, type, yylineno, currentScope, false);
-            $$->setOffset(getCurrentScopeOffset());
+            $$ = new Symbol($1, type, yylineno, currentScope, false); //set the current scope space 
+            $$->setOffset(getCurrentScopeOffset()); 
             incCurrentScopeOffset();
         }
         else {
@@ -346,7 +356,7 @@ lvalue
 
         if( search != NULL && search->getScope() == currentScope )
             $$ = search;
-        else if( !symtable.contains($2, LIBRARYFUNC) )
+        else if( !symtable.contains($2, LIBRARYFUNC) )  //set the current scope space and offset
             $$ = new Symbol($2, type, yylineno, currentScope, false);
         else if( symtable.contains($2, LIBRARYFUNC) ) {
             yyerror("trying to shadow a Library Function.");
@@ -491,7 +501,7 @@ funcprefix
             // function_symbol->setOffset(getCurrentScopeOffset());
             symtable.insert(function_symbol);
             $$ = function_symbol;
-            emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol) , nextQuadLabel(), yylineno);
+            emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol) , nextQuadLabel(), yylineno); //!!!!!!
             incCurrentScopeOffset();
         }
     }
@@ -567,12 +577,14 @@ funcdef
 
 const
     : INTEGER {
+         std::cout << "const" << std::endl;
         $$ = CONST_NUMBER_EXPR;
     }
     | REAL{
         $$ = CONST_NUMBER_EXPR;
     }
     | STRING{
+        std::cout << "const STRING" << std::endl;
         $$ = CONST_STRING_EXPR;
     }
     | NIL{
@@ -625,18 +637,43 @@ nextid
     | %empty
     ;
 
+ifprefix 
+    : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+
+    };
+
+elseprefix
+    : ELSE {
+
+    };
+
 ifstmt
-    : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
+    : ifprefix stmt %prec PUREIF {
     }
-    | IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
+    | ifprefix stmt elseprefix stmt {
+    };
+
+whilestart
+    : WHILE {
+
+    };
+
+whilecond
+    : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+
     };
 
 whilestmt
-    : WHILE{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmtOpen--;} {
+    : whilestart{currentLine = yylineno; stmtOpen++;} whilecond stmt {stmtOpen--;} {
+    };
+
+forprefix
+    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON {
+
     };
 
 forstmt
-    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
+    :  forprefix elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
 
     };
 

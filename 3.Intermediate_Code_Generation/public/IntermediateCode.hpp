@@ -68,7 +68,7 @@ typedef struct {
 /* Global Variables */
 extern std::vector<Quad*> Quads;
 extern SymbolTable symtable;
-extern unsigned int currentScope;
+extern unsigned int currentScope; //we never initialize this
 extern int yylineno;
 
 extern unsigned int programVarOffset;
@@ -76,6 +76,45 @@ extern unsigned int functionLocalOffset;
 extern unsigned int formalArgOffset;
 extern unsigned int scopeSpaceCounter;
 unsigned int tempNameCounter = 1;
+
+void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
+    unsigned int label) {
+
+    Quad* newQuad = new Quad();
+    newQuad->arg1 = arg1;
+    newQuad->arg2 = arg2;
+    newQuad->result = result;
+    newQuad->line = line;
+    newQuad->label = label;
+    newQuad->opcode = op;
+
+    Quads.push_back(newQuad);
+}
+
+std::string newTempName() {
+    return std::string("$") + std::to_string(tempNameCounter++);
+}
+
+void resetTemp() {
+
+    auto symList = symtable.getSymbols(currentScope);
+    for (auto it = symList.begin(); it != symList.end(); it++) {  //delete all the temporary symbols from current scope
+        std::string id = (*it)->getId();
+        if (id[0] == '$') symtable.removeSymbol(id, currentScope);
+    }
+
+    tempNameCounter = 1;
+}
+
+//for creating a new temporary variable
+Symbol* newTempSymbol() {
+    std::string name = newTempName();
+    Symbol* symbol = symtable.scopeLookup(name, currentScope);
+    if (symbol == NULL)
+        return new Symbol(name, LOCALVAR, yylineno, currentScope, true);
+    else
+        return symbol;
+}
 
 Scopespace_T getCurrentScopespace() {
     if (scopeSpaceCounter == 1)
@@ -99,15 +138,6 @@ unsigned int getCurrentScopeOffset() {
     }
 }
 
-void enterScopespace() {
-    ++scopeSpaceCounter;
-}
-
-void exitScopepace() {
-    assert(scopeSpaceCounter > 1);
-    --scopeSpaceCounter;
-}
-
 void incCurrentScopeOffset() {
     switch (getCurrentScopespace()) {
     case PROGRAM_VAR:
@@ -124,42 +154,13 @@ void incCurrentScopeOffset() {
     }
 }
 
-void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
-    unsigned int label) {
-
-    Quad* newQuad = new Quad();
-    newQuad->arg1 = arg1;
-    newQuad->arg2 = arg2;
-    newQuad->result = result;
-    newQuad->line = line;
-    newQuad->label = label;
-    newQuad->opcode = op;
-
-    Quads.push_back(newQuad);
+void enterScopespace() {
+    ++scopeSpaceCounter;
 }
 
-std::string newTempName() {
-    return std::string("$") + std::to_string(tempNameCounter++);
-}
-
-void resetTemp() {
-
-    auto symList = symtable.getSymbols(currentScope);
-    for (auto it = symList.begin(); it != symList.end(); it++) {
-        std::string id = (*it)->getId();
-        if (id[0] == '$') symtable.removeSymbol(id, currentScope);
-    }
-
-    tempNameCounter = 1;
-}
-
-Symbol* newTempSymbol() {
-    std::string name = newTempName();
-    Symbol* symbol = symtable.scopeLookup(name, currentScope);
-    if (symbol == NULL)
-        return new Symbol(name, LOCALVAR, yylineno, currentScope, true);
-    else
-        return symbol;
+void exitScopepace() {
+    assert(scopeSpaceCounter > 1);
+    --scopeSpaceCounter;
 }
 
 bool isValidArithmeticOperation(unsigned int e1, unsigned int e2) {
@@ -232,17 +233,23 @@ std::string opcodeToString(Opcode opcode) {
 Expr* symbolToExpr(Symbol* symbol) {
     Expr* newExpr = new Expr;
 
+    newExpr->symbol = symbol;
+    newExpr->value = symbol->getId();
     switch(symbol->getType()) {
-        case USERFUNC: {
-            newExpr->type = USERFUNCTION_EXPR;
-            newExpr->symbol = symbol;
-            newExpr->value = symbol->getId();
-        }
+        case USERFUNC: newExpr->type = USERFUNCTION_EXPR;
+        case LIBRARYFUNC: newExpr->type = LIBRARYFUNCTION_EXPR;
+        
         default: break;
     }
 
     return newExpr;
 }
+
+
+//function patchlabel sel.10 II
+
+//function lvalue_exp sel.18 II
+
 
 unsigned int nextQuadLabel() {
     return Quads.size();
