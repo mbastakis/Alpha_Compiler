@@ -52,8 +52,7 @@ typedef enum {   //expression type
 typedef struct {
     Expr_T type;
     Symbol* symbol;
-    //Expr* next;
-    std::variant<std::string, double, bool> value;
+    std::variant<std::string, int, double, bool> value;
 } Expr;
 
 typedef struct {
@@ -75,6 +74,7 @@ extern unsigned int programVarOffset;
 extern unsigned int functionLocalOffset;
 extern unsigned int formalArgOffset;
 extern unsigned int scopeSpaceCounter;
+<<<<<<< HEAD
 unsigned int tempNameCounter = 1;
 
 void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
@@ -172,64 +172,42 @@ bool isValidArithmeticOperation(unsigned int e1, unsigned int e2) {
             e2 == VAR_EXPR)) return true;
     return false;
 }
+=======
+extern unsigned int tempNameCounter;
+
+Scopespace_T getCurrentScopespace();
+
+unsigned int getCurrentScopeOffset();
+
+void enterScopespace();
+
+void exitScopepace();
+
+void incCurrentScopeOffset();
+
+void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
+    unsigned int label);
+
+std::string newTempName();
+
+void resetTemp();
+
+Symbol* newTempSymbol();
+
+bool isValidArithmeticOperation(Expr* e1, Expr* e2);
+>>>>>>> origin/eva
 
 // EVA
-void resetFormalArgsOffset() {
-    formalArgOffset = 0;
-}
+void resetFormalArgsOffset();
 
-void resetFunctionLocalOffset() {
-    functionLocalOffset = 0;
-}
+void resetFunctionLocalOffset();
 
-void restoreCurrentScopeOffset(unsigned int offset) {
-    switch (getCurrentScopespace()) {
-        case PROGRAM_VAR:
-            programVarOffset = offset;
-            break;
-        case FORMAL_ARG:
-            formalArgOffset = offset;
-            break;
-        case FUNCTION_LOCAL:
-            functionLocalOffset = offset;
-            break;
-        default: assert(0);
-    }
-}
+void restoreCurrentScopeOffset(unsigned int offset);
 
-std::string opcodeToString(Opcode opcode) {
-    switch (opcode) {
-        case OP_ASSIGN: return "assign";
-        case OP_ADD: return "add";
-        case OP_SUB: return "sub";
-        case OP_MUL: return "mul";
-        case OP_DIV: return "div";
-        case OP_MOD: return "mod";
-        case OP_UMINUS: return "uminus";
-        case OP_AND: return "and";
-        case OP_OR: return "or";
-        case OP_NOT: return "not";
-        case OP_IF_EQ: return "if_eq";
-        case OP_IF_NOTEQ: return "if_noteq";
-        case OP_IF_LESSEQ: return "if_lesseq";
-        case OP_IF_GREATEQ: return "if_greatereq";
-        case OP_IF_LESS: return "if_less";
-        case OP_IF_GREATER: return "if_greater";
-        case OP_JUMP: return "jump";
-        case OP_CALL: return "call";
-        case OP_PARAM: return "param";
-        case OP_RET: return "return";
-        case OP_GETRETVAL: return "getretval";
-        case OP_FUNCSTART: return "funcstart";
-        case OP_FUNCEND: return "funcend";
-        case OP_TABLECREATE: return "tablecreate";
-        case OP_TABLEGETELEM: return "tablegetelem";
-        case OP_TABLESETELEM: return "tablesetelem";
-        default: return "UNKNOWN";
-    }
-}
+std::string opcodeToString(Opcode opcode);
 
 // Extend for other cases
+<<<<<<< HEAD
 Expr* symbolToExpr(Symbol* symbol) {
     Expr* newExpr = new Expr;
 
@@ -273,5 +251,26 @@ void printQuads() {
 
     std::cout << std::endl;
 }
+=======
+Expr* symbolToExpr(Symbol* symbol);
+
+Expr* newNilExpr();
+
+Expr* newBoolExpr(std::string value);
+
+Expr* newStringExpr(std::string value);
+
+Expr* newIntegerExpr(int value);
+
+Expr* newDoubleExpr(double value);
+
+bool isFunctionExpr(Expr* expr);
+
+unsigned int nextQuadLabel();
+
+std::string exprValueToString(Expr* expr);
+
+void printQuads();
+>>>>>>> origin/eva
 
 #endif

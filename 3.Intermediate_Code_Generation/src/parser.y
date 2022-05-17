@@ -44,6 +44,7 @@
     unsigned int functionLocalOffset;
     unsigned int formalArgOffset;
     unsigned int scopeSpaceCounter;
+    unsigned int tempNameCounter;
 
     /* Quad */
     std::vector<Quad*> Quads;
@@ -76,8 +77,7 @@
     int integer;
     double real;
     char* string;
-    unsigned int expression;
-    //Expr* expression;
+    Expr* expression;
     Symbol* symbol;
 }
 
@@ -103,7 +103,7 @@
 %type<expression> term
 %type<expression> primary
 %type<expression> const
-%type<symbol> lvalue
+%type<expression> lvalue
 // EVA
 // %type<string> funcname  //!!!!!
 %type<integer> funcbody
@@ -195,35 +195,39 @@ expr
             yyerror("Cannot do the mod operation with non numeric value");
     }
     | expr GREATER_THAN expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if(isFunctionExpr($1) || isFunctionExpr($3))
             yyerror("Cannot compare with a function");
     }
     | expr LESS_THAN expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if(isFunctionExpr($1) || isFunctionExpr($3))
             yyerror("Cannot compare with a function");
     }
     | expr GREATER_OR_EQUAL expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if(isFunctionExpr($1) || isFunctionExpr($3))
             yyerror("Cannot compare with a function");
     }
     | expr LESS_OR_EQUAL expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if(isFunctionExpr($1) || isFunctionExpr($3))
             yyerror("Cannot compare with a function");
     }
     | expr EQUALITY expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if(isFunctionExpr($1) || isFunctionExpr($3))
             yyerror("Cannot compare with a function");
     }
     | expr INEQUALITY expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if(isFunctionExpr($1) || isFunctionExpr($3))
             yyerror("Cannot compare with a function");
     }
     | expr AND expr {
+<<<<<<< HEAD
         if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE) //den isxuei, tha einai true
+=======
+        if(isFunctionExpr($1) || isFunctionExpr($3))
+>>>>>>> origin/eva
             yyerror("Cannot compare with a function");
     }
     | expr OR expr {
-        if( $1 == FUNCTION_TYPE || $3 == FUNCTION_TYPE)
+        if(isFunctionExpr($1) || isFunctionExpr($3))
             yyerror("Cannot compare with a function");
     }
     | term {
@@ -238,7 +242,7 @@ term
     | NOT expr {
     }
     | INCREMENT lvalue {
-        Symbol* symbol = $2;
+        Symbol* symbol = $2->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -249,7 +253,7 @@ term
         }
     }
     | lvalue INCREMENT {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -260,7 +264,7 @@ term
         }
     }
     | DECREMENT lvalue {
-        Symbol* symbol = $2;
+        Symbol* symbol = $2->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -271,7 +275,7 @@ term
         }
     }
     | lvalue DECREMENT {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -290,8 +294,12 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
+<<<<<<< HEAD
          std::cout << "assignexpr" << std::endl;
         Symbol* symbol = $1;
+=======
+        Symbol* symbol = $1->symbol;
+>>>>>>> origin/eva
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC) { // The symbol is a function.
@@ -300,12 +308,18 @@ assignexpr
             symbol->setActive(true);
             symtable.insert(symbol);
         }
+
+        emit(OP_ASSIGN, $3, NULL, $1 , yylineno, nextQuadLabel());
     };
 
 primary
     : lvalue {
+<<<<<<< HEAD
         std::cout << "primary" << std::endl;
         Symbol* symbol = $1;
+=======
+        Symbol* symbol = $1->symbol;
+>>>>>>> origin/eva
 
         if( symbol == NULL ); // An error came up ignore.
         else if( !symbol->isActive() ) {
@@ -314,11 +328,11 @@ primary
         }
 
         if( symbol != NULL && symbol->getType() == USERFUNC)
-            $$ = USERFUNCTION_EXPR;
+            $$->type = USERFUNCTION_EXPR;
         else if(symbol != NULL && symbol->getType() == LIBRARYFUNC)
-            $$ = LIBRARYFUNCTION_EXPR;
+            $$->type = LIBRARYFUNCTION_EXPR;
         else
-            $$ = VAR_EXPR;
+            $$->type = VAR_EXPR;
     }
     | call {
     }
@@ -338,16 +352,23 @@ lvalue
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) {// If no symbol was found.
+<<<<<<< HEAD
             $$ = new Symbol($1, type, yylineno, currentScope, false); //set the current scope space 
             $$->setOffset(getCurrentScopeOffset()); 
+=======
+            Symbol* newSymbol = new Symbol($1, type, yylineno, currentScope, false);
+            newSymbol->setOffset(getCurrentScopeOffset());
+            symtable.insert(newSymbol);
+>>>>>>> origin/eva
             incCurrentScopeOffset();
+            $$ = symbolToExpr(newSymbol);
         }
         else {
             if( search->getType() == SYMERROR ) {
                 yyerror("cannot access this variable.");
                 $$ = NULL;
             }else
-                $$ = search;
+                $$ = symbolToExpr(search);
         }
     }
     | LOCAL ID {
@@ -355,9 +376,15 @@ lvalue
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search != NULL && search->getScope() == currentScope )
+<<<<<<< HEAD
             $$ = search;
         else if( !symtable.contains($2, LIBRARYFUNC) )  //set the current scope space and offset
             $$ = new Symbol($2, type, yylineno, currentScope, false);
+=======
+            $$ = symbolToExpr(search);
+        else if( !symtable.contains($2, LIBRARYFUNC) )
+            $$ = symbolToExpr(new Symbol($2, type, yylineno, currentScope, false));
+>>>>>>> origin/eva
         else if( symtable.contains($2, LIBRARYFUNC) ) {
             yyerror("trying to shadow a Library Function.");
             $$ = NULL;
@@ -373,7 +400,7 @@ lvalue
             yyerror("the global symbol you are trying to access doesn't exist.");
             $$ = NULL;
         } else
-            $$ = search;
+            $$ = symbolToExpr(search);
 
     }
     | member {
@@ -382,7 +409,7 @@ lvalue
 
 member
     : lvalue DOT ID {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( !symbol->isActive() ) { // If the symbol doesn't exist.
@@ -391,7 +418,7 @@ member
         }
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( !symbol->isActive() ) { // If the symbol doesn't exist.
@@ -408,7 +435,7 @@ call
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
     }
     | lvalue callsufix {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if ( symbol == NULL ); // An error came up ignore.
         else if( !symbol->isActive() ) { // Symbol we are trying to call doesn't exist so we create it.
@@ -501,7 +528,11 @@ funcprefix
             // function_symbol->setOffset(getCurrentScopeOffset());
             symtable.insert(function_symbol);
             $$ = function_symbol;
+<<<<<<< HEAD
             emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol) , nextQuadLabel(), yylineno); //!!!!!!
+=======
+            emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol), yylineno, nextQuadLabel());
+>>>>>>> origin/eva
             incCurrentScopeOffset();
         }
     }
@@ -539,62 +570,42 @@ funcdef
         functionOpen--;
         Symbol* function_symbol = new Symbol(functionStack.top(), USERFUNC, currentLine, currentScope, true);
         functionStack.pop();
-        emit(OP_FUNCEND, NULL, NULL, symbolToExpr(function_symbol), nextQuadLabel(), yylineno);
+        emit(OP_FUNCEND, NULL, NULL, symbolToExpr(function_symbol), yylineno, nextQuadLabel());
         restoreCurrentScopeOffset(scopeOffsetStack.top());
         scopeOffsetStack.pop();
     }
     ;
 
-// funcdef
-//     : FUNCTION {currentLine = yylineno;} ID {
-//         currentFunctionName = "_Error_";
-//         functionStack.push($3);
-//         if(symtable.contains($3, LIBRARYFUNC)) {
-//             yyerror("function shadows library function.");
-//         } else if (symtable.scopeLookup($3, currentScope) != NULL) {
-//             yyerror("function already exists.");
-//         } else {
-//             symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
-//             currentFunctionName = $3;
-//         }
-
-
-//     } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
-//         functionOpen--;
-//         functionStack.pop();
-//     }
-//     | FUNCTION{
-//         currentLine = yylineno;
-//         newName= "_f" + std::to_string(newNameFunction++);
-//         functionStack.push(newName);
-//         symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
-//         currentFunctionName = newName;
-
-//     } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
-//         functionOpen--;
-//         functionStack.pop();
-//     };
-
 const
     : INTEGER {
+<<<<<<< HEAD
          std::cout << "const" << std::endl;
         $$ = CONST_NUMBER_EXPR;
+=======
+        $$ = newIntegerExpr($1);
+        // std::cout << "Integer " << yylval.integer << std::endl;
+        $$->value = yylval.integer;
+>>>>>>> origin/eva
     }
     | REAL{
-        $$ = CONST_NUMBER_EXPR;
+        $$ = newDoubleExpr($1);
     }
     | STRING{
+<<<<<<< HEAD
         std::cout << "const STRING" << std::endl;
         $$ = CONST_STRING_EXPR;
+=======
+        $$ = newStringExpr($1);
+>>>>>>> origin/eva
     }
     | NIL{
-        $$ = NIL_EXPR;
+        $$ = newNilExpr();
     }
     | TRUE{
-        $$ = CONST_BOOLEAN_EXPR;
+        $$ = newBoolExpr($1);
     }
     | FALSE{
-        $$ = CONST_BOOLEAN_EXPR;
+        $$ = newBoolExpr($1);
     };
 
 idlist
@@ -721,6 +732,7 @@ int main(int argc, char** argv) {
     functionLocalOffset = 0;
     formalArgOffset = 0;
     scopeSpaceCounter = 1;
+    tempNameCounter = 1;
 
     Quads = std::vector<Quad*>();
 
