@@ -1,11 +1,12 @@
 /* Definitions */
-%{  
+%{
     #include <iostream>
     #include <string>
     #include <stack>
     #include <cstring>
 
     #include "../public/Symbol.hpp"
+    #include "../public/IntermediateCode.hpp"
     #include "parser.h"
 
     // Globals
@@ -41,10 +42,10 @@
                         formatedString[j++] = '\\';
                         i++;
                         break;
-                    case '\"':    
+                    case '\"':
                         formatedString[j++] = '"';
                         i++;
-                        break;    
+                        break;
                     default:
                         yellow();
                         std::cerr << "Warning: In line " << yylineno << " invalid escape character found!" << std::endl;
@@ -121,169 +122,169 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
 /* Pattern Actions */
 %%
 {IF}                    {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (IF);
                         }
 {ELSE}                  {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (ELSE);
                         }
 {WHILE}                 {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (WHILE);
                         }
 {FOR}                   {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (FOR);
                         }
 {FUNCTION}              {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (FUNCTION);
                         }
 {RETURN}                {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (RETURN);
                         }
 {BREAK}                 {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (BREAK);
                         }
 {CONTINUE}              {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (CONTINUE);
                         }
 {AND}                   {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (AND);
                         }
 {NOT}                   {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (NOT);
                         }
 {OR}                    {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (OR);
                         }
 {LOCAL}                 {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (LOCAL);
                         }
 {TRUE}                  {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (TRUE);
                         }
 {FALSE}                 {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (FALSE);
                         }
 {NIL}                   {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (NIL);
                         }
 {ASSIGNMENT}            {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (ASSIGNMENT);
                         }
 {ADDITION}              {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (ADDITION);
                         }
 {SUBTRACTION}           {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (SUBTRACTION);
                         }
 {MULTIPLICATION}        {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (MULTIPLICATION);
                         }
 {DIVISION}              {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (DIVISION);
                         }
 {MODULO}                {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (MODULO);
                         }
 {EQUALITY}              {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (EQUALITY);
                         }
 {INEQUALITY}            {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (INEQUALITY);
                         }
 {INCREMENT}             {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (INCREMENT);
                         }
 {DECREMENT}             {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (DECREMENT);
                         }
 {GREATER_THAN}          {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (GREATER_THAN);
                         }
 {LESS_THAN}             {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (LESS_THAN);
                         }
 {GREATER_OR_EQUAL}      {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (GREATER_THAN);
                         }
 {LESS_OR_EQUAL}         {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (LESS_OR_EQUAL);
                         }
 {LEFT_CURLY_BRACKET}    {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (LEFT_CURLY_BRACKET);
                         }
 {RIGHT_CURLY_BRACKET}   {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (RIGHT_CURLY_BRACKET);
                         }
 {LEFT_SQUARE_BRACKET}   {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (LEFT_SQUARE_BRACKET);
                         }
 {RIGHT_SQUARE_BRACKET}  {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (RIGHT_SQUARE_BRACKET);
                         }
 {LEFT_PARENTHESES}      {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (LEFT_PARENTHESES);
                         }
 {RIGHT_PARENTHESES}     {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (RIGHT_PARENTHESES);
                         }
 {SEMICOLON}             {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (SEMICOLON);
                         }
 {COMMA}                 {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (COMMA);
                         }
 {COLON}                 {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (COLON);
                         }
 {DOUBLE_COLON}          {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (DOUBLE_COLON);
                         }
 {DOT}                   {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (DOT);
                         }
 {DOUBLE_DOT}            {
-                            if( state == DEFAULT ) 
+                            if( state == DEFAULT )
                                 return (DOUBLE_DOT);
-                        }                       
+                        }
 {BLOCK_COMMENT_OPEN}    {
                             if( state != LINE_COMMENT ) {
                                 commentStack.push(yylineno);
@@ -298,7 +299,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             }
                         }
 {ID}                    {
-                            
+
                             if( state == DEFAULT) {
                                 std::string str = std::string(yytext);
                                 char * cStr = strcpy(new char[str.length() + 1], str.c_str());
@@ -319,7 +320,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             }
                         }
 {DELIMITER}             {
-                            if(strcmp(yytext, "\n") == 0 && state == LINE_COMMENT) 
+                            if(strcmp(yytext, "\n") == 0 && state == LINE_COMMENT)
                                 state = DEFAULT;
                         }
 {STRING}                {

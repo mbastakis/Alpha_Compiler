@@ -52,8 +52,7 @@ typedef enum {
 typedef struct {
     Expr_T type;
     Symbol* symbol;
-    //Expr* next;
-    std::variant<std::string, double, bool> value;
+    std::variant<std::string, int, double, bool> value;
 } Expr;
 
 typedef struct {
@@ -75,196 +74,57 @@ extern unsigned int programVarOffset;
 extern unsigned int functionLocalOffset;
 extern unsigned int formalArgOffset;
 extern unsigned int scopeSpaceCounter;
-unsigned int tempNameCounter = 1;
+extern unsigned int tempNameCounter;
 
-Scopespace_T getCurrentScopespace() {
-    if (scopeSpaceCounter == 1)
-        return PROGRAM_VAR;
-    else if (scopeSpaceCounter % 2 == 0)
-        return FORMAL_ARG;
-    else
-        return FUNCTION_LOCAL;
-}
+Scopespace_T getCurrentScopespace();
 
-unsigned int getCurrentScopeOffset() {
-    switch (getCurrentScopespace()) {
-    case PROGRAM_VAR:
-        return programVarOffset;
-    case FORMAL_ARG:
-        return formalArgOffset;
-    case FUNCTION_LOCAL:
-        return functionLocalOffset;
-    default:
-        assert(0);
-    }
-}
+unsigned int getCurrentScopeOffset();
 
-void enterScopespace() {
-    ++scopeSpaceCounter;
-}
+void enterScopespace();
 
-void exitScopepace() {
-    assert(scopeSpaceCounter > 1);
-    --scopeSpaceCounter;
-}
+void exitScopepace();
 
-void incCurrentScopeOffset() {
-    switch (getCurrentScopespace()) {
-    case PROGRAM_VAR:
-        ++programVarOffset;
-        break;
-    case FORMAL_ARG:
-        ++formalArgOffset;
-        break;
-    case FUNCTION_LOCAL:
-        ++functionLocalOffset;
-        break;
-    default:
-        assert(0);
-    }
-}
+void incCurrentScopeOffset();
 
 void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
-    unsigned int label) {
+    unsigned int label);
 
-    Quad* newQuad = new Quad();
-    newQuad->arg1 = arg1;
-    newQuad->arg2 = arg2;
-    newQuad->result = result;
-    newQuad->line = line;
-    newQuad->label = label;
-    newQuad->opcode = op;
+std::string newTempName();
 
-    Quads.push_back(newQuad);
-}
+void resetTemp();
 
-std::string newTempName() {
-    return std::string("$") + std::to_string(tempNameCounter++);
-}
+Symbol* newTempSymbol();
 
-void resetTemp() {
-
-    auto symList = symtable.getSymbols(currentScope);
-    for (auto it = symList.begin(); it != symList.end(); it++) {
-        std::string id = (*it)->getId();
-        if (id[0] == '$') symtable.removeSymbol(id, currentScope);
-    }
-
-    tempNameCounter = 1;
-}
-
-Symbol* newTempSymbol() {
-    std::string name = newTempName();
-    Symbol* symbol = symtable.scopeLookup(name, currentScope);
-    if (symbol == NULL)
-        return new Symbol(name, LOCALVAR, yylineno, currentScope, true);
-    else
-        return symbol;
-}
-
-bool isValidArithmeticOperation(unsigned int e1, unsigned int e2) {
-    if ((e1 == NUMBER_EXPR ||
-        e1 == CONST_NUMBER_EXPR ||
-        e1 == VAR_EXPR) &&
-        (e2 == NUMBER_EXPR ||
-            e2 == CONST_NUMBER_EXPR ||
-            e2 == VAR_EXPR)) return true;
-    return false;
-}
+bool isValidArithmeticOperation(Expr* e1, Expr* e2);
 
 // EVA
-void resetFormalArgsOffset() {
-    formalArgOffset = 0;
-}
+void resetFormalArgsOffset();
 
-void resetFunctionLocalOffset() {
-    functionLocalOffset = 0;
-}
+void resetFunctionLocalOffset();
 
-void restoreCurrentScopeOffset(unsigned int offset) {
-    switch (getCurrentScopespace()) {
-        case PROGRAM_VAR:
-            programVarOffset = offset;
-            break;
-        case FORMAL_ARG:
-            formalArgOffset = offset;
-            break;
-        case FUNCTION_LOCAL:
-            functionLocalOffset = offset;
-            break;
-        default: assert(0);
-    }
-}
+void restoreCurrentScopeOffset(unsigned int offset);
 
-std::string opcodeToString(Opcode opcode) {
-    switch (opcode) {
-        case OP_ASSIGN: return "assign";
-        case OP_ADD: return "add";
-        case OP_SUB: return "sub";
-        case OP_MUL: return "mul";
-        case OP_DIV: return "div";
-        case OP_MOD: return "mod";
-        case OP_UMINUS: return "uminus";
-        case OP_AND: return "and";
-        case OP_OR: return "or";
-        case OP_NOT: return "not";
-        case OP_IF_EQ: return "if_eq";
-        case OP_IF_NOTEQ: return "if_noteq";
-        case OP_IF_LESSEQ: return "if_lesseq";
-        case OP_IF_GREATEQ: return "if_greatereq";
-        case OP_IF_LESS: return "if_less";
-        case OP_IF_GREATER: return "if_greater";
-        case OP_JUMP: return "jump";
-        case OP_CALL: return "call";
-        case OP_PARAM: return "param";
-        case OP_RET: return "return";
-        case OP_GETRETVAL: return "getretval";
-        case OP_FUNCSTART: return "funcstart";
-        case OP_FUNCEND: return "funcend";
-        case OP_TABLECREATE: return "tablecreate";
-        case OP_TABLEGETELEM: return "tablegetelem";
-        case OP_TABLESETELEM: return "tablesetelem";
-        default: return "UNKNOWN";
-    }
-}
+std::string opcodeToString(Opcode opcode);
 
 // Extend for other cases
-Expr* symbolToExpr(Symbol* symbol) {
-    Expr* newExpr = new Expr;
+Expr* symbolToExpr(Symbol* symbol);
 
-    switch(symbol->getType()) {
-        case USERFUNC: {
-            newExpr->type = USERFUNCTION_EXPR;
-            newExpr->symbol = symbol;
-            newExpr->value = symbol->getId();
-        }
-        default: break;
-    }
+Expr* newNilExpr();
 
-    return newExpr;
-}
+Expr* newBoolExpr(std::string value);
 
-unsigned int nextQuadLabel() {
-    return Quads.size();
-}
+Expr* newStringExpr(std::string value);
 
-void printQuads() {
-    std::cout << std::endl;
-    std::cout << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;
-    std::cout << "=============================================================================" << std::endl;
+Expr* newIntegerExpr(int value);
 
-    for (auto it = Quads.begin(); it != Quads.end(); ++it) {
-        Quad* quad = *it;
-        std::cout << quad->label << ':';
-        std::cout << '\t' << opcodeToString(quad->opcode);
+Expr* newDoubleExpr(double value);
 
-        if (quad->result != NULL) std::cout << '\t' << std::get<std::string>(quad->result->value);
-        // Extend code for other fields
+bool isFunctionExpr(Expr* expr);
 
-        std::cout << std::endl;
-    }
+unsigned int nextQuadLabel();
 
-    std::cout << std::endl;
-}
+std::string exprValueToString(Expr* expr);
+
+void printQuads();
 
 #endif
