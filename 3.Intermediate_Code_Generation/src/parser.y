@@ -166,6 +166,7 @@ stmt
 
 expr
     : assignexpr {
+        $$ = $1;
     }
     | expr ADDITION expr {
         if( !isValidArithmeticOperation($1, $3) )
@@ -290,29 +291,26 @@ assignexpr
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC) { // The symbol is a function.
             yyerror("cannot change the value of a function.");
         } else if( !symbol->isActive() ) { // The symbol didn't exist.
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            // symbol->setActive(true);
+            // symtable.insert(symbol);
         }
 
-        emit(OP_ASSIGN, $3, NULL, $1 , yylineno, nextQuadLabel());
+        emit(OP_ASSIGN, $1, NULL, $3 , yylineno, nextQuadLabel());
+
+        $$ = newExprType(ASSIGN_EXPR);
+        if(isTempSymbol($1->symbol)) {
+            $$->symbol = $1->symbol;
+        } else {
+            Symbol* newSymbol = newTempSymbol();
+            symtable.insert(newSymbol);
+            $$->symbol = newSymbol;
+            $$->value = newSymbol->getId();
+            emit(OP_ASSIGN, $$, NULL, $1, yylineno, nextQuadLabel());
+        }
     };
 
 primary
     : lvalue {
-        Symbol* symbol = $1->symbol;
-
-        if( symbol == NULL ); // An error came up ignore.
-        else if( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
-        }
-
-        if( symbol != NULL && symbol->getType() == USERFUNC)
-            $$->type = USERFUNCTION_EXPR;
-        else if(symbol != NULL && symbol->getType() == LIBRARYFUNC)
-            $$->type = LIBRARYFUNCTION_EXPR;
-        else
-            $$->type = VAR_EXPR;
     }
     | call {
     }
@@ -330,6 +328,7 @@ lvalue
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) {// If no symbol was found.
+            // std::cout << "New id: " << $1 << " scopespace: " << getCurrentScopespace() << std::endl;
             Symbol* newSymbol = new Symbol($1, type, yylineno, currentScope, false);
             newSymbol->setOffset(getCurrentScopeOffset());
             symtable.insert(newSymbol);
@@ -496,6 +495,7 @@ funcprefix
             symtable.insert(function_symbol);
             $$ = function_symbol;
             emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol), yylineno, nextQuadLabel());
+            // std::cout << "Entering function " << currentFunctionName << " curr offset " << getCurrentScopeOffset() << std::endl;
             incCurrentScopeOffset();
         }
     }
@@ -539,26 +539,54 @@ funcdef
     }
     ;
 
+// funcdef
+//     : FUNCTION {currentLine = yylineno;} ID {
+//         currentFunctionName = "_Error_";
+//         functionStack.push($3);
+//         if(symtable.contains($3, LIBRARYFUNC)) {
+//             yyerror("function shadows library function.");
+//         } else if (symtable.scopeLookup($3, currentScope) != NULL) {
+//             yyerror("function already exists.");
+//         } else {
+//             symtable.insert(new Symbol($3, USERFUNC, currentLine, currentScope, true));
+//             currentFunctionName = $3;
+//         }
+
+
+//     } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
+//         functionOpen--;
+//         functionStack.pop();
+//     }
+//     | FUNCTION{
+//         currentLine = yylineno;
+//         newName= "_f" + std::to_string(newNameFunction++);
+//         functionStack.push(newName);
+//         symtable.insert(new Symbol(newName, USERFUNC, currentLine, currentScope, true));
+//         currentFunctionName = newName;
+
+//     } LEFT_PARENTHESES idlist RIGHT_PARENTHESES {functionOpen++; isFunc = true;} block {
+//         functionOpen--;
+//         functionStack.pop();
+//     };
+
 const
     : INTEGER {
-        $$ = newIntegerExpr($1);
-        // std::cout << "Integer " << yylval.integer << std::endl;
-        $$->value = yylval.integer;
+        $$ = newIntegerExpr(yylval.integer);
     }
     | REAL{
-        $$ = newDoubleExpr($1);
+        $$ = newDoubleExpr(yylval.real);
     }
     | STRING{
-        $$ = newStringExpr($1);
+        $$ = newStringExpr(yylval.string);
     }
     | NIL{
         $$ = newNilExpr();
     }
     | TRUE{
-        $$ = newBoolExpr($1);
+        $$ = newBoolExpr(true);
     }
     | FALSE{
-        $$ = newBoolExpr($1);
+        $$ = newBoolExpr(false);
     };
 
 idlist
@@ -570,6 +598,7 @@ idlist
             } else if (function->containsArgument($1)){
                 yyerror("formal argument redeclaration.");
             } else {
+                // std::cout << "new formal: " << $1 << std::endl;
                 Symbol* newSym = new Symbol($1, FORMALVAR, yylineno, currentScope+1, true);
                 newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);
@@ -590,6 +619,7 @@ nextid
             } else if (function->containsArgument($2)){
                 yyerror("formal argument redeclaration.");
             } else {
+                // std::cout << "new formal: " << $2 << std::endl;
                 Symbol* newSym = new Symbol($2, FORMALVAR, yylineno, currentScope+1, true);
                 newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);

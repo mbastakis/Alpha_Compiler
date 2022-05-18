@@ -37,8 +37,10 @@ typedef enum {
 } Opcode;
 
 typedef enum {
-    CONST_NUMBER_EXPR,
-    NUMBER_EXPR,
+    CONST_INTEGER_EXPR,
+    INTEGER_EXPR,
+    CONST_REAL_EXPR,
+    REAL_EXPR,
     CONST_BOOLEAN_EXPR,
     BOOLEAN_EXPR,
     CONST_STRING_EXPR,
@@ -46,7 +48,8 @@ typedef enum {
     NIL_EXPR,
     USERFUNCTION_EXPR,
     LIBRARYFUNCTION_EXPR,
-    VAR_EXPR
+    VAR_EXPR,
+    ASSIGN_EXPR
 } Expr_T;
 
 typedef struct {
@@ -109,15 +112,19 @@ std::string opcodeToString(Opcode opcode);
 // Extend for other cases
 Expr* symbolToExpr(Symbol* symbol);
 
+Expr* newExprType(Expr_T type);
+
 Expr* newNilExpr();
 
-Expr* newBoolExpr(std::string value);
+Expr* newBoolExpr(bool value);
 
 Expr* newStringExpr(std::string value);
 
 Expr* newIntegerExpr(int value);
 
 Expr* newDoubleExpr(double value);
+
+bool isTempSymbol(Symbol* symbol);
 
 bool isFunctionExpr(Expr* expr);
 

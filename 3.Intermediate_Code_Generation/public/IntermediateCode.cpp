@@ -35,12 +35,15 @@ void incCurrentScopeOffset() {
     switch (getCurrentScopespace()) {
     case PROGRAM_VAR:
         ++programVarOffset;
+        // std::cout << "Incremented current program offset: " << programVarOffset << std::endl;
         break;
     case FORMAL_ARG:
         ++formalArgOffset;
+        // std::cout << "Incremented current formal offset: " << formalArgOffset << std::endl;
         break;
     case FUNCTION_LOCAL:
         ++functionLocalOffset;
+        // std::cout << "Incremented current local offset: " << functionLocalOffset << std::endl;
         break;
     default:
         assert(0);
@@ -86,11 +89,15 @@ Symbol* newTempSymbol() {
 }
 
 bool isValidArithmeticOperation(Expr* e1, Expr* e2) {
-    if ((e1->type == NUMBER_EXPR ||
-        e1->type == CONST_NUMBER_EXPR ||
+    if ((e1->type == CONST_INTEGER_EXPR ||
+        e1->type == INTEGER_EXPR ||
+        e1->type == CONST_REAL_EXPR ||
+        e1->type == REAL_EXPR ||
         e1->type == VAR_EXPR) &&
-        (e2->type == NUMBER_EXPR ||
-            e2->type == CONST_NUMBER_EXPR ||
+        (e2->type == CONST_INTEGER_EXPR ||
+            e2->type == INTEGER_EXPR ||
+            e2->type == CONST_REAL_EXPR ||
+            e2->type == REAL_EXPR ||
             e2->type == VAR_EXPR)) return true;
     return false;
 }
@@ -156,13 +163,34 @@ Expr* symbolToExpr(Symbol* symbol) {
     Expr* newExpr = new Expr;
 
     switch(symbol->getType()) {
-        case USERFUNC: {
+        case GLOBALVAR:
+        case LOCALVAR:
+        case FORMAL_ARG:
+            newExpr->type = VAR_EXPR;
+            newExpr->symbol = symbol;
+            newExpr->value = symbol->getId();
+            break;
+        case LIBRARYFUNC:
+            newExpr->type = LIBRARYFUNCTION_EXPR;
+            newExpr->symbol = symbol;
+            newExpr->value = symbol->getId();
+        case USERFUNC:
             newExpr->type = USERFUNCTION_EXPR;
             newExpr->symbol = symbol;
             newExpr->value = symbol->getId();
-        };
+            break;
+        case SYMERROR:
+            break;
         default: break;
     }
+
+    return newExpr;
+}
+
+Expr* newExprType(Expr_T type) {
+    Expr* newExpr = new Expr;
+
+    newExpr->type = type;
 
     return newExpr;
 }
@@ -175,11 +203,11 @@ Expr* newNilExpr() {
     return newExpr;
 }
 
-Expr* newBoolExpr(std::string value) {
+Expr* newBoolExpr(bool value) {
     Expr* newExpr = new Expr;
 
     newExpr->type = BOOLEAN_EXPR;
-    newExpr->value = value == "true";
+    newExpr->value = value;
 
     return newExpr;
 }
@@ -196,7 +224,7 @@ Expr* newStringExpr(std::string value) {
 Expr* newIntegerExpr(int value) {
     Expr* newExpr = new Expr;
 
-    newExpr->type = CONST_NUMBER_EXPR;
+    newExpr->type = CONST_INTEGER_EXPR;
     newExpr->value = value;
 
     return newExpr;
@@ -205,10 +233,14 @@ Expr* newIntegerExpr(int value) {
 Expr* newDoubleExpr(double value) {
     Expr* newExpr = new Expr;
 
-    newExpr->type = CONST_NUMBER_EXPR;
+    newExpr->type = CONST_REAL_EXPR;
     newExpr->value = value;
 
     return newExpr;
+}
+
+bool isTempSymbol(Symbol* symbol) {
+    return symbol->getId().rfind("$", 0) == 0;
 }
 
 bool isFunctionExpr(Expr* expr) {
@@ -221,12 +253,15 @@ unsigned int nextQuadLabel() {
 
 std::string exprValueToString(Expr* expr) {
     switch(expr->type) {
-        case CONST_NUMBER_EXPR:
-        case NUMBER_EXPR:
+        case CONST_INTEGER_EXPR:
+        case INTEGER_EXPR:
             return std::to_string(std::get<int>(expr->value));
+        case CONST_REAL_EXPR:
+        case REAL_EXPR:
+            return std::to_string(std::get<double>(expr->value));
         case CONST_BOOLEAN_EXPR:
         case BOOLEAN_EXPR:
-            return std::to_string(std::get<bool>(expr->value));
+            return std::get<bool>(expr->value) ? "true" : "false";
         case CONST_STRING_EXPR:
         case STRING_EXPR:
             return std::get<std::string>(expr->value);
@@ -235,10 +270,19 @@ std::string exprValueToString(Expr* expr) {
         case USERFUNCTION_EXPR:
         case LIBRARYFUNCTION_EXPR:
         case VAR_EXPR:
-            return "TEST";
+        case ASSIGN_EXPR:
+            return std::get<std::string>(expr->value);
         default:
             return "UKNOWN";
     }
+}
+
+std::string quadTabs(std::string value) {
+    if (value.length() < 8) {
+        return "\t\t";
+    }
+
+    return "\t";
 }
 
 void printQuads() {
@@ -248,13 +292,13 @@ void printQuads() {
 
     for (auto it = Quads.begin(); it != Quads.end(); ++it) {
         Quad* quad = *it;
+        std::string opcode = opcodeToString(quad->opcode);
         std::cout << quad->label << ':';
-        std::cout << '\t' << opcodeToString(quad->opcode);
+        std::cout << '\t' << opcode << quadTabs(opcode);
 
-        // if (quad->result != NULL) std::cout << '\t' << exprValueToString(quad->result);
-        if (quad->arg1 != NULL) std::cout << '\t' << exprValueToString(quad->arg1);
-        if (quad->arg2 != NULL) std::cout << '\t' << exprValueToString(quad->arg2);
-        // Extend code for other fields
+        if (quad->result != NULL) std::cout << exprValueToString(quad->result);
+        if (quad->arg1 != NULL) std::cout << quadTabs(exprValueToString(quad->result)) << exprValueToString(quad->arg1);
+        if (quad->arg2 != NULL) std::cout << quadTabs(exprValueToString(quad->arg1)) << exprValueToString(quad->arg2);
 
         std::cout << std::endl;
     }
