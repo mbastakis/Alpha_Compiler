@@ -74,105 +74,6 @@ extern unsigned int programVarOffset;
 extern unsigned int functionLocalOffset;
 extern unsigned int formalArgOffset;
 extern unsigned int scopeSpaceCounter;
-<<<<<<< HEAD
-unsigned int tempNameCounter = 1;
-
-void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
-    unsigned int label) {
-
-    Quad* newQuad = new Quad();
-    newQuad->arg1 = arg1;
-    newQuad->arg2 = arg2;
-    newQuad->result = result;
-    newQuad->line = line;
-    newQuad->label = label;
-    newQuad->opcode = op;
-
-    Quads.push_back(newQuad);
-}
-
-std::string newTempName() {
-    return std::string("$") + std::to_string(tempNameCounter++);
-}
-
-void resetTemp() {
-
-    auto symList = symtable.getSymbols(currentScope);
-    for (auto it = symList.begin(); it != symList.end(); it++) {  //delete all the temporary symbols from current scope
-        std::string id = (*it)->getId();
-        if (id[0] == '$') symtable.removeSymbol(id, currentScope);
-    }
-
-    tempNameCounter = 1;
-}
-
-//for creating a new temporary variable
-Symbol* newTempSymbol() {
-    std::string name = newTempName();
-    Symbol* symbol = symtable.scopeLookup(name, currentScope);
-    if (symbol == NULL)
-        return new Symbol(name, LOCALVAR, yylineno, currentScope, true);
-    else
-        return symbol;
-}
-
-Scopespace_T getCurrentScopespace() {
-    if (scopeSpaceCounter == 1)
-        return PROGRAM_VAR;
-    else if (scopeSpaceCounter % 2 == 0)
-        return FORMAL_ARG;
-    else
-        return FUNCTION_LOCAL;
-}
-
-unsigned int getCurrentScopeOffset() {
-    switch (getCurrentScopespace()) {
-    case PROGRAM_VAR:
-        return programVarOffset;
-    case FORMAL_ARG:
-        return formalArgOffset;
-    case FUNCTION_LOCAL:
-        return functionLocalOffset;
-    default:
-        assert(0);
-    }
-}
-
-void incCurrentScopeOffset() {
-    switch (getCurrentScopespace()) {
-    case PROGRAM_VAR:
-        ++programVarOffset;
-        break;
-    case FORMAL_ARG:
-        ++formalArgOffset;
-        break;
-    case FUNCTION_LOCAL:
-        ++functionLocalOffset;
-        break;
-    default:
-        assert(0);
-    }
-}
-
-void enterScopespace() {
-    ++scopeSpaceCounter;
-}
-
-void exitScopepace() {
-    assert(scopeSpaceCounter > 1);
-    --scopeSpaceCounter;
-}
-
-bool isValidArithmeticOperation(unsigned int e1, unsigned int e2) {
-    if ((e1 == NUMBER_EXPR ||
-        e1 == CONST_NUMBER_EXPR ||
-        e1 == VAR_EXPR) &&
-        (e2 == NUMBER_EXPR ||
-            e2 == CONST_NUMBER_EXPR ||
-            e2 == VAR_EXPR)) return true;
-    return false;
-}
-=======
 extern unsigned int tempNameCounter;
 
 Scopespace_T getCurrentScopespace();
@@ -195,7 +96,6 @@ void resetTemp();
 Symbol* newTempSymbol();
 
 bool isValidArithmeticOperation(Expr* e1, Expr* e2);
->>>>>>> origin/eva
 
 // EVA
 void resetFormalArgsOffset();
@@ -207,51 +107,6 @@ void restoreCurrentScopeOffset(unsigned int offset);
 std::string opcodeToString(Opcode opcode);
 
 // Extend for other cases
-<<<<<<< HEAD
-Expr* symbolToExpr(Symbol* symbol) {
-    Expr* newExpr = new Expr;
-
-    newExpr->symbol = symbol;
-    newExpr->value = symbol->getId();
-    switch(symbol->getType()) {
-        case USERFUNC: newExpr->type = USERFUNCTION_EXPR;
-        case LIBRARYFUNC: newExpr->type = LIBRARYFUNCTION_EXPR;
-        
-        default: break;
-    }
-
-    return newExpr;
-}
-
-
-//function patchlabel sel.10 II
-
-//function lvalue_exp sel.18 II
-
-
-unsigned int nextQuadLabel() {
-    return Quads.size();
-}
-
-void printQuads() {
-    std::cout << std::endl;
-    std::cout << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;
-    std::cout << "=============================================================================" << std::endl;
-
-    for (auto it = Quads.begin(); it != Quads.end(); ++it) {
-        Quad* quad = *it;
-        std::cout << quad->label << ':';
-        std::cout << '\t' << opcodeToString(quad->opcode);
-
-        if (quad->result != NULL) std::cout << '\t' << std::get<std::string>(quad->result->value);
-        // Extend code for other fields
-
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl;
-}
-=======
 Expr* symbolToExpr(Symbol* symbol);
 
 Expr* newNilExpr();
@@ -271,6 +126,5 @@ unsigned int nextQuadLabel();
 std::string exprValueToString(Expr* expr);
 
 void printQuads();
->>>>>>> origin/eva
 
 #endif
