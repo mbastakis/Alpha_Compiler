@@ -123,6 +123,8 @@
 %type<expression> indexedelem
 %type<expression> member
 %type<expression> call
+%type<expression> idlist
+%type<expression> nextid
 %type<call> callsufix normcall methodcall
 %type<integer> whilestart
 %type<integer> whilecond
@@ -621,6 +623,7 @@ assignexpr
         }
 
         if($1->type == TABLE_ITEM_EXPR) {
+            std::cout<<"hello"<<std::endl;
             emit(OP_TABLESETELEM, $3, $1->index, $1, yylineno, 0);
             $$ = emit_iftableitem($1, yylineno);
             $$->type = ASSIGN_EXPR;
@@ -732,7 +735,7 @@ member
             // symbol->setActive(true);
             // symtable.insert(symbol);
         }
-        //std::cout<<yylval.string<<std::endl;
+        //std::cout<<"hello"<<std::endl;
         $$ = emit_table($1, newStringExpr(yylval.string), yylineno);
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
@@ -995,10 +998,13 @@ idlist
                 symtable.insert(newSym);
                 function->insertArgument(newSym);
                 incCurrentScopeOffset();
+                $$ = symbolToExpr(newSym);
             }
         }
     }
-    | %empty
+    | %empty { //This code does nothing
+        $$ = NULL;
+    }
     ;
 
 nextid
@@ -1016,17 +1022,14 @@ nextid
                 symtable.insert(newSym);
                 function->insertArgument(newSym);
                 incCurrentScopeOffset();
+                $$ = symbolToExpr(newSym);
             }
         }
     }
-    | %empty
+    | %empty { 
+        $$ = NULL;
+    }
     ;
-
-// ifstmt
-//     : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
-//     }
-//     | IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
-//     };
 
 ifprefix
     : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES {
@@ -1066,7 +1069,7 @@ ifstmt
 
 whilestart
     : WHILE {
-        $$ = nextQuadLabel()+1; //Because it counts from 0
+        $$ = nextQuadLabel(); 
 
     };
 
@@ -1079,7 +1082,7 @@ whilecond
         varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
         varBool = changeValue(varBool, true);
         emit(OP_IF_EQ, $2, varBool, NULL, yylineno, nextQuadLabel() + 2);
-        $$ = nextQuadLabel();
+        $$ = nextQuadLabel()-1;
         emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
         
     };
@@ -1088,7 +1091,7 @@ whilestmt
     : whilestart {currentLine = yylineno; stmtOpen++;} whilecond stmt {stmtOpen--;} {
         
         emit(OP_JUMP, NULL, NULL, NULL, yylineno, $1);
-        patchlabel($3, nextQuadLabel());
+        patchlabel($3, nextQuadLabel()-1);
 
     };
 

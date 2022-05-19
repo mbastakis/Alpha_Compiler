@@ -123,7 +123,8 @@ bool isValidArithmeticExpr(Expr* expr) {
             expr->type == REAL_EXPR ||
             expr->type == CONST_NUMBER_EXPR ||
             expr->type == NUMBER_EXPR ||
-            expr->type == VAR_EXPR;
+            expr->type == VAR_EXPR ||
+            expr->type == ARITHMETIC_EXPR;
 }
 
 void resetFormalArgsOffset() {
@@ -186,22 +187,36 @@ Expr* symbolToExpr(Symbol* symbol) {
     Expr* newExpr = new Expr;
 
     switch(symbol->getType()) {
-        case GLOBALVAR:
-        case LOCALVAR:
-        case FORMAL_ARG:
+        case GLOBALVAR: {
+            newExpr->symbol = symbol;
+            newExpr->value = symbol->getId();
+            newExpr->type = VAR_EXPR;
+            break;
+        };
+        case LOCALVAR: {
+            newExpr->symbol = symbol;
+            newExpr->value = symbol->getId();
+            newExpr->type = VAR_EXPR;
+            break;
+        };
+        case FORMAL_ARG: {
             newExpr->type = VAR_EXPR;
             newExpr->symbol = symbol;
             newExpr->value = symbol->getId();
             break;
-        case LIBRARYFUNC:
+        };
+        case LIBRARYFUNC: {
             newExpr->type = LIBRARYFUNCTION_EXPR;
             newExpr->symbol = symbol;
             newExpr->value = symbol->getId();
-        case USERFUNC:
+            break;
+        };
+        case USERFUNC: {
             newExpr->type = USERFUNCTION_EXPR;
             newExpr->symbol = symbol;
             newExpr->value = symbol->getId();
             break;
+        }
         case SYMERROR:
             break;
         default: break;
@@ -296,7 +311,7 @@ void patchlabel (unsigned int quadNo, unsigned int label) {
 }
 
 unsigned int nextQuadLabel() {
-    return Quads.size();
+    return Quads.size()+1;
 }
 
 
