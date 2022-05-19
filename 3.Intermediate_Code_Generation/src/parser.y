@@ -42,6 +42,7 @@
     int closureJumpInFor;
     std::string newName;
     std::string currentFunctionName;
+    int errorCounter = 0;
 
     /* Offset Usage */
     /* Note, isws xreiastoume kapoio stack apo offsets gia emfolebmenes sunartisis */
@@ -65,6 +66,7 @@
      }
 
      void yyerror (const std::string errorMsg) {
+
          red();
          std::cout << "Error: at line: " << yylineno << ", " << errorMsg << std::endl;
          reset();
@@ -559,7 +561,7 @@ term
 
         if($2->type == TABLE_ITEM_EXPR) {
             $$ = emit_iftableitem($2, yylineno);
-            emit(OP_SUB, newIntegerExpr(1), $$, $$, yylineno, 0);           
+            emit(OP_SUB, newIntegerExpr(1), $$, $$, yylineno, 0);
             emit(OP_TABLESETELEM, $2, $2->index, $$, yylineno, 0);
         } else {
             emit(OP_SUB, $2, $2, newIntegerExpr(1), yylineno, 0);
@@ -659,7 +661,7 @@ primary
             $$->type = LIBRARYFUNCTION_EXPR;
         else
             $$->type = VAR_EXPR;
-            
+
         $$ = emit_iftableitem($1, yylineno);
     }
     | call {
@@ -726,7 +728,7 @@ lvalue
         $$ = $1;
     };
 
-member 
+member
     : lvalue DOT ID {
         Symbol* symbol = $1->symbol;
 
@@ -753,7 +755,7 @@ member
     | call LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
     };
 
-call 
+call
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
         $$ = make_call($1, reverseElist($3),yylineno);
     }
@@ -1026,7 +1028,7 @@ nextid
             }
         }
     }
-    | %empty { 
+    | %empty {
         $$ = NULL;
     }
     ;
@@ -1069,7 +1071,7 @@ ifstmt
 
 whilestart
     : WHILE {
-        $$ = nextQuadLabel(); 
+        $$ = nextQuadLabel();
 
     };
 
@@ -1084,12 +1086,12 @@ whilecond
         emit(OP_IF_EQ, $2, varBool, NULL, yylineno, nextQuadLabel() + 2);
         $$ = nextQuadLabel()-1;
         emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
-        
+
     };
 
 whilestmt
     : whilestart {currentLine = yylineno; stmtOpen++;} whilecond stmt {stmtOpen--;} {
-        
+
         emit(OP_JUMP, NULL, NULL, NULL, yylineno, $1);
         patchlabel($3, nextQuadLabel()-1);
 
@@ -1181,7 +1183,7 @@ int main(int argc, char** argv) {
     yyparse();
 
     // EVA
-    printQuads();
+    
 
 
     // Ending Lexical Analysis
@@ -1190,8 +1192,10 @@ int main(int argc, char** argv) {
 
     if ( argc == 3) {
         symtable.printSymbolsInFile(argv[2]);
-    } else
+    } else {
         symtable.printSymTable();
+        printQuads();
+    }
 
     return 0;
 }
