@@ -231,7 +231,7 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                         }
 {GREATER_OR_EQUAL}      {
                             if( state == DEFAULT )
-                                return (GREATER_THAN);
+                                return (GREATER_OR_EQUAL);
                         }
 {LESS_OR_EQUAL}         {
                             if( state == DEFAULT )

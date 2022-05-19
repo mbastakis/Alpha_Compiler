@@ -67,6 +67,14 @@ struct Expr {
     struct Expr* next;
 };
 
+typedef struct Call Call;
+
+struct Call {
+    std::list<Expr*> revElist;
+    unsigned char method;
+    std::string name;
+};
+
 typedef struct {
     Opcode opcode;
     Expr* result;
@@ -159,7 +167,14 @@ Expr* emit_table(Expr* arg1, Expr* arg2, unsigned int lineno);
 
 bool isValidArithmeticExpr(Expr* expr);
 
+Expr* make_call(Expr* lv, std::list<Expr*> revElist, unsigned int line);
+
+Expr* member_item(Expr* lv, std::string name, int line);
+
+std::list<Expr*> reverseElist(Expr* expr);
 
 std::string opcodeToString(Opcode opcode);
+
+int betweenFor();
 
 #endif

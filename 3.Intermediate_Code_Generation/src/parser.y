@@ -29,12 +29,17 @@
     std::stack<unsigned int> scopeOffsetStack;
     std::stack<bool> blockStack;
     unsigned int currentScope;
+    std::stack<int> jumpStack;
 
     bool isFunc;
     int functionOpen;
     int stmtOpen;
     int currentLine;
     int newNameFunction;
+    int betweenElistExprInFor;
+    int falseJumpInFor;
+    int loopJumpInFor;
+    int closureJumpInFor;
     std::string newName;
     std::string currentFunctionName;
 
@@ -79,6 +84,7 @@
     char* string;
     Expr* expression;
     Symbol* symbol;
+    Call* call;
 }
 
 /* Terminal Symbols */
@@ -106,8 +112,6 @@
 %type<expression> lvalue
 %type<integer> ifprefix
 %type<integer> elseprefix
-// EVA
-// %type<string> funcname
 %type<integer> funcbody
 %type<symbol> funcprefix
 %type<symbol> funcdef
@@ -118,6 +122,11 @@
 %type<expression> nextindexed
 %type<expression> indexedelem
 %type<expression> member
+%type<expression> call
+%type<call> callsufix normcall methodcall
+%type<integer> whilestart
+%type<integer> whilecond
+%type<integer> forprefix
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -142,6 +151,7 @@ program
 
 statements
     : statements stmt {
+        //resetTemp();
     }
     | %empty
     ;
@@ -467,7 +477,7 @@ term
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_UMINUS, $2, NULL, $$, yylineno, nextQuadLabel());
+        emit(OP_UMINUS, $2, NULL, $$, yylineno, 0);
     }
     | NOT expr {
         $$ = newExprType(BOOLEAN_EXPR);
@@ -475,7 +485,7 @@ term
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_NOT, $2, NULL, $$, yylineno, nextQuadLabel());
+        emit(OP_NOT, $2, NULL, $$, yylineno, 0);
     }
     | INCREMENT lvalue {
         Symbol* symbol = $2->symbol;
@@ -490,10 +500,10 @@ term
 
         if($2->type == TABLE_ITEM_EXPR) {
             $$ = emit_iftableitem($2, yylineno);
-            emit(OP_ADD, newIntegerExpr(1), $$, $$, yylineno, nextQuadLabel());
-            emit(OP_TABLESETELEM, $2->index, $2, $$, yylineno, nextQuadLabel());
+            emit(OP_ADD, newIntegerExpr(1), $$, $$, yylineno, 0);
+            emit(OP_TABLESETELEM, $2, $2->index, $$, yylineno, 0);
         } else {
-            emit(OP_ADD, newIntegerExpr(1), $2, $2, yylineno, nextQuadLabel());
+            emit(OP_ADD, newIntegerExpr(1), $2, $2, yylineno, 0);
             $$ = newExprType(ARITHMETIC_EXPR);
 
             if(isTempSymbol($2->symbol)) {
@@ -503,7 +513,7 @@ term
                 symtable.insert(newSymbol);
                 $$->symbol = newSymbol;
                 $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $2, NULL, $$, yylineno, nextQuadLabel());
+                emit(OP_ASSIGN, $2, NULL, $$, yylineno, 0);
             }
         }
     }
@@ -523,15 +533,15 @@ term
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_ASSIGN, $1, NULL, $$, yylineno, nextQuadLabel());
+        emit(OP_ASSIGN, $1, NULL, $$, yylineno, 0);
 
         if($1->type == TABLE_ITEM_EXPR) {
             Expr* newExpr = emit_iftableitem($1, yylineno);
-            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, nextQuadLabel());
-            emit(OP_ADD, newExpr, newExpr, newIntegerExpr(1), yylineno, nextQuadLabel());
-            emit(OP_TABLESETELEM, $1->index, $1, newExpr, yylineno, nextQuadLabel());
+            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, 0);
+            emit(OP_ADD, newExpr, newExpr, newIntegerExpr(1), yylineno, 0);
+            emit(OP_TABLESETELEM, $1->index, $1, newExpr, yylineno, 0);
         } else {
-            emit(OP_ADD, newIntegerExpr(1), $1, $1, yylineno, nextQuadLabel());
+            emit(OP_ADD, newIntegerExpr(1), $1, $1, yylineno, 0);
         }
     }
     | DECREMENT lvalue {
@@ -547,10 +557,10 @@ term
 
         if($2->type == TABLE_ITEM_EXPR) {
             $$ = emit_iftableitem($2, yylineno);
-            emit(OP_SUB, newIntegerExpr(1), $$, $$, yylineno, nextQuadLabel());
-            emit(OP_TABLESETELEM, $2->index, $2, $$, yylineno, nextQuadLabel());
+            emit(OP_SUB, newIntegerExpr(1), $$, $$, yylineno, 0);           
+            emit(OP_TABLESETELEM, $2, $2->index, $$, yylineno, 0);
         } else {
-            emit(OP_SUB, $2, $2, newIntegerExpr(1), yylineno, nextQuadLabel());
+            emit(OP_SUB, $2, $2, newIntegerExpr(1), yylineno, 0);
             $$ = newExprType(ARITHMETIC_EXPR);
 
             if(isTempSymbol($2->symbol)) {
@@ -560,7 +570,7 @@ term
                 symtable.insert(newSymbol);
                 $$->symbol = newSymbol;
                 $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $2, NULL, $$, yylineno, nextQuadLabel());
+                emit(OP_ASSIGN, $2, NULL, $$, yylineno, 0);
             }
         }
     }
@@ -583,12 +593,12 @@ term
 
         if($1->type == TABLE_ITEM_EXPR) {
             Expr* newExpr = emit_iftableitem($1, yylineno);
-            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, nextQuadLabel());
-            emit(OP_SUB, newExpr, newExpr, newIntegerExpr(1), yylineno, nextQuadLabel());
-            emit(OP_TABLESETELEM, $1->index, $1, newExpr, yylineno, nextQuadLabel());
+            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, 0);
+            emit(OP_SUB, newExpr, newExpr, newIntegerExpr(1), yylineno, 0);
+            emit(OP_TABLESETELEM, $1, $1->index, newExpr, yylineno, 0);
         } else {
-            emit(OP_ASSIGN, $1, NULL, $$, yylineno, nextQuadLabel());
-            emit(OP_SUB, newIntegerExpr(1), $1, $1, yylineno, nextQuadLabel());
+            emit(OP_ASSIGN, $1, NULL, $$, yylineno, 0);
+            emit(OP_SUB, newIntegerExpr(1), $1, $1, yylineno, 0);
         }
     }
     | primary {
@@ -611,13 +621,13 @@ assignexpr
         }
 
         if($1->type == TABLE_ITEM_EXPR) {
-            emit(OP_TABLESETELEM, $1->index, $1, $3, yylineno, nextQuadLabel());
+            emit(OP_TABLESETELEM, $3, $1->index, $1, yylineno, 0);
             $$ = emit_iftableitem($1, yylineno);
             $$->type = ASSIGN_EXPR;
         } else {
-            emit(OP_ASSIGN, $3, NULL, $1 , yylineno, nextQuadLabel());
+            emit(OP_ASSIGN, $3, NULL, $1 , yylineno, 0);
 
-            $$ = newExprType(ASSIGN_EXPR);
+            /*$$ = newExprType(ASSIGN_EXPR);
             if(isTempSymbol($1->symbol)) {
                 $$->symbol = $1->symbol;
             } else {
@@ -625,13 +635,28 @@ assignexpr
                 symtable.insert(newSymbol);
                 $$->symbol = newSymbol;
                 $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $1, NULL, $$, yylineno, nextQuadLabel());
-            }
+                emit(OP_ASSIGN, $1, NULL, $$, yylineno,0);
+            }*/
         }
     };
 
 primary
     : lvalue {
+         Symbol* symbol = $1->symbol;
+
+        if( symbol == NULL ); // An error came up ignore.
+        else if( !symbol->isActive() ) {
+            symbol->setActive(true);
+            symtable.insert(symbol);
+        }
+
+        if( symbol != NULL && symbol->getType() == USERFUNC)
+            $$->type = USERFUNCTION_EXPR;
+        else if(symbol != NULL && symbol->getType() == LIBRARYFUNC)
+            $$->type = LIBRARYFUNCTION_EXPR;
+        else
+            $$->type = VAR_EXPR;
+            
         $$ = emit_iftableitem($1, yylineno);
     }
     | call {
@@ -698,7 +723,7 @@ lvalue
         $$ = $1;
     };
 
-member
+member 
     : lvalue DOT ID {
         Symbol* symbol = $1->symbol;
 
@@ -707,6 +732,7 @@ member
             // symbol->setActive(true);
             // symtable.insert(symbol);
         }
+        //std::cout<<yylval.string<<std::endl;
         $$ = emit_table($1, newStringExpr(yylval.string), yylineno);
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
@@ -724,10 +750,20 @@ member
     | call LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
     };
 
-call
+call 
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
+        $$ = make_call($1, reverseElist($3),yylineno);
     }
     | lvalue callsufix {
+        Expr* lva = emit_iftableitem($1, yylineno);
+
+        if($2->method){
+            Expr* tmp = lva;
+            lva = emit_iftableitem(member_item(tmp,$2->name,yylineno),yylineno);
+            $2->revElist.push_front(tmp);
+        }
+        $$ = make_call(lva,$2->revElist,yylineno);
+
         Symbol* symbol = $1->symbol;
 
         if ( symbol == NULL ); // An error came up ignore.
@@ -737,22 +773,35 @@ call
         }
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {
+        Expr* func = newExprType(USERFUNCTION_EXPR);
+        func->symbol = $2;
+        $$ = make_call(func, reverseElist($5), yylineno);
     };
 
 callsufix
     : normcall {
-
+        $$ = $1;
     }
     | methodcall {
-
+        $$ = $1;
     };
 
 normcall
     : LEFT_PARENTHESES elist RIGHT_PARENTHESES {
+        $$ = new Call();
+
+        $$->revElist = reverseElist($2);
+        $$->method = 0;
+        $$->name = "NULL";
     }
 
 methodcall
     : DOUBLE_DOT ID LEFT_PARENTHESES elist RIGHT_PARENTHESES {
+        $$ = new Call();
+
+        $$->revElist = reverseElist($4);
+        $$->method = 1;
+        $$->name = $2;
     };
 
 elist
@@ -785,11 +834,13 @@ objectdef
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_TABLECREATE, NULL, NULL, $$, nextQuadLabel(), yylineno);
+        std::string val = newSymbol->getId();
+        std::cerr << "symbol: " << val << std::endl;
+        emit(OP_TABLECREATE, $$, NULL, NULL, yylineno, 0);
 
         tmp = $2;
         while(tmp != NULL) {
-            emit(OP_TABLESETELEM, newIntegerExpr(i++), $$, tmp, nextQuadLabel(), yylineno);
+            emit(OP_TABLESETELEM, tmp, newIntegerExpr(i++),$$, yylineno, 0);
             tmp = tmp->next;
         }
     }
@@ -801,11 +852,11 @@ objectdef
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_TABLECREATE, NULL, NULL, $$, nextQuadLabel(), yylineno);
+        emit(OP_TABLECREATE, $$, NULL, NULL, yylineno, 0);
 
         tmp = $2;
         while(tmp != NULL) {
-            emit(OP_TABLESETELEM, $$, tmp, tmp->index, nextQuadLabel(), yylineno);
+            emit(OP_TABLESETELEM, $$, tmp, tmp->index, yylineno, 0);
             tmp = tmp->next;
         }
     };
@@ -837,7 +888,6 @@ block
     : LEFT_CURLY_BRACKET {currentScope++; blockStack.push(isFunc); isFunc = false;} statements RIGHT_CURLY_BRACKET {symtable.hide(currentScope--); blockStack.pop();} {
     };
 
-// EVA
 funcname
     : ID {
         currentFunctionName = $1;
@@ -849,8 +899,6 @@ funcname
 
 funcprefix
     : FUNCTION {currentLine = yylineno;} funcname {
-        // currentFunctionName = "_Error_";
-        // functionStack.push($3);
         scopeOffsetStack.push(getCurrentScopeOffset());
         incCurrentScopeOffset();
         resetFormalArgsOffset();
@@ -862,11 +910,11 @@ funcprefix
         } else {
             functionStack.push(currentFunctionName);
             Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
-            // function_symbol->setOffset(getCurrentScopeOffset());
             symtable.insert(function_symbol);
             $$ = function_symbol;
-            emit(OP_FUNCSTART, NULL, NULL, symbolToExpr(function_symbol), yylineno, nextQuadLabel());
-            // std::cout << "Entering function " << currentFunctionName << " curr offset " << getCurrentScopeOffset() << std::endl;
+            jumpStack.push(Quads.size());
+            emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+            emit(OP_FUNCSTART, symbolToExpr(function_symbol), NULL, NULL, yylineno, 0);
             incCurrentScopeOffset();
         }
     }
@@ -904,7 +952,9 @@ funcdef
         functionOpen--;
         Symbol* function_symbol = new Symbol(functionStack.top(), USERFUNC, currentLine, currentScope, true);
         functionStack.pop();
-        emit(OP_FUNCEND, NULL, NULL, symbolToExpr(function_symbol), yylineno, nextQuadLabel());
+        emit(OP_FUNCEND, symbolToExpr(function_symbol), NULL, NULL, yylineno, 0);
+        Quads[jumpStack.top()]->label = Quads.size() + 1;
+        jumpStack.pop();
         restoreCurrentScopeOffset(scopeOffsetStack.top());
         scopeOffsetStack.pop();
     }
@@ -1014,37 +1064,57 @@ ifstmt
 
     };
 
-// whilestmt
-//     : WHILE{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmtOpen--;} {
-//     };
-
 whilestart
     : WHILE {
+        $$ = nextQuadLabel()+1; //Because it counts from 0
 
     };
 
 whilecond
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
-
+        Symbol* symbol;
+        Expr* varBool;
+        symbol = newTempSymbol();
+        varBool = symbolToExpr(symbol);
+        varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
+        varBool = changeValue(varBool, true);
+        emit(OP_IF_EQ, $2, varBool, NULL, yylineno, nextQuadLabel() + 2);
+        $$ = nextQuadLabel();
+        emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+        
     };
 
 whilestmt
     : whilestart {currentLine = yylineno; stmtOpen++;} whilecond stmt {stmtOpen--;} {
+        
+        emit(OP_JUMP, NULL, NULL, NULL, yylineno, $1);
+        patchlabel($3, nextQuadLabel());
 
     };
 
-// forstmt
-//     : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
-
-//     };
 
 forprefix
-    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON {
-
+    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON {betweenElistExprInFor = nextQuadLabel();} expr SEMICOLON {
+        std::cout << "forprefix: " << betweenElistExprInFor << std::endl;
+        Symbol* symbol;
+        Expr* varBool;
+        symbol = newTempSymbol();
+        varBool = symbolToExpr(symbol);
+        varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
+        varBool = changeValue(varBool, true);
+        $$ = nextQuadLabel();
+        emit(OP_IF_EQ, $7, varBool, NULL, yylineno, 0);
     };
 
 forstmt
-    : forprefix elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
+    : forprefix { falseJumpInFor = betweenFor();} elist RIGHT_PARENTHESES { loopJumpInFor = betweenFor();} stmt { closureJumpInFor = betweenFor(); stmtOpen--;} {
+            std::cerr << "forprefix " << $1 << std::endl;
+            std::cerr << "falsejumpinfor "<< falseJumpInFor << std::endl;
+            std::cerr << "closurejmpinfor " << closureJumpInFor << std::endl;
+            patchlabel($1, loopJumpInFor + 1);
+            patchlabel(falseJumpInFor, nextQuadLabel());
+            patchlabel(loopJumpInFor, betweenElistExprInFor);
+            patchlabel(closureJumpInFor-1, falseJumpInFor+1);
 
     };
 
@@ -1052,11 +1122,18 @@ returnstmt
     : RETURN SEMICOLON {
         if(functionOpen == 0)
             yyerror("return outside of function");
+        else {
+            emit(OP_RET, NULL, NULL, NULL, yylineno, 0);
+        }
 
     }
     | RETURN expr SEMICOLON {
         if(functionOpen == 0)
             yyerror("return outside of function");
+        else {
+
+            emit(OP_RET, $2, NULL, NULL, yylineno, 0);
+        }
 
     };
 %%
@@ -1080,6 +1157,7 @@ int main(int argc, char** argv) {
     symtable = SymbolTable();
     functionStack = std::stack<std::string>();
     blockStack = std::stack<bool>();
+    jumpStack = std::stack<int>();
 
     currentScope = 0;
     functionOpen = 0;

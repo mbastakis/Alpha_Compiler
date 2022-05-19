@@ -37,15 +37,12 @@ void incCurrentScopeOffset() {
     switch (getCurrentScopespace()) {
     case PROGRAM_VAR:
         ++programVarOffset;
-        // std::cout << "Incremented current program offset: " << programVarOffset << std::endl;
         break;
     case FORMAL_ARG:
         ++formalArgOffset;
-        // std::cout << "Incremented current formal offset: " << formalArgOffset << std::endl;
         break;
     case FUNCTION_LOCAL:
         ++functionLocalOffset;
-        // std::cout << "Incremented current local offset: " << functionLocalOffset << std::endl;
         break;
     default:
         assert(0);
@@ -76,7 +73,7 @@ Expr* emit_iftableitem(Expr* expr, unsigned int lineno) {
     symtable.insert(newSymbol);
     newExpr->symbol = newSymbol;
     newExpr->value = newSymbol->getId();
-    emit(OP_TABLEGETELEM, expr, expr->index, newExpr, lineno, nextQuadLabel());
+    emit(OP_TABLEGETELEM, expr, expr->index, newExpr, lineno, 0);
 
     return newExpr;
 }
@@ -293,11 +290,54 @@ bool areExprBoolTypes(Expr* expr1, Expr* expr2) {
 }
 
 void patchlabel (unsigned int quadNo, unsigned int label) {
+    std::cerr<< "Quad num: "<< quadNo<<std::endl;
+    std::cerr<< "Label: " <<label<<std::endl;
     Quads[quadNo]->label = label;
 }
 
 unsigned int nextQuadLabel() {
     return Quads.size();
+}
+
+
+Expr* make_call(Expr* lvalue, std::list<Expr*> revElist, unsigned int line) {
+    Expr* called_func = emit_iftableitem(lvalue, line);
+    while(!revElist.empty()) {
+        emit(OP_PARAM, revElist.back(), NULL, NULL, line, 0);
+        revElist.pop_back();
+    }
+    emit(OP_CALL, called_func, NULL, NULL, line, 0);
+
+    Expr* result = new Expr();
+    result->symbol = newTempSymbol();
+    result->type = VAR_EXPR;
+    emit(OP_GETRETVAL, NULL, NULL, result, line, 0);
+    return result;
+}
+
+Expr* member_item(Expr* lv, std::string name, int line) {
+    lv = emit_iftableitem(lv,line); // Emit code if r-value use of table item
+    Expr* ti = newExprType(TABLE_ITEM_EXPR); // Make a new expression
+    ti->symbol = lv->symbol;
+    ti->index = newExprType(CONST_STRING_EXPR); // Const string index
+    return ti;
+}
+
+std::list<Expr*> reverseElist(Expr* expr) {
+    std::list<Expr*> list = std::list<Expr*>();
+    std::stack<Expr*> stack = std::stack<Expr*>();
+
+    while(expr) {
+        stack.push(expr);
+        expr = expr->next;
+    }
+
+    while(!stack.empty()) {
+        list.push_front(stack.top());
+        stack.pop();
+    }
+
+    return list;
 }
 
 std::string fixPrecision(std::string num) {
@@ -313,6 +353,11 @@ std::string fixPrecision(std::string num) {
 
     std::reverse(fixedNum.begin(), fixedNum.end());
     return fixedNum;
+}
+
+int betweenFor(){
+    emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+    return nextQuadLabel();
 }
 
 std::string exprValueToString(Expr* expr) {
@@ -348,7 +393,7 @@ std::string exprValueToString(Expr* expr) {
         case BOOLEAN_EXPR:
         case NEW_TABLE_EXPR:
         case TABLE_ITEM_EXPR:
-            return std::get<std::string>(expr->value);
+            return expr->symbol->getId();
         default:
             return "UKNOWN";
     }
@@ -366,14 +411,16 @@ void printQuads() {
     std::cout << std::endl;
     std::cout << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;
     std::cout << "=============================================================================" << std::endl;
-
+    int counter = 1;
     for (auto it = Quads.begin(); it != Quads.end(); ++it) {
         Quad* quad = *it;
         std::string opcode = opcodeToString(quad->opcode);
-        std::cout << quad->label << ':';
+        std::cout << counter++ << ':';
         std::cout << '\t' << opcode << quadTabs(opcode);
-
-        if (quad->result != NULL) std::cout << exprValueToString(quad->result)<< "\t\t";
+        
+        // if (quad->result != NULL) std::cout << quad->result->symbol->getId() << "\t\t";
+        if (quad->result != NULL) std::cout << exprValueToString(quad->result) << "\t\t";
+        else std::cout << "" << "\t\t";
         // if (quad->arg1 != NULL) std::cout << quadTabs(exprValueToString(quad->result)) << exprValueToString(quad->arg1);
         if (quad->arg1 != NULL) {
             if(quad->arg1->type == CONST_NUMBER_EXPR || quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
