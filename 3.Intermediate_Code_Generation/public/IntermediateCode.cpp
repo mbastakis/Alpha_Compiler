@@ -129,7 +129,6 @@ bool isValidArithmeticExpr(Expr* expr) {
             expr->type == VAR_EXPR;
 }
 
-// EVA
 void resetFormalArgsOffset() {
     formalArgOffset = 0;
 }
@@ -374,7 +373,7 @@ void printQuads() {
         std::cout << quad->label << ':';
         std::cout << '\t' << opcode << quadTabs(opcode);
 
-        if (quad->result != NULL) std::cout << exprValueToString(quad->result);
+        if (quad->result != NULL) std::cout << exprValueToString(quad->result)<< "\t\t";
         // if (quad->arg1 != NULL) std::cout << quadTabs(exprValueToString(quad->result)) << exprValueToString(quad->arg1);
         if (quad->arg1 != NULL) {
             if(quad->arg1->type == CONST_NUMBER_EXPR || quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
