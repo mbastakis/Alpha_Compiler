@@ -1,34 +1,26 @@
-a = 1;
-b = 2;
-c = 3;
-d = 4;
-
-function (k, l, m, n) {}
-
-
-function () {}
-function f() {}
-function f2(x, y) {
-	z = 1;
-	w = 1;
-	q = 1;
+a = 1 + 2;
+b = 5 > 3;
+if(2 < 3) {
+	x = 10;
+} else {
+	x = 20;
 }
 
-(function () {});
+while (20 == 20) {
+	x = 21;
+}
 
-e = 5;
-g = 1.2;
-h = "test";
-i = true;
-j = false;
-i = j;
-k = -5;
-l = not true;
-m = ++i;
-n = i++;
-o = --i;
-p = i--;
-t = [1, 2, 3, 4];
-t2 = [{"x": 0}, {"y": a}, { -1: 0}];
-t.a = 5;
-t[0]++;
+function iamafunction(a, b) { 
+	a + b;
+	return 8;
+	9-0;
+}
+
+
+function iamnothing() { iamafunction; }
+
+ihavenoname = (function(){ 10-0; return 12; 11-0; });
+
+function(){}
+
+function(){ function() { iamafunction(3,4); } }

@@ -1,4 +1,6 @@
 #include "IntermediateCode.hpp"
+#include <iomanip>
+#include <algorithm>
 
 Scopespace_T getCurrentScopespace() {
     if (scopeSpaceCounter == 1)
@@ -122,6 +124,8 @@ bool isValidArithmeticExpr(Expr* expr) {
             expr->type == INTEGER_EXPR ||
             expr->type == CONST_REAL_EXPR ||
             expr->type == REAL_EXPR ||
+            expr->type == CONST_NUMBER_EXPR ||
+            expr->type == NUMBER_EXPR ||
             expr->type == VAR_EXPR;
 }
 
@@ -210,6 +214,16 @@ Expr* symbolToExpr(Symbol* symbol) {
     return newExpr;
 }
 
+Expr* changeType(Expr* expr, Expr_T type) {
+    expr->type = type;
+    return expr;
+}
+
+Expr* changeValue(Expr* expr, std::variant<std::string, int, double, bool> value) {
+    expr->value = value;
+    return expr;
+}
+
 Expr* newExprType(Expr_T type) {
     Expr* newExpr = new Expr;
 
@@ -270,12 +284,50 @@ bool isFunctionExpr(Expr* expr) {
     return expr->type == USERFUNCTION_EXPR || expr->type == LIBRARYFUNCTION_EXPR;
 }
 
+bool areExprTypesEq(Expr* expr1, Expr* expr2) {
+    return expr1->type == expr2->type;
+}
+
+bool areExprBoolTypes(Expr* expr1, Expr* expr2) {
+    return (expr1->type == BOOLEAN_EXPR || expr1-> type == CONST_BOOLEAN_EXPR ) &&
+            (expr2->type == BOOLEAN_EXPR || expr2-> type == CONST_BOOLEAN_EXPR );
+}
+
+void patchlabel (unsigned int quadNo, unsigned int label) {
+    Quads[quadNo]->label = label;
+}
+
 unsigned int nextQuadLabel() {
     return Quads.size();
 }
 
+std::string fixPrecision(std::string num) {
+    std::string fixedNum = "";
+    int size = num.length() - 1;
+    bool flag = false;
+
+    for(int i = 0; i <= size; i++) {
+        if(num[size - i] != '0') flag = true;
+        if(!flag) continue;
+        fixedNum += num[size - i];
+    }
+
+    std::reverse(fixedNum.begin(), fixedNum.end());
+    return fixedNum;
+}
+
 std::string exprValueToString(Expr* expr) {
     switch(expr->type) {
+        case CONST_NUMBER_EXPR:
+            if(expr->value.index() == 1)
+                return std::to_string(std::get<int>(expr->value));
+            if(expr->value.index() == 2)
+                return fixPrecision(std::to_string(std::get<double>(expr->value)));
+        case NUMBER_EXPR:
+            if(expr->value.index() == 1)
+                return std::to_string(std::get<int>(expr->value));
+            if(expr->value.index() == 2)
+                return fixPrecision(std::to_string(std::get<double>(expr->value)));
         case CONST_INTEGER_EXPR:
         case INTEGER_EXPR:
             return std::to_string(std::get<int>(expr->value));
@@ -323,8 +375,25 @@ void printQuads() {
         std::cout << '\t' << opcode << quadTabs(opcode);
 
         if (quad->result != NULL) std::cout << exprValueToString(quad->result);
-        if (quad->arg1 != NULL) std::cout << quadTabs(exprValueToString(quad->result)) << exprValueToString(quad->arg1);
-        if (quad->arg2 != NULL) std::cout << quadTabs(exprValueToString(quad->arg1)) << exprValueToString(quad->arg2);
+        // if (quad->arg1 != NULL) std::cout << quadTabs(exprValueToString(quad->result)) << exprValueToString(quad->arg1);
+        if (quad->arg1 != NULL) {
+            if(quad->arg1->type == CONST_NUMBER_EXPR || quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
+                std::cout << exprValueToString(quad->arg1) << "\t\t";
+            }
+            else{
+                std::cout << exprValueToString(quad->arg1) << "\t\t";
+            }
+        } else std::cout << "" << "\t\t";
+        // if (quad->arg2 != NULL) std::cout << quadTabs(exprValueToString(quad->arg1)) << exprValueToString(quad->arg2);
+        if (quad->arg2 != NULL) {
+            if(quad->arg2->type == CONST_NUMBER_EXPR || quad->arg2->type == CONST_BOOLEAN_EXPR || quad->arg2->type == CONST_STRING_EXPR)
+                std::cout << exprValueToString(quad->arg2) << "\t\t";
+            else
+                std::cout << exprValueToString(quad->arg2) << "\t\t";
+        } else std::cout << "" << "\t\t";
+        if (quad->label != 0) {
+            std::cout << quad->label;
+        }
 
         std::cout << std::endl;
     }

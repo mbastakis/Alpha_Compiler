@@ -36,7 +36,7 @@ typedef enum {
     OP_TABLESETELEM
 } Opcode;
 
-typedef enum {
+typedef enum {   //expression type   //tableitem_e, newtable_e, assignexpr_e sel.15 front
     CONST_INTEGER_EXPR,
     INTEGER_EXPR,
     CONST_REAL_EXPR,
@@ -52,7 +52,9 @@ typedef enum {
     ASSIGN_EXPR,
     ARITHMETIC_EXPR,
     NEW_TABLE_EXPR,
-    TABLE_ITEM_EXPR
+    TABLE_ITEM_EXPR,
+    NUMBER_EXPR,
+    CONST_NUMBER_EXPR
 } Expr_T;
 
 typedef struct Expr Expr;
@@ -77,7 +79,7 @@ typedef struct {
 /* Global Variables */
 extern std::vector<Quad*> Quads;
 extern SymbolTable symtable;
-extern unsigned int currentScope;
+extern unsigned int currentScope; //we never initialize this
 extern int yylineno;
 
 extern unsigned int programVarOffset;
@@ -108,12 +110,6 @@ Symbol* newTempSymbol();
 bool isValidArithmeticOperation(Expr* e1, Expr* e2);
 
 // EVA
-Expr* emit_iftableitem(Expr* expr, unsigned int lineno);
-
-Expr* emit_table(Expr* arg1, Expr* arg2, unsigned int lineno);
-
-bool isValidArithmeticExpr(Expr* expr);
-
 void resetFormalArgsOffset();
 
 void resetFunctionLocalOffset();
@@ -125,8 +121,6 @@ std::string opcodeToString(Opcode opcode);
 // Extend for other cases
 Expr* symbolToExpr(Symbol* symbol);
 
-Expr* newExprType(Expr_T type);
-
 Expr* newNilExpr();
 
 Expr* newBoolExpr(bool value);
@@ -137,14 +131,35 @@ Expr* newIntegerExpr(int value);
 
 Expr* newDoubleExpr(double value);
 
-bool isTempSymbol(Symbol* symbol);
+Expr* changeType(Expr* expr, Expr_T type);
+
+Expr* changeValue(Expr* expr, std::variant<std::string, int, double, bool> value);
+
+bool areExprTypesEq(Expr* expr1, Expr* expr2);
 
 bool isFunctionExpr(Expr* expr);
+
+Expr* newExprType(Expr_T type);
+
+void patchlabel (unsigned int quadNo, unsigned int label);
 
 unsigned int nextQuadLabel();
 
 std::string exprValueToString(Expr* expr);
 
 void printQuads();
+
+bool isTempSymbol(Symbol* symbol);
+
+bool isFunctionExpr(Expr* expr);
+
+Expr* emit_iftableitem(Expr* expr, unsigned int lineno);
+
+Expr* emit_table(Expr* arg1, Expr* arg2, unsigned int lineno);
+
+bool isValidArithmeticExpr(Expr* expr);
+
+
+std::string opcodeToString(Opcode opcode);
 
 #endif
