@@ -64,6 +64,31 @@ void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
     Quads.push_back(newQuad);
 }
 
+Expr* emit_iftableitem(Expr* expr, unsigned int lineno) {
+    if(expr->type != TABLE_ITEM_EXPR) {
+        return expr;
+    }
+
+    Expr* newExpr = newExprType(VAR_EXPR);
+    Symbol* newSymbol = newTempSymbol();
+    symtable.insert(newSymbol);
+    newExpr->symbol = newSymbol;
+    newExpr->value = newSymbol->getId();
+    emit(OP_TABLEGETELEM, expr, expr->index, newExpr, lineno, nextQuadLabel());
+
+    return newExpr;
+}
+
+Expr* emit_table(Expr* arg1, Expr* arg2, unsigned int lineno) {
+    Expr* newExpr = emit_iftableitem(arg1, lineno);
+
+    Expr* newExpr2 = newExprType(TABLE_ITEM_EXPR);
+    newExpr2->symbol = newExpr->symbol;
+    newExpr2->index = arg2;
+
+    return newExpr2;
+}
+
 std::string newTempName() {
     return std::string("$") + std::to_string(tempNameCounter++);
 }
@@ -89,17 +114,15 @@ Symbol* newTempSymbol() {
 }
 
 bool isValidArithmeticOperation(Expr* e1, Expr* e2) {
-    if ((e1->type == CONST_INTEGER_EXPR ||
-        e1->type == INTEGER_EXPR ||
-        e1->type == CONST_REAL_EXPR ||
-        e1->type == REAL_EXPR ||
-        e1->type == VAR_EXPR) &&
-        (e2->type == CONST_INTEGER_EXPR ||
-            e2->type == INTEGER_EXPR ||
-            e2->type == CONST_REAL_EXPR ||
-            e2->type == REAL_EXPR ||
-            e2->type == VAR_EXPR)) return true;
-    return false;
+    return isValidArithmeticExpr(e1) && isValidArithmeticExpr(e2);
+}
+
+bool isValidArithmeticExpr(Expr* expr) {
+    return expr->type == CONST_INTEGER_EXPR ||
+            expr->type == INTEGER_EXPR ||
+            expr->type == CONST_REAL_EXPR ||
+            expr->type == REAL_EXPR ||
+            expr->type == VAR_EXPR;
 }
 
 // EVA
@@ -206,7 +229,7 @@ Expr* newNilExpr() {
 Expr* newBoolExpr(bool value) {
     Expr* newExpr = new Expr;
 
-    newExpr->type = BOOLEAN_EXPR;
+    newExpr->type = CONST_BOOLEAN_EXPR;
     newExpr->value = value;
 
     return newExpr;
@@ -260,7 +283,6 @@ std::string exprValueToString(Expr* expr) {
         case REAL_EXPR:
             return std::to_string(std::get<double>(expr->value));
         case CONST_BOOLEAN_EXPR:
-        case BOOLEAN_EXPR:
             return std::get<bool>(expr->value) ? "true" : "false";
         case CONST_STRING_EXPR:
         case STRING_EXPR:
@@ -271,6 +293,10 @@ std::string exprValueToString(Expr* expr) {
         case LIBRARYFUNCTION_EXPR:
         case VAR_EXPR:
         case ASSIGN_EXPR:
+        case ARITHMETIC_EXPR:
+        case BOOLEAN_EXPR:
+        case NEW_TABLE_EXPR:
+        case TABLE_ITEM_EXPR:
             return std::get<std::string>(expr->value);
         default:
             return "UKNOWN";

@@ -109,6 +109,13 @@
 %type<integer> funcbody
 %type<symbol> funcprefix
 %type<symbol> funcdef
+%type<expression> objectdef
+%type<expression> elist
+%type<expression> nextexpr
+%type<expression> indexed
+%type<expression> nextindexed
+%type<expression> indexedelem
+%type<expression> member
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -227,10 +234,25 @@ expr
 
 term
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+        $$ = $2;
     }
     | SUBTRACTION expr %prec UMINUS {
+        if (!isValidArithmeticExpr($2)) yyerror("invalid arithmetic expression");
+
+        $$ = newExprType(ARITHMETIC_EXPR);
+        Symbol* newSymbol = newTempSymbol();
+        symtable.insert(newSymbol);
+        $$->symbol = newSymbol;
+        $$->value = newSymbol->getId();
+        emit(OP_UMINUS, $2, NULL, $$, yylineno, nextQuadLabel());
     }
     | NOT expr {
+        $$ = newExprType(BOOLEAN_EXPR);
+        Symbol* newSymbol = newTempSymbol();
+        symtable.insert(newSymbol);
+        $$->symbol = newSymbol;
+        $$->value = newSymbol->getId();
+        emit(OP_NOT, $2, NULL, $$, yylineno, nextQuadLabel());
     }
     | INCREMENT lvalue {
         Symbol* symbol = $2->symbol;
@@ -239,8 +261,27 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot increment the value of a function.");
         } else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            // symbol->setActive(true);
+            // symtable.insert(symbol);
+        }
+
+        if($2->type == TABLE_ITEM_EXPR) {
+            $$ = emit_iftableitem($2, yylineno);
+            emit(OP_ADD, newIntegerExpr(1), $$, $$, yylineno, nextQuadLabel());
+            emit(OP_TABLESETELEM, $2->index, $2, $$, yylineno, nextQuadLabel());
+        } else {
+            emit(OP_ADD, newIntegerExpr(1), $2, $2, yylineno, nextQuadLabel());
+            $$ = newExprType(ARITHMETIC_EXPR);
+
+            if(isTempSymbol($2->symbol)) {
+                $$->symbol = $2->symbol;
+            } else {
+                Symbol* newSymbol = newTempSymbol();
+                symtable.insert(newSymbol);
+                $$->symbol = newSymbol;
+                $$->value = newSymbol->getId();
+                emit(OP_ASSIGN, $2, NULL, $$, yylineno, nextQuadLabel());
+            }
         }
     }
     | lvalue INCREMENT {
@@ -250,8 +291,24 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot increment the value of a function.");
         }else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            // symbol->setActive(true);
+            // symtable.insert(symbol);
+        }
+
+        $$ = newExprType(VAR_EXPR);
+        Symbol* newSymbol = newTempSymbol();
+        symtable.insert(newSymbol);
+        $$->symbol = newSymbol;
+        $$->value = newSymbol->getId();
+        emit(OP_ASSIGN, $1, NULL, $$, yylineno, nextQuadLabel());
+
+        if($1->type == TABLE_ITEM_EXPR) {
+            Expr* newExpr = emit_iftableitem($1, yylineno);
+            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, nextQuadLabel());
+            emit(OP_ADD, newExpr, newExpr, newIntegerExpr(1), yylineno, nextQuadLabel());
+            emit(OP_TABLESETELEM, $1->index, $1, newExpr, yylineno, nextQuadLabel());
+        } else {
+            emit(OP_ADD, newIntegerExpr(1), $1, $1, yylineno, nextQuadLabel());
         }
     }
     | DECREMENT lvalue {
@@ -261,8 +318,27 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot decrement the value of a function.");
         } else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            // symbol->setActive(true);
+            // symtable.insert(symbol);
+        }
+
+        if($2->type == TABLE_ITEM_EXPR) {
+            $$ = emit_iftableitem($2, yylineno);
+            emit(OP_SUB, newIntegerExpr(1), $$, $$, yylineno, nextQuadLabel());
+            emit(OP_TABLESETELEM, $2->index, $2, $$, yylineno, nextQuadLabel());
+        } else {
+            emit(OP_SUB, $2, $2, newIntegerExpr(1), yylineno, nextQuadLabel());
+            $$ = newExprType(ARITHMETIC_EXPR);
+
+            if(isTempSymbol($2->symbol)) {
+                $$->symbol = $2->symbol;
+            } else {
+                Symbol* newSymbol = newTempSymbol();
+                symtable.insert(newSymbol);
+                $$->symbol = newSymbol;
+                $$->value = newSymbol->getId();
+                emit(OP_ASSIGN, $2, NULL, $$, yylineno, nextQuadLabel());
+            }
         }
     }
     | lvalue DECREMENT {
@@ -272,8 +348,24 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot decrement the value of a function.");
         } else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            // symbol->setActive(true);
+            // symtable.insert(symbol);
+        }
+
+        $$ = newExprType(VAR_EXPR);
+        Symbol* newSymbol = newTempSymbol();
+        symtable.insert(newSymbol);
+        $$->symbol = newSymbol;
+        $$->value = newSymbol->getId();
+
+        if($1->type == TABLE_ITEM_EXPR) {
+            Expr* newExpr = emit_iftableitem($1, yylineno);
+            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, nextQuadLabel());
+            emit(OP_SUB, newExpr, newExpr, newIntegerExpr(1), yylineno, nextQuadLabel());
+            emit(OP_TABLESETELEM, $1->index, $1, newExpr, yylineno, nextQuadLabel());
+        } else {
+            emit(OP_ASSIGN, $1, NULL, $$, yylineno, nextQuadLabel());
+            emit(OP_SUB, newIntegerExpr(1), $1, $1, yylineno, nextQuadLabel());
         }
     }
     | primary {
@@ -295,28 +387,38 @@ assignexpr
             // symtable.insert(symbol);
         }
 
-        emit(OP_ASSIGN, $1, NULL, $3 , yylineno, nextQuadLabel());
-
-        $$ = newExprType(ASSIGN_EXPR);
-        if(isTempSymbol($1->symbol)) {
-            $$->symbol = $1->symbol;
+        if($1->type == TABLE_ITEM_EXPR) {
+            emit(OP_TABLESETELEM, $1->index, $1, $3, yylineno, nextQuadLabel());
+            $$ = emit_iftableitem($1, yylineno);
+            $$->type = ASSIGN_EXPR;
         } else {
-            Symbol* newSymbol = newTempSymbol();
-            symtable.insert(newSymbol);
-            $$->symbol = newSymbol;
-            $$->value = newSymbol->getId();
-            emit(OP_ASSIGN, $$, NULL, $1, yylineno, nextQuadLabel());
+            emit(OP_ASSIGN, $3, NULL, $1 , yylineno, nextQuadLabel());
+
+            $$ = newExprType(ASSIGN_EXPR);
+            if(isTempSymbol($1->symbol)) {
+                $$->symbol = $1->symbol;
+            } else {
+                Symbol* newSymbol = newTempSymbol();
+                symtable.insert(newSymbol);
+                $$->symbol = newSymbol;
+                $$->value = newSymbol->getId();
+                emit(OP_ASSIGN, $1, NULL, $$, yylineno, nextQuadLabel());
+            }
         }
     };
 
 primary
     : lvalue {
+        $$ = emit_iftableitem($1, yylineno);
     }
     | call {
     }
     | objectdef {
+        $$ = $1;
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {
+        $$ = newExprType(USERFUNCTION_EXPR);
+        $$->symbol = $2;
     }
     | const {
         $$ = $1;
@@ -370,7 +472,7 @@ lvalue
 
     }
     | member {
-        $$ = NULL;
+        $$ = $1;
     };
 
 member
@@ -379,18 +481,20 @@ member
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( !symbol->isActive() ) { // If the symbol doesn't exist.
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            // symbol->setActive(true);
+            // symtable.insert(symbol);
         }
+        $$ = emit_table($1, newStringExpr(yylval.string), yylineno);
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
         Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( !symbol->isActive() ) { // If the symbol doesn't exist.
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            // symbol->setActive(true);
+            // symtable.insert(symbol);
         }
+        $$ = emit_table($1, $3, yylineno);
     }
     | call DOT ID {
     }
@@ -430,36 +534,80 @@ methodcall
 
 elist
     : expr nextexpr {
+        $$ = $1;
+        $$->next = $2;
     }
-    | %empty
+    | %empty {
+        $$ = NULL;
+    }
     ;
 
 nextexpr
     : COMMA expr nextexpr {
+        $$ = $2;
+        $$->next = $3;
     }
-    | %empty
+    | %empty {
+        $$ = NULL;
+    }
     ;
 
 objectdef
     : LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET {
+        Expr* tmp;
+        int i = 0;
+
+        $$ = newExprType(NEW_TABLE_EXPR);
+        Symbol* newSymbol = newTempSymbol();
+        symtable.insert(newSymbol);
+        $$->symbol = newSymbol;
+        $$->value = newSymbol->getId();
+        emit(OP_TABLECREATE, NULL, NULL, $$, nextQuadLabel(), yylineno);
+
+        tmp = $2;
+        while(tmp != NULL) {
+            emit(OP_TABLESETELEM, newIntegerExpr(i++), $$, tmp, nextQuadLabel(), yylineno);
+            tmp = tmp->next;
+        }
     }
     | LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
+        Expr* tmp;
+
+        $$ = newExprType(NEW_TABLE_EXPR);
+        Symbol* newSymbol = newTempSymbol();
+        symtable.insert(newSymbol);
+        $$->symbol = newSymbol;
+        $$->value = newSymbol->getId();
+        emit(OP_TABLECREATE, NULL, NULL, $$, nextQuadLabel(), yylineno);
+
+        tmp = $2;
+        while(tmp != NULL) {
+            emit(OP_TABLESETELEM, $$, tmp, tmp->index, nextQuadLabel(), yylineno);
+            tmp = tmp->next;
+        }
     };
 
 indexed
     : indexedelem nextindexed {
+        $$ = $1;
+        $$->next = $2;
     }
     ;
 
 nextindexed
     : COMMA indexedelem nextindexed {
+        $$ = $2;
+        $$->next = $3;
     }
-    | %empty
+    | %empty {
+        $$ = NULL;
+    }
     ;
 
 indexedelem
     : LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET{
-
+        $$ = $2;
+        $$->index = $4;
     };
 
 block

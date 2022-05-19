@@ -49,14 +49,21 @@ typedef enum {
     USERFUNCTION_EXPR,
     LIBRARYFUNCTION_EXPR,
     VAR_EXPR,
-    ASSIGN_EXPR
+    ASSIGN_EXPR,
+    ARITHMETIC_EXPR,
+    NEW_TABLE_EXPR,
+    TABLE_ITEM_EXPR
 } Expr_T;
 
-typedef struct {
+typedef struct Expr Expr;
+
+struct Expr {
     Expr_T type;
     Symbol* symbol;
     std::variant<std::string, int, double, bool> value;
-} Expr;
+    struct Expr* index;
+    struct Expr* next;
+};
 
 typedef struct {
     Opcode opcode;
@@ -101,6 +108,12 @@ Symbol* newTempSymbol();
 bool isValidArithmeticOperation(Expr* e1, Expr* e2);
 
 // EVA
+Expr* emit_iftableitem(Expr* expr, unsigned int lineno);
+
+Expr* emit_table(Expr* arg1, Expr* arg2, unsigned int lineno);
+
+bool isValidArithmeticExpr(Expr* expr);
+
 void resetFormalArgsOffset();
 
 void resetFunctionLocalOffset();

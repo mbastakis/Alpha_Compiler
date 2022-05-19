@@ -14,9 +14,21 @@ function f2(x, y) {
 	q = 1;
 }
 
+(function () {});
+
 e = 5;
 g = 1.2;
 h = "test";
 i = true;
 j = false;
 i = j;
+k = -5;
+l = not true;
+m = ++i;
+n = i++;
+o = --i;
+p = i--;
+t = [1, 2, 3, 4];
+t2 = [{"x": 0}, {"y": a}, { -1: 0}];
+t.a = 5;
+t[0]++;
