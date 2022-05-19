@@ -104,6 +104,8 @@
 %type<expression> primary
 %type<expression> const
 %type<expression> lvalue
+%type<integer> ifprefix
+%type<integer> elseprefix
 // EVA
 // %type<string> funcname
 %type<integer> funcbody
@@ -133,6 +135,7 @@ program
 
 statements
     : statements stmt {
+        resetTemp();
     }
     | %empty
     ;
@@ -170,55 +173,277 @@ expr
     | expr ADDITION expr {
         if( !isValidArithmeticOperation($1, $3) )
             yyerror("Cannot add non numeric value");
+        else {
+            Expr_T a ;
+            // if ($1->type==CONST_NUMBER_EXPR && $3->type==CONST_NUMBER_EXPR){
+            //     a = CONST_NUMBER_EXPR;
+            // } else {
+            //     a = NUMBER_EXPR;
+            // }
+            a = NUMBER_EXPR;
+
+            Symbol* symbol;
+            Expr* result;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            result = changeType(result, a);
+            emit(OP_ADD, $1, $3, result , yylineno, 0);
+            $$ = result;
+        }
     }
     | expr SUBTRACTION expr {
         if( !isValidArithmeticOperation($1, $3) )
             yyerror("Cannot subtract non numeric value");
+        else {
+            Expr_T a ;
+            a = NUMBER_EXPR;
+
+            Symbol* symbol;
+            Expr* result;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            result = changeType(result, a);
+            emit(OP_SUB, $1, $3, result , yylineno, 0);
+            $$ = result;
+        }
     }
     | expr MULTIPLICATION expr {
         if( !isValidArithmeticOperation($1, $3) )
             yyerror("Cannot multiply non numeric value");
+        else {
+            Expr_T a ;
+            a = NUMBER_EXPR;
+
+            Symbol* symbol;
+            Expr* result;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            result = changeType(result, a);
+            emit(OP_MUL, $1, $3, result , yylineno, 0);
+            $$ = result;
+        }
 
     }
     | expr DIVISION expr {
         if( !isValidArithmeticOperation($1, $3) )
             yyerror("Cannot divide non numeric value");
+        else {
+            Expr_T a ;
+            a = NUMBER_EXPR;
+
+            Symbol* symbol;
+            Expr* result;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            result = changeType(result, a);
+            emit(OP_DIV, $1, $3, result , yylineno, 0);
+            $$ = result;
+        }
     }
-    | expr MODULO expr {
+    | expr MODULO expr {  //faq 6.
         if( !isValidArithmeticOperation($1, $3) )
             yyerror("Cannot do the mod operation with non numeric value");
+        else {
+            Expr_T a ;
+            a = NUMBER_EXPR;
+
+            Symbol* symbol;
+            Expr* result;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            result = changeType(result, a);
+            emit(OP_MOD, $1, $3, result , yylineno, 0);
+            $$ = result;
+        }
     }
     | expr GREATER_THAN expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot compare non numeric value");
+        else {
+            Symbol* symbol;
+            Expr* result, *varBool1, *varBool2;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            varBool1 = symbolToExpr(symbol);
+            varBool2 = symbolToExpr(symbol);
+
+            emit(OP_IF_GREATER, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            result = changeType(result, BOOLEAN_EXPR);
+
+            varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
+            varBool1 = changeValue(varBool1, false);
+
+            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
+            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+
+            varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
+            varBool2 = changeValue(varBool2, true);
+            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+
+            $$ = result;
+        }
     }
     | expr LESS_THAN expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot compare non numeric value");
+        else {
+            Symbol* symbol;
+            Expr* result, *varBool1, *varBool2;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            varBool1 = symbolToExpr(symbol);
+            varBool2 = symbolToExpr(symbol);
+
+            emit(OP_IF_LESS, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            result = changeType(result, BOOLEAN_EXPR);
+
+            varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
+            varBool1 = changeValue(varBool1, false);
+
+            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
+            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+
+            varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
+            varBool2 = changeValue(varBool2, true);
+            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+
+            $$ = result;
+        }
     }
     | expr GREATER_OR_EQUAL expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot compare non numeric value");
+        else {
+            Symbol* symbol;
+            Expr* result, *varBool1, *varBool2;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            varBool1 = symbolToExpr(symbol);
+            varBool2 = symbolToExpr(symbol);
+
+            emit(OP_IF_GREATEQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            result = changeType(result, BOOLEAN_EXPR);
+
+            varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
+            varBool1 = changeValue(varBool1, false);
+
+            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
+            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+
+            varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
+            varBool2 = changeValue(varBool2, true);
+            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+
+            $$ = result;
+        }
     }
     | expr LESS_OR_EQUAL expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+        if( !isValidArithmeticOperation($1, $3) )
+            yyerror("Cannot compare non numeric value");
+        else {
+            Symbol* symbol;
+            Expr* result, *varBool1, *varBool2;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            varBool1 = symbolToExpr(symbol);
+            varBool2 = symbolToExpr(symbol);
+
+            emit(OP_IF_LESSEQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            result = changeType(result, BOOLEAN_EXPR);
+
+            varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
+            varBool1 = changeValue(varBool1, false);
+
+            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
+            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+
+            varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
+            varBool2 = changeValue(varBool2, true);
+            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+
+            $$ = result;
+        }
     }
     | expr EQUALITY expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+        if(!areExprTypesEq($1, $3))
+            yyerror("Cannot compare different types");
+         else {
+            Symbol* symbol;
+            Expr* result, *varBool1, *varBool2;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            varBool1 = symbolToExpr(symbol);
+            varBool2 = symbolToExpr(symbol);
+
+            emit(OP_IF_EQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            result = changeType(result, BOOLEAN_EXPR);
+
+            varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
+            varBool1 = changeValue(varBool1, false);
+
+            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
+            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+
+            varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
+            varBool2 = changeValue(varBool2, true);
+            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+
+            $$ = result;
+        }
     }
     | expr INEQUALITY expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+        if(!areExprTypesEq($1, $3))
+            yyerror("Cannot compare different types");
+         else {
+            Symbol* symbol;
+            Expr* result, *varBool1, *varBool2;
+            symbol = newTempSymbol();
+            result = symbolToExpr(symbol);
+            varBool1 = symbolToExpr(symbol);
+            varBool2 = symbolToExpr(symbol);
+
+            emit(OP_IF_NOTEQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            result = changeType(result, BOOLEAN_EXPR);
+
+            varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
+            varBool1 = changeValue(varBool1, false);
+
+            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
+            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+
+            varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
+            varBool2 = changeValue(varBool2, true);
+            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+
+            $$ = result;
+        }
     }
     | expr AND expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+        //if() yyerror("Cannot compare with a function");
+        Expr_T a ;
+        a = NUMBER_EXPR;
+
+        Symbol* symbol;
+        Expr* result;
+        symbol = newTempSymbol();
+        result = symbolToExpr(symbol);
+        result = changeType(result, a);
+        emit(OP_AND, $1, $3, result , yylineno, 0);
+        $$ = result;
+
     }
     | expr OR expr {
-        if(isFunctionExpr($1) || isFunctionExpr($3))
-            yyerror("Cannot compare with a function");
+       // if() yyerror("Cannot compare with a function");
+        Expr_T a ;
+        a = NUMBER_EXPR;
+
+        Symbol* symbol;
+        Expr* result;
+        symbol = newTempSymbol();
+        result = symbolToExpr(symbol);
+        result = changeType(result, a);
+        emit(OP_OR, $1, $3, result , yylineno, 0);
+        $$ = result;
     }
     | term {
         $$ = $1;
@@ -294,7 +519,7 @@ assignexpr
             symtable.insert(symbol);
         }
 
-        emit(OP_ASSIGN, $3, NULL, $1 , yylineno, nextQuadLabel());
+        emit(OP_ASSIGN, $3, NULL, $1 , yylineno, 0);
     };
 
 primary
@@ -324,15 +549,14 @@ primary
         $$ = $1;
     };
 
-lvalue
-    : ID {
+lvalue        
+    : ID { //na ftiaxoume to scope
         Symbol* search = symtable.recursiveLookup($1, currentScope, blockStack);
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) {// If no symbol was found.
             Symbol* newSymbol = new Symbol($1, type, yylineno, currentScope, false);
             newSymbol->setOffset(getCurrentScopeOffset());
-            symtable.insert(newSymbol);
             incCurrentScopeOffset();
             $$ = symbolToExpr(newSymbol);
         }
@@ -555,10 +779,10 @@ const
         $$ = newNilExpr();
     }
     | TRUE{
-        $$ = newBoolExpr($1);
+        $$ = newBoolExpr("true");
     }
     | FALSE{
-        $$ = newBoolExpr($1);
+        $$ = newBoolExpr("false");
     };
 
 idlist
@@ -601,18 +825,64 @@ nextid
     | %empty
     ;
 
+ifprefix
+    : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+        Symbol* symbol;
+        Expr* varBool;
+        symbol = newTempSymbol();
+        varBool = symbolToExpr(symbol);
+        varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
+        varBool = changeValue(varBool, true);
+
+        emit(OP_IF_EQ, $3, varBool, NULL, yylineno, nextQuadLabel() + 2);
+        $$ = nextQuadLabel();
+       
+        emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+        
+    };
+
+elseprefix
+    : ELSE {
+        $$ = nextQuadLabel();
+       
+        emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+
+    };
+
 ifstmt
-    : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt %prec PUREIF {
+    : ifprefix stmt %prec PUREIF {
+        
+        patchlabel($1, nextQuadLabel());
     }
-    | IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt {
+    | ifprefix stmt elseprefix stmt {
+        
+        patchlabel($1, $3 + 1);
+        patchlabel($3, nextQuadLabel());
+
+    };
+
+whilestart
+    : WHILE {
+
+    };
+
+whilecond
+    : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+        
     };
 
 whilestmt
-    : WHILE{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {stmtOpen--;} {
+    : whilestart {currentLine = yylineno; stmtOpen++;} whilecond stmt {stmtOpen--;} {
+
+    };
+
+forprefix
+    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON {
+
     };
 
 forstmt
-    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON expr SEMICOLON elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
+    : forprefix elist RIGHT_PARENTHESES stmt {stmtOpen--;} {
 
     };
 
@@ -660,7 +930,7 @@ int main(int argc, char** argv) {
     functionLocalOffset = 0;
     formalArgOffset = 0;
     scopeSpaceCounter = 1;
-    tempNameCounter = 1;
+    tempNameCounter = 0;
 
     Quads = std::vector<Quad*>();
 

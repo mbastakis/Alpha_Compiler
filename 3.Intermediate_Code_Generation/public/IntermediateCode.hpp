@@ -36,7 +36,7 @@ typedef enum {
     OP_TABLESETELEM
 } Opcode;
 
-typedef enum {   //expression type
+typedef enum {   //expression type   //tableitem_e, newtable_e, assignexpr_e sel.15 front
     CONST_NUMBER_EXPR,
     NUMBER_EXPR,
     CONST_BOOLEAN_EXPR,
@@ -49,7 +49,7 @@ typedef enum {   //expression type
     VAR_EXPR
 } Expr_T;
 
-typedef struct {
+typedef struct {  // expr* next
     Expr_T type;
     Symbol* symbol;
     std::variant<std::string, int, double, bool> value;
@@ -119,7 +119,15 @@ Expr* newIntegerExpr(int value);
 
 Expr* newDoubleExpr(double value);
 
+Expr* changeType(Expr* expr, Expr_T type);
+
+Expr* changeValue(Expr* expr, std::variant<std::string, int, double, bool> value);
+
+bool areExprTypesEq(Expr* expr1, Expr* expr2);
+
 bool isFunctionExpr(Expr* expr);
+
+void patchlabel (unsigned int quadNo, unsigned int label);
 
 unsigned int nextQuadLabel();
 
