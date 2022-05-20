@@ -1,0 +1,33 @@
+
+quad#	opcode		result		arg1		arg2		label
+=============================================================================
+1:	jump								7
+2:	funcstart			iamafunction				
+3:	add		$1		a		b		
+4:	return				8				
+5:	sub		$2		9		0		
+6:	funcend				iamafunction				
+7:	jump								10
+8:	funcstart			iamnothing				
+9:	funcend				iamnothing				
+10:	jump								16
+11:	funcstart			_f1				
+12:	sub		$3		10		0		
+13:	return				12				
+14:	sub		$4		11		0		
+15:	funcend				_f1				
+16:	assign		ihavenoname		_f1				
+17:	jump								20
+18:	funcstart			_f2				
+19:	funcend				_f2				
+20:	jump								30
+21:	funcstart			_f3				
+22:	jump								29
+23:	funcstart			_f4				
+24:	param				4				
+25:	param				3				
+26:	call				iamafunction				
+27:	getretval	$5						
+28:	funcend				_f4				
+29:	funcend				_f3				
+

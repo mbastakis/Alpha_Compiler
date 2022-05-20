@@ -175,6 +175,8 @@ std::list<Expr*> reverseElist(Expr* expr);
 
 std::string opcodeToString(Opcode opcode);
 
+void printQuadsInFile(char*);
+
 int betweenFor();
 
 #endif

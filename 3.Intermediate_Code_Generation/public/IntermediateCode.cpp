@@ -422,6 +422,52 @@ std::string quadTabs(std::string value) {
     return "\t";
 }
 
+void printQuadsInFile(char* argv) {
+    std::ofstream myfile;
+    std::string filename = "quads_" + std::string(argv);
+    myfile.open(filename.c_str());
+
+    myfile << std::endl;
+    myfile << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;
+    myfile << "=============================================================================" << std::endl;
+    int counter = 1;
+    for (auto it = Quads.begin(); it != Quads.end(); ++it) {
+        Quad* quad = *it;
+        std::string opcode = opcodeToString(quad->opcode);
+        myfile << counter++ << ':';
+        myfile << '\t' << opcode << quadTabs(opcode);
+        
+        // if (quad->result != NULL) myfile << quad->result->symbol->getId() << "\t\t";
+        if (quad->result != NULL) myfile << exprValueToString(quad->result) << "\t\t";
+        else myfile << "" << "\t\t";
+        // if (quad->arg1 != NULL) myfile << quadTabs(exprValueToString(quad->result)) << exprValueToString(quad->arg1);
+        if (quad->arg1 != NULL) {
+            if(quad->arg1->type == CONST_NUMBER_EXPR || quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
+                myfile << exprValueToString(quad->arg1) << "\t\t";
+            }
+            else{
+                myfile << exprValueToString(quad->arg1) << "\t\t";
+            }
+        } else myfile << "" << "\t\t";
+        // if (quad->arg2 != NULL) myfile << quadTabs(exprValueToString(quad->arg1)) << exprValueToString(quad->arg2);
+        if (quad->arg2 != NULL) {
+            if(quad->arg2->type == CONST_NUMBER_EXPR || quad->arg2->type == CONST_BOOLEAN_EXPR || quad->arg2->type == CONST_STRING_EXPR)
+                myfile << exprValueToString(quad->arg2) << "\t\t";
+            else
+                myfile << exprValueToString(quad->arg2) << "\t\t";
+        } else myfile << "" << "\t\t";
+        if (quad->label != 0) {
+            myfile << quad->label;
+        }
+
+        myfile << std::endl;
+    }
+
+    myfile << std::endl;
+
+    myfile.close();
+}
+
 void printQuads() {
     std::cout << std::endl;
     std::cout << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;

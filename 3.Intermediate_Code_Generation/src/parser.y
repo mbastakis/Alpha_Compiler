@@ -42,7 +42,7 @@
     int closureJumpInFor;
     std::string newName;
     std::string currentFunctionName;
-    int errorCounter = 0;
+    bool hadError = false;
 
     /* Offset Usage */
     /* Note, isws xreiastoume kapoio stack apo offsets gia emfolebmenes sunartisis */
@@ -66,10 +66,10 @@
      }
 
      void yyerror (const std::string errorMsg) {
-
-         red();
-         std::cout << "Error: at line: " << yylineno << ", " << errorMsg << std::endl;
-         reset();
+        hadError = true;
+        red();
+        std::cout << "Error: at line: " << yylineno << ", " << errorMsg << std::endl;
+        reset();
      }
 %}
 
@@ -442,7 +442,7 @@ expr
     | expr AND expr {
         //if() yyerror("Cannot compare with a function");
         Expr_T a ;
-        a = NUMBER_EXPR;
+        a = ARITHMETIC_EXPR;
 
         Symbol* symbol;
         Expr* result;
@@ -455,7 +455,7 @@ expr
     | expr OR expr {
         // if() yyerror("Cannot compare with a function");
         Expr_T a ;
-        a = NUMBER_EXPR;
+        a = ARITHMETIC_EXPR;
 
         Symbol* symbol;
         Expr* result;
@@ -1190,11 +1190,16 @@ int main(int argc, char** argv) {
     if ( argc > 1)
         fclose(yyin);
 
-    if ( argc == 3) {
+    if(hadError) {
+        std::cout << "Program compiled with errors, terminating..." << std::endl;
+    }
+
+    if ( argc == 3 ) {
+        printQuadsInFile(argv[2]);
         symtable.printSymbolsInFile(argv[2]);
     } else {
-        symtable.printSymTable();
         printQuads();
+        symtable.printSymTable();
     }
 
     return 0;

@@ -1,0 +1,27 @@
+-----------	 Scope #0	-----------
+"argument" [library function] (line 0) (scope 0) (offset 0) 
+"cos" [library function] (line 0) (scope 0) (offset 0) 
+"input" [library function] (line 0) (scope 0) (offset 0) 
+"objectcopy" [library function] (line 0) (scope 0) (offset 0) 
+"objectmemberkeys" [library function] (line 0) (scope 0) (offset 0) 
+"objecttotalmembers" [library function] (line 0) (scope 0) (offset 0) 
+"print" [library function] (line 0) (scope 0) (offset 0) 
+"sin" [library function] (line 0) (scope 0) (offset 0) 
+"sqrt" [library function] (line 0) (scope 0) (offset 0) 
+"strtonum" [library function] (line 0) (scope 0) (offset 0) 
+"totalarguments" [library function] (line 0) (scope 0) (offset 0) 
+"typeof" [library function] (line 0) (scope 0) (offset 0) 
+"iamafunction" [user function] (line 2) (scope 0) (offset 0) 
+"iamnothing" [user function] (line 8) (scope 0) (offset 0) 
+"_f1" [user function] (line 10) (scope 0) (offset 0) 
+"ihavenoname" [global variable] (line 10) (scope 0) (offset 0) 
+"_f2" [user function] (line 12) (scope 0) (offset 0) 
+"_f3" [user function] (line 14) (scope 0) (offset 0) 
+
+
+-----------	 Scope #1	-----------
+"a" [formal argument] (line 2) (scope 1) (offset 1) 
+"b" [formal argument] (line 2) (scope 1) (offset 0) 
+"_f4" [user function] (line 14) (scope 1) (offset 0) 
+
+
