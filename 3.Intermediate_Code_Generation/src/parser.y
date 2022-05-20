@@ -628,7 +628,7 @@ assignexpr
             std::cout<<"hello"<<std::endl;
             emit(OP_TABLESETELEM, $3, $1->index, $1, yylineno, 0);
             $$ = emit_iftableitem($1, yylineno);
-            $$->type = ASSIGN_EXPR;
+            //$$->type = ASSIGN_EXPR;
         } else {
             emit(OP_ASSIGN, $3, NULL, $1 , yylineno, 0);
 
