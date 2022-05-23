@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <list>
+#include "IntermediateCode.hpp"
 
 typedef enum {
     GLOBALVAR = 0,
@@ -13,6 +14,12 @@ typedef enum {
     USERFUNC,
     SYMERROR
 } Symbol_T;
+
+typedef enum {
+    PROGRAM_VAR,
+    FUNCTION_LOCAL,
+    FORMAL_ARG
+} Scopespace_T;
 
 static const char* enum_str[] =
 { "global variable", "local variable", "formal argument", "library function", "user function", "error" };
@@ -26,6 +33,8 @@ private:
     unsigned int m_line;
     bool m_isActive;
     std::list<Symbol*> m_argsList;
+    Scopespace_T m_space;
+    unsigned int m_offset;
 
 public:
     Symbol() = default;
@@ -100,6 +109,24 @@ public:
         return false;
     }
 
+    unsigned int getOffset() {
+        return m_offset;
+    }
+
+    void setOffset(unsigned int offset) {
+        m_offset = offset;
+    }
+
+    Scopespace_T getScopespace() {
+        return m_space;
+    }
+
+    void setScopespace(Scopespace_T space) {
+        m_space = space;
+    }
+
+    Expr* toExpr();
+
     /*number of arguments in a function*/
 
     std::string toString() {
@@ -113,7 +140,8 @@ public:
         return (qm + m_id + qm + sp + \
             lb + enum_str[m_type] + rb + sp + \
             lp + "line " + std::to_string(m_line) + rp + sp + \
-            lp + "scope " + std::to_string(m_scope) + rp + sp
+            lp + "scope " + std::to_string(m_scope) + rp + sp + \
+            lp + "offset " + std::to_string(m_offset) + rp + sp
             );
     }
 

@@ -9,6 +9,7 @@
 
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
+    #include "../public/IntermediateCode.hpp"
 
     /* Defines */
     #define FUNCTION_TYPE 6969
@@ -23,6 +24,7 @@
 
     /* Global Variables */
     SymbolTable symtable;
+    Quads quads;
     std::stack<std::string> functionStack;
     std::stack<bool> blockStack;
     unsigned int currentScope;
@@ -34,7 +36,6 @@
     int newNameFunction;
     std::string newName;
     std::string currentFunctionName;
-    
 
 
     /* Function Definitions */
@@ -64,7 +65,7 @@
     int integer;
     double real;
     char* string;
-    unsigned int expression;
+    Expr* expression;
     Symbol* symbol;
 }
 
@@ -85,11 +86,7 @@
 %token<string>  ERROR
 
 /* Non Terminal Symbols */
-%type<expression> expr
-%type<expression> assignexpr
-%type<expression> term
-%type<expression> primary
-%type<symbol> lvalue
+%type<expression> expr assignexpr term primary const lvalue
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -207,13 +204,14 @@ expr
 
 term
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
+        $$ = $2;
     }
     | SUBTRACTION expr %prec UMINUS {
     }
     | NOT expr {
     }
     | INCREMENT lvalue {
-        Symbol* symbol = $2;
+        Symbol* symbol = $2->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -224,7 +222,7 @@ term
         }
     }
     | lvalue INCREMENT {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -235,7 +233,7 @@ term
         }
     }
     | DECREMENT lvalue {
-        Symbol* symbol = $2;
+        Symbol* symbol = $2->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -246,7 +244,7 @@ term
         }
     }
     | lvalue DECREMENT {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
@@ -265,7 +263,7 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC) { // The symbol is a function.
@@ -278,7 +276,7 @@ assignexpr
 
 primary
     : lvalue {
-        Symbol* symbol = $1;
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up ignore.
         else if( !symbol->isActive() ) {
@@ -304,13 +302,17 @@ lvalue
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) // If no symbol was found.
-            $$ = new Symbol($1, type, yylineno, currentScope, false);
+            Symbol* sym = new Symbol($1, type, yylineno, currentScope, false);
+            sym->setOffset(quads.getCurrentScopeOffset());
+            sym->setScopeSpace(quads.getCurrentScopespace());
+            quads.incCurrentScopeOffset();
+            $$ = sym->toExpr();
         else {
             if( search->getType() == SYMERROR ) {
                 yyerror("cannot access this variable.");
                 $$ = NULL;
             }else
-                $$ = search;
+                $$ = search->toExpr();
         }
     }
     | LOCAL ID {
@@ -318,16 +320,17 @@ lvalue
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search != NULL && search->getScope() == currentScope )
-            $$ = search;
+            $$ = search->toExpr();
         else if( !symtable.contains($2, LIBRARYFUNC) )
-            $$ = new Symbol($2, type, yylineno, currentScope, false);
+            Symbol* sym = new Symbol($2, type, yylineno, currentScope, false);
+            sym->setOffset(quads.getCurrentScopeOffset());
+            sym->setScopeSpace(quads.getCurrentScopespace());
+            quads.incCurrentScopeOffset();
+            $$ = sym->toExpr();
         else if( symtable.contains($2, LIBRARYFUNC) ) {
             yyerror("trying to shadow a Library Function.");
             $$ = NULL;
         }
-            
-
-
     }
     | DOUBLE_COLON ID {
         Symbol* search = symtable.get($2, 0);
@@ -336,8 +339,7 @@ lvalue
             yyerror("the global symbol you are trying to access doesn't exist.");
             $$ = NULL;
         } else
-            $$ = search;
-            
+            $$ = search->toExpr();
     }
     | member {
         $$ = NULL;
@@ -487,7 +489,8 @@ const
 idlist
     : ID nextid {
         if(currentFunctionName.compare("_Error_") != 0) {
-                Symbol* function = symtable.lookup(currentFunctionName, currentScope);
+            Symbol* function = symtable.lookup(currentFunctionName, currentScope);
+            
             if(symtable.contains($1, LIBRARYFUNC)) {
                 yyerror("formal argument shadows library function.");
             } else if (function->containsArgument($1)){
@@ -576,7 +579,6 @@ int main(int argc, char** argv) {
 
 
     yyparse();
-    
 
     // Ending Lexical Analysis
     if ( argc > 1)
