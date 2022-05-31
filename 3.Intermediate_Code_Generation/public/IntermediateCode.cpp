@@ -12,7 +12,7 @@ void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int label, u
     newQuad->result = result;
     newQuad->line = line;
     newQuad->label = label;
-    
+
     Quads.push_back(newQuad);
 }
 
@@ -27,18 +27,12 @@ Symbol* newTemp() {
     Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
     if (symbol == NULL) {
         return new Symbol(name, type, yylineno, currentScope, true);
-    } else
+    }
+    else
         return symbol;
 }
 
 void resetTemp() { //prepei ontws na ta bgazoume apo to symtable?? - den nomizw
-
-    auto symList = symtable.getSymbols(currentScope);
-    for (auto it = symList.begin(); it != symList.end(); it++) {
-        std::string id = (*it)->getId();
-        if (id[0] == '$') symtable.removeSymbol(id, currentScope);
-    }
-
     tempCounter = 1;
 }
 
@@ -324,11 +318,11 @@ bool areExprBoolTypes(Expr* expr1, Expr* expr2) {
 
 void patchlist(std::stack<int> stackLoop, int label, int countLoop) {
     if (!stackLoop.empty()) {
-        while(countLoop > 0) {
+        while (countLoop > 0) {
             Quads[stackLoop.top()]->label = label;
             stackLoop.pop();
             countLoop = countLoop - 1;
-        } 
+        }
     }
 
 }
