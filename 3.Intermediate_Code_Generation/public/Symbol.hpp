@@ -23,6 +23,9 @@ typedef enum {
 static const char* enum_str[] =
 { "global variable", "local variable", "formal argument", "library function", "user function", "error" };
 
+static const char* enum_str_space[] =
+{ "program variable", "function local", "formal argument" };
+
 class Symbol {
 
 private:
@@ -34,6 +37,8 @@ private:
     std::list<Symbol*> m_argsList;
     Scopespace_T m_space;
     unsigned int m_offset;
+    unsigned int m_addressQuad;
+    unsigned int m_totalFunctionLocals;
 
 public:
     Symbol() = default;
@@ -46,6 +51,22 @@ public:
         m_line = line;
         m_isActive = isActive;
         m_argsList = std::list<Symbol*>();
+    }
+
+    unsigned int getTotalLocals() {
+        return m_totalFunctionLocals;
+    }
+
+    void setTotalLocals(unsigned int totalLocals) {
+        m_totalFunctionLocals = totalLocals;
+    }
+
+    unsigned int getAddressQuad() {
+        return m_addressQuad;
+    }
+
+    void setAddressQuad(unsigned int addressQuad) {
+        m_addressQuad = addressQuad;
     }
 
     unsigned int getOffset() {
@@ -138,6 +159,7 @@ public:
             lb + enum_str[m_type] + rb + sp + \
             lp + "line " + std::to_string(m_line) + rp + sp + \
             lp + "scope " + std::to_string(m_scope) + rp + sp + \
+            lp + enum_str_space[m_space] + rp + sp + \
             lp + "offset " + std::to_string(m_offset) + rp + sp
             );
     }

@@ -211,7 +211,7 @@ public:
 
     void printSymbolsInFile(char* argv) {
         std::ofstream myfile;
-        myfile.open(argv);
+        myfile.open(argv, std::ios_base::app);
 
         for (auto i = 0; i <= m_maxScope; i++) {
             myfile << "-----------\t Scope #" << std::to_string(i) << "\t-----------" << std::endl;

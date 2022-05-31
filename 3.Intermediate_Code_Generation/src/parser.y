@@ -5,8 +5,8 @@
     #include <iostream>
     #include <stack>
     #include <fstream>
-    #include <stack>
     #include <vector>
+    #include <list>
 
     #include "../public/Symbol.hpp"
     #include "../public/SymbolTable.hpp"
@@ -25,15 +25,19 @@
 
     /* Global Variables */
     SymbolTable symtable;
-    std::stack<std::string> functionStack;
     std::stack<unsigned int> scopeOffsetStack;
     std::stack<bool> blockStack;
     unsigned int currentScope;
-    std::stack<int> jumpStack;
+    std::stack<int> stackLoop;
+    std::stack<int> breakStack;
+    std::stack<int> continueStack;
+
+    std::stack<int> timesInLoop;
+    int countLoop;
 
     bool isFunc;
     int functionOpen;
-    int stmtOpen;
+    int loopOpen;
     int currentLine;
     int newNameFunction;
     int betweenElistExprInFor;
@@ -44,13 +48,15 @@
     std::string currentFunctionName;
     bool hadError = false;
 
+    int numberListOfBreak;
+    int numberListOfContinue;
+
     /* Offset Usage */
-    /* Note, isws xreiastoume kapoio stack apo offsets gia emfolebmenes sunartisis */
     unsigned int programVarOffset;
     unsigned int functionLocalOffset;
     unsigned int formalArgOffset;
     unsigned int scopeSpaceCounter;
-    unsigned int tempNameCounter;
+    unsigned int tempCounter;
 
     /* Quad */
     std::vector<Quad*> Quads;
@@ -155,7 +161,6 @@ program
 
 statements
     : statements stmt {
-        //resetTemp();
     }
     | %empty
     ;
@@ -172,12 +177,22 @@ stmt
     | returnstmt {
     }
     | BREAK SEMICOLON {
-        if(stmtOpen == 0)
-            yyerror("break outside of statement");
+        if(loopOpen == 0)
+            yyerror("break outside of loop");
+        else {
+            countLoop = countLoop + 1;
+            breakStack.push(nextQuadLabel()-1);
+            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
+        }
     }
     | CONTINUE SEMICOLON {
-        if(stmtOpen == 0)
-            yyerror("continue outside of statement");
+        if(loopOpen == 0)
+            yyerror("continue outside of loop");
+        else {
+            countLoop = countLoop + 1;
+            continueStack.push(nextQuadLabel()-1);
+            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
+        }
     }
     | block {
     }
@@ -192,278 +207,346 @@ expr
         $$ = $1;
     }
     | expr ADDITION expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ){
             yyerror("Cannot add non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Expr_T a ;
-            // if ($1->type==CONST_NUMBER_EXPR && $3->type==CONST_NUMBER_EXPR){
-            //     a = CONST_NUMBER_EXPR;
-            // } else {
-            //     a = NUMBER_EXPR;
-            // }
             a = ARITHMETIC_EXPR;
 
             Symbol* symbol;
             Expr* result;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            emit(OP_ADD, $1, $3, result , yylineno, 0);
+            symtable.insert(symbol);
+            emit(OP_ADD, $1, $3, result , 0, yylineno);
             $$ = result;
         }
     }
     | expr SUBTRACTION expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ){
             yyerror("Cannot subtract non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Expr_T a ;
             a = ARITHMETIC_EXPR;
 
             Symbol* symbol;
             Expr* result;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            emit(OP_SUB, $1, $3, result , yylineno, 0);
+            symtable.insert(symbol);
+            emit(OP_SUB, $1, $3, result, 0, yylineno);
             $$ = result;
         }
     }
     | expr MULTIPLICATION expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ) {
             yyerror("Cannot multiply non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Expr_T a ;
             a = ARITHMETIC_EXPR;
 
             Symbol* symbol;
             Expr* result;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            emit(OP_MUL, $1, $3, result , yylineno, 0);
+            symtable.insert(symbol);
+            emit(OP_MUL, $1, $3, result, 0, yylineno);
             $$ = result;
         }
 
     }
     | expr DIVISION expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ) {
             yyerror("Cannot divide non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Expr_T a ;
             a = ARITHMETIC_EXPR;
 
             Symbol* symbol;
             Expr* result;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            emit(OP_DIV, $1, $3, result , yylineno, 0);
+            symtable.insert(symbol);
+            emit(OP_DIV, $1, $3, result, 0, yylineno);
             $$ = result;
         }
     }
     | expr MODULO expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ) {
             yyerror("Cannot do the mod operation with non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Expr_T a ;
             a = ARITHMETIC_EXPR;
 
             Symbol* symbol;
             Expr* result;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            emit(OP_MOD, $1, $3, result , yylineno, 0);
+            symtable.insert(symbol);
+            emit(OP_MOD, $1, $3, result, 0, yylineno);
             $$ = result;
         }
     }
     | expr GREATER_THAN expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ) {
             yyerror("Cannot compare non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Symbol* symbol;
             Expr* result, *varBool1, *varBool2;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
+            symtable.insert(symbol);
 
-            emit(OP_IF_GREATER, $1, $3, NULL, yylineno, nextQuadLabel()+3);
+            emit(OP_IF_GREATER, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
 
             varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
             varBool1 = changeValue(varBool1, false);
 
-            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
-            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+            emit(OP_ASSIGN, varBool1, NULL, result, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, nextQuadLabel()+2, yylineno);
 
             varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
             varBool2 = changeValue(varBool2, true);
-            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+            emit(OP_ASSIGN, varBool2, NULL, result, 0, yylineno);
 
             $$ = result;
         }
     }
     | expr LESS_THAN expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ) {
             yyerror("Cannot compare non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Symbol* symbol;
             Expr* result, *varBool1, *varBool2;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
+            symtable.insert(symbol);
 
-            emit(OP_IF_LESS, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            emit(OP_IF_LESS, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
 
             varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
             varBool1 = changeValue(varBool1, false);
 
-            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
-            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+            emit(OP_ASSIGN, varBool1, NULL, result, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, nextQuadLabel()+2, yylineno);
 
             varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
             varBool2 = changeValue(varBool2, true);
-            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+            emit(OP_ASSIGN, varBool2, NULL, result, 0, yylineno);
 
             $$ = result;
         }
     }
     | expr GREATER_OR_EQUAL expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ) {
             yyerror("Cannot compare non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Symbol* symbol;
             Expr* result, *varBool1, *varBool2;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
+            symtable.insert(symbol);
 
-            emit(OP_IF_GREATEQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            emit(OP_IF_GREATEQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
 
             varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
             varBool1 = changeValue(varBool1, false);
 
-            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
-            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+            emit(OP_ASSIGN, varBool1, NULL, result, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, nextQuadLabel()+2, yylineno);
 
             varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
             varBool2 = changeValue(varBool2, true);
-            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+            emit(OP_ASSIGN, varBool2, NULL, result, 0, yylineno);
 
             $$ = result;
         }
     }
     | expr LESS_OR_EQUAL expr {
-        if( !isValidArithmeticOperation($1, $3) )
+        if( !isValidArithmeticOperation($1, $3) ) {
             yyerror("Cannot compare non numeric value");
-        else {
+            $$ = NULL;
+        } else {
             Symbol* symbol;
             Expr* result, *varBool1, *varBool2;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
+            symtable.insert(symbol);
 
-            emit(OP_IF_LESSEQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            emit(OP_IF_LESSEQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
 
             varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
             varBool1 = changeValue(varBool1, false);
 
-            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
-            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+            emit(OP_ASSIGN, varBool1, NULL, result, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, nextQuadLabel()+2, yylineno);
 
             varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
             varBool2 = changeValue(varBool2, true);
-            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+            emit(OP_ASSIGN, varBool2, NULL, result, 0, yylineno);
 
             $$ = result;
         }
     }
     | expr EQUALITY expr {
-        if(!areExprTypesEq($1, $3))
+        if(!areExprTypesEq($1, $3)) {
             yyerror("Cannot compare different types");
-         else {
+            $$ = NULL;
+         } else {
             Symbol* symbol;
             Expr* result, *varBool1, *varBool2;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
+            symtable.insert(symbol);
 
-            emit(OP_IF_EQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            emit(OP_IF_EQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
 
             varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
             varBool1 = changeValue(varBool1, false);
 
-            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
-            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+            emit(OP_ASSIGN, varBool1, NULL, result, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, nextQuadLabel()+2, yylineno);
 
             varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
             varBool2 = changeValue(varBool2, true);
-            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+            emit(OP_ASSIGN, varBool2, NULL, result, 0, yylineno);
 
             $$ = result;
         }
     }
     | expr INEQUALITY expr {
-        if(!areExprTypesEq($1, $3))
+        if(!areExprTypesEq($1, $3)) {
             yyerror("Cannot compare different types");
-         else {
+            $$ = NULL;
+        } else {
             Symbol* symbol;
             Expr* result, *varBool1, *varBool2;
-            symbol = newTempSymbol();
+            symbol = newTemp();
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
+            symtable.insert(symbol);
 
-            emit(OP_IF_NOTEQ, $1, $3, NULL , yylineno, nextQuadLabel()+3);
+            emit(OP_IF_NOTEQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
 
             varBool1 = changeType(varBool1, CONST_BOOLEAN_EXPR);
             varBool1 = changeValue(varBool1, false);
 
-            emit(OP_ASSIGN, varBool1, NULL, result , yylineno, 0);
-            emit(OP_JUMP, NULL, NULL, NULL, yylineno, nextQuadLabel()+2);
+            emit(OP_ASSIGN, varBool1, NULL, result, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, nextQuadLabel()+2, yylineno);
 
             varBool2 = changeType(varBool2, CONST_BOOLEAN_EXPR);
             varBool2 = changeValue(varBool2, true);
-            emit(OP_ASSIGN, varBool2, NULL, result , yylineno, 0);
+            emit(OP_ASSIGN, varBool2, NULL, result, 0, yylineno);
 
             $$ = result;
         }
     }
     | expr AND expr {
-        //if() yyerror("Cannot compare with a function");
-        Expr_T a ;
-        a = ARITHMETIC_EXPR;
+        //all values of alpha are converted in boolean
+        if ($1 == NULL || $3 == NULL) {
+            yyerror("An argument in operation 'and' had not type");
+            $$ = NULL;
+        } else {
 
-        Symbol* symbol;
-        Expr* result;
-        symbol = newTempSymbol();
-        result = symbolToExpr(symbol);
-        result = changeType(result, a);
-        emit(OP_AND, $1, $3, result , yylineno, 0);
-        $$ = result;
+            Expr_T a ;
+            a = BOOLEAN_EXPR;
+            Symbol* symbol0;
+            Expr* arg1, *arg2;
+            symbol0 = newTemp();
+            arg1 = symbolToExpr(symbol0);
+            arg2 = symbolToExpr(symbol0);
+        
+            if($1->type == NIL_EXPR)
+                arg1->symbol->setId("false");
+            else if($1->type != CONST_BOOLEAN_EXPR)
+                arg1->symbol->setId("true");
+            else arg1 = $1;
+
+            if($3->type == NIL_EXPR)
+                arg2->symbol->setId("false");
+            else if($3->type != CONST_BOOLEAN_EXPR)
+                arg2->symbol->setId("true");
+            else 
+                arg2=$3;
+
+            Symbol* symbol;
+            Expr* result;
+            symbol = newTemp();
+            result = symbolToExpr(symbol);
+            result = changeType(result, a);
+            symtable.insert(symbol);
+            emit(OP_AND, arg1, arg2, result, 0, yylineno);
+            $$ = result;
+        }
+
     }
-    | expr OR expr {
-        // if() yyerror("Cannot compare with a function");
-        Expr_T a ;
-        a = ARITHMETIC_EXPR;
+    | expr OR expr { 
+        //all values of alpha are converted in boolean
+        if ($1 == NULL || $3 == NULL) {
+            yyerror("An argument in operation 'or' had not type");
+            $$ = NULL;
+        } else {
+            Expr_T a ;
+            a = BOOLEAN_EXPR;
+            Symbol* symbol0;
+            Expr* arg1, *arg2;
+            symbol0 = newTemp();
+            arg1 = symbolToExpr(symbol0);
+            arg2 = symbolToExpr(symbol0);
 
-        Symbol* symbol;
-        Expr* result;
-        symbol = newTempSymbol();
-        result = symbolToExpr(symbol);
-        result = changeType(result, a);
-        emit(OP_OR, $1, $3, result , yylineno, 0);
-        $$ = result;
+            if($1->type == NIL_EXPR)
+                arg1->symbol->setId("false");
+            else if($1->type != CONST_BOOLEAN_EXPR)
+                arg1->symbol->setId("true");
+            else arg1 = $1;
+
+            if($3->type == NIL_EXPR)
+                arg2->symbol->setId("false");
+            else if($3->type != CONST_BOOLEAN_EXPR)
+                arg2->symbol->setId("true");
+            else 
+                arg2=$3;
+
+            Symbol* symbol;
+            Expr* result;
+            symbol = newTemp();
+            result = symbolToExpr(symbol);
+            result = changeType(result, a);
+            symtable.insert(symbol);
+            emit(OP_OR, arg1, arg2, result, 0, yylineno);
+            $$ = result;
+        }
+        
     }
     | term {
         $$ = $1;
@@ -476,20 +559,20 @@ term
     | SUBTRACTION expr %prec UMINUS {
         if (!isValidArithmeticExpr($2)) yyerror("invalid arithmetic expression");
 
-        $$ = newExprType(ARITHMETIC_EXPR);
-        Symbol* newSymbol = newTempSymbol();
-        symtable.insert(newSymbol);
+        $$ = newExpression(ARITHMETIC_EXPR);
+        Symbol* newSymbol = newTemp();
+        symtable.insert(newSymbol); 
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_UMINUS, $2, NULL, $$, yylineno, 0);
+        emit(OP_UMINUS, $2, NULL, $$, 0, yylineno);
     }
     | NOT expr {
-        $$ = newExprType(BOOLEAN_EXPR);
-        Symbol* newSymbol = newTempSymbol();
+        $$ = newExpression(VAR_EXPR);  //BOOLEAN_EXPR
+        Symbol* newSymbol = newTemp();
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_NOT, $2, NULL, $$, yylineno, 0);
+        emit(OP_NOT, $2, NULL, $$, 0, yylineno);
     }
     | INCREMENT lvalue {
         Symbol* symbol = $2->symbol;
@@ -498,26 +581,26 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot increment the value of a function.");
         } else if ( !symbol->isActive() ) {
-            // symbol->setActive(true);
-            // symtable.insert(symbol);
+            symbol->setActive(true);
+            symtable.insert(symbol);
         }
 
         if($2->type == TABLE_ITEM_EXPR) {
             $$ = emit_iftableitem($2, yylineno);
-            emit(OP_ADD, newIntegerExpr(1), $$, $$, yylineno, 0);
-            emit(OP_TABLESETELEM, $2, $2->index, $$, yylineno, 0);
+            emit(OP_ADD, newIntegerExpr(1), $$, $$, 0, yylineno);
+            emit(OP_TABLESETELEM, $2, $2->index, $$, 0, yylineno);
         } else {
-            emit(OP_ADD, newIntegerExpr(1), $2, $2, yylineno, 0);
-            $$ = newExprType(ARITHMETIC_EXPR);
+            emit(OP_ADD, newIntegerExpr(1), $2, $2, 0, yylineno);
+            $$ = newExpression(ARITHMETIC_EXPR);
 
             if(isTempSymbol($2->symbol)) {
                 $$->symbol = $2->symbol;
             } else {
-                Symbol* newSymbol = newTempSymbol();
+                Symbol* newSymbol = newTemp();
                 symtable.insert(newSymbol);
                 $$->symbol = newSymbol;
                 $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $2, NULL, $$, yylineno, 0);
+                emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
             }
         }
     }
@@ -528,24 +611,24 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot increment the value of a function.");
         }else if ( !symbol->isActive() ) {
-            // symbol->setActive(true);
-            // symtable.insert(symbol);
+            symbol->setActive(true);
+            symtable.insert(symbol);
         }
 
-        $$ = newExprType(VAR_EXPR);
-        Symbol* newSymbol = newTempSymbol();
+        $$ = newExpression(VAR_EXPR);
+        Symbol* newSymbol = newTemp();
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_ASSIGN, $1, NULL, $$, yylineno, 0);
+        emit(OP_ASSIGN, $1, NULL, $$, 0, yylineno);
 
         if($1->type == TABLE_ITEM_EXPR) {
             Expr* newExpr = emit_iftableitem($1, yylineno);
-            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, 0);
-            emit(OP_ADD, newExpr, newExpr, newIntegerExpr(1), yylineno, 0);
-            emit(OP_TABLESETELEM, $1->index, $1, newExpr, yylineno, 0);
+            emit(OP_ASSIGN, newExpr, NULL, $$, 0, yylineno);
+            emit(OP_ADD, newExpr, newExpr, newIntegerExpr(1), 0, yylineno);
+            emit(OP_TABLESETELEM, $1->index, $1, newExpr, 0, yylineno);
         } else {
-            emit(OP_ADD, newIntegerExpr(1), $1, $1, yylineno, 0);
+            emit(OP_ADD, newIntegerExpr(1), $1, $1, 0, yylineno);
         }
     }
     | DECREMENT lvalue {
@@ -555,26 +638,26 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot decrement the value of a function.");
         } else if ( !symbol->isActive() ) {
-            // symbol->setActive(true);
-            // symtable.insert(symbol);
+            symbol->setActive(true);
+            symtable.insert(symbol);
         }
 
         if($2->type == TABLE_ITEM_EXPR) {
             $$ = emit_iftableitem($2, yylineno);
-            emit(OP_SUB, newIntegerExpr(1), $$, $$, yylineno, 0);
-            emit(OP_TABLESETELEM, $2, $2->index, $$, yylineno, 0);
+            emit(OP_SUB, newIntegerExpr(1), $$, $$, 0, yylineno);
+            emit(OP_TABLESETELEM, $2, $2->index, $$, 0, yylineno);
         } else {
-            emit(OP_SUB, $2, $2, newIntegerExpr(1), yylineno, 0);
-            $$ = newExprType(ARITHMETIC_EXPR);
+            emit(OP_SUB, $2, $2, newIntegerExpr(1), 0, yylineno);
+            $$ = newExpression(ARITHMETIC_EXPR);
 
             if(isTempSymbol($2->symbol)) {
                 $$->symbol = $2->symbol;
             } else {
-                Symbol* newSymbol = newTempSymbol();
+                Symbol* newSymbol = newTemp();
                 symtable.insert(newSymbol);
                 $$->symbol = newSymbol;
                 $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $2, NULL, $$, yylineno, 0);
+                emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
             }
         }
     }
@@ -585,24 +668,24 @@ term
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
             yyerror("cannot decrement the value of a function.");
         } else if ( !symbol->isActive() ) {
-            // symbol->setActive(true);
-            // symtable.insert(symbol);
+            symbol->setActive(true);
+            symtable.insert(symbol);
         }
 
-        $$ = newExprType(VAR_EXPR);
-        Symbol* newSymbol = newTempSymbol();
+        $$ = newExpression(VAR_EXPR);
+        Symbol* newSymbol = newTemp();
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
 
         if($1->type == TABLE_ITEM_EXPR) {
             Expr* newExpr = emit_iftableitem($1, yylineno);
-            emit(OP_ASSIGN, newExpr, NULL, $$, yylineno, 0);
-            emit(OP_SUB, newExpr, newExpr, newIntegerExpr(1), yylineno, 0);
-            emit(OP_TABLESETELEM, $1, $1->index, newExpr, yylineno, 0);
+            emit(OP_ASSIGN, newExpr, NULL, $$, 0, yylineno);
+            emit(OP_SUB, newExpr, newExpr, newIntegerExpr(1), 0, yylineno);
+            emit(OP_TABLESETELEM, $1, $1->index, newExpr, 0, yylineno);
         } else {
-            emit(OP_ASSIGN, $1, NULL, $$, yylineno, 0);
-            emit(OP_SUB, newIntegerExpr(1), $1, $1, yylineno, 0);
+            emit(OP_ASSIGN, $1, NULL, $$, 0, yylineno);
+            emit(OP_SUB, newIntegerExpr(1), $1, $1, 0, yylineno);
         }
     }
     | primary {
@@ -620,28 +703,27 @@ assignexpr
         else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC) { // The symbol is a function.
             yyerror("cannot change the value of a function.");
         } else if( !symbol->isActive() ) { // The symbol didn't exist.
-            // symbol->setActive(true);
-            // symtable.insert(symbol);
+            symbol->setActive(true);
+            symtable.insert(symbol);
         }
 
         if($1->type == TABLE_ITEM_EXPR) {
-            std::cout<<"hello"<<std::endl;
-            emit(OP_TABLESETELEM, $3, $1->index, $1, yylineno, 0);
+            
+            emit(OP_TABLESETELEM, $1->index, $3, $1, 0, yylineno);
             $$ = emit_iftableitem($1, yylineno);
-            //$$->type = ASSIGN_EXPR;
+            $$->type = ASSIGN_EXPR;
         } else {
-            emit(OP_ASSIGN, $3, NULL, $1 , yylineno, 0);
-
-            /*$$ = newExprType(ASSIGN_EXPR);
-            if(isTempSymbol($1->symbol)) {
-                $$->symbol = $1->symbol;
-            } else {
-                Symbol* newSymbol = newTempSymbol();
-                symtable.insert(newSymbol);
-                $$->symbol = newSymbol;
-                $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $1, NULL, $$, yylineno,0);
-            }*/
+            if($3 != NULL) {
+                emit(OP_ASSIGN, $3, NULL, $1 , 0, yylineno);
+                Symbol* symbol;
+                Expr* result;
+                symbol = newTemp();
+                symtable.insert(symbol);
+                result = newExpression(ASSIGN_EXPR);
+                result->symbol = symbol;
+                emit(OP_ASSIGN, $1, NULL, result, 0, yylineno);
+                $$= result;
+            }
         }
     };
 
@@ -670,7 +752,7 @@ primary
         $$ = $1;
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {
-        $$ = newExprType(USERFUNCTION_EXPR);
+        $$ = newExpression(USERFUNCTION_EXPR);
         $$->symbol = $2;
     }
     | const {
@@ -683,10 +765,12 @@ lvalue
         Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
 
         if( search == NULL ) {// If no symbol was found.
-            // std::cout << "New id: " << $1 << " scopespace: " << getCurrentScopespace() << std::endl;
             Symbol* newSymbol = new Symbol($1, type, yylineno, currentScope, false);
+            if( functionOpen == 0 )
+                newSymbol->setScopespace(PROGRAM_VAR);
+            else
+                newSymbol->setScopespace(FUNCTION_LOCAL);
             newSymbol->setOffset(getCurrentScopeOffset());
-            symtable.insert(newSymbol);
             incCurrentScopeOffset();
             $$ = symbolToExpr(newSymbol);
         }
@@ -704,15 +788,19 @@ lvalue
 
         if( search != NULL && search->getScope() == currentScope )
             $$ = symbolToExpr(search);
-        else if( !symtable.contains($2, LIBRARYFUNC) )
-            $$ = symbolToExpr(new Symbol($2, type, yylineno, currentScope, false));
-        else if( symtable.contains($2, LIBRARYFUNC) ) {
+        else if( !symtable.contains($2, LIBRARYFUNC) ) { 
+            Symbol* newSymbol = new Symbol($2, type, yylineno, currentScope, false);
+            if( functionOpen == 0 )
+                newSymbol->setScopespace(PROGRAM_VAR);
+            else
+                newSymbol->setScopespace(FUNCTION_LOCAL);
+            newSymbol->setOffset(getCurrentScopeOffset());
+            incCurrentScopeOffset();
+            $$ = symbolToExpr(newSymbol);
+        } else if( symtable.contains($2, LIBRARYFUNC) ) {
             yyerror("trying to shadow a Library Function.");
             $$ = NULL;
         }
-
-        incCurrentScopeOffset();
-
     }
     | DOUBLE_COLON ID {
         Symbol* search = symtable.get($2, 0);
@@ -734,21 +822,23 @@ member
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( !symbol->isActive() ) { // If the symbol doesn't exist.
-            // symbol->setActive(true);
-            // symtable.insert(symbol);
+            symbol->setActive(true);
+            symtable.insert(symbol);
         }
-        //std::cout<<"hello"<<std::endl;
-        $$ = emit_table($1, newStringExpr(yylval.string), yylineno);
+
+        $$ = member_item($1, $3, yylineno);
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
         Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up, ignore.
         else if( !symbol->isActive() ) { // If the symbol doesn't exist.
-            // symbol->setActive(true);
-            // symtable.insert(symbol);
+            symbol->setActive(true);
+            symtable.insert(symbol);
         }
-        $$ = emit_table($1, $3, yylineno);
+
+
+        $$ = member_itemExpr($1, $3, yylineno);
     }
     | call DOT ID {
     }
@@ -778,7 +868,7 @@ call
         }
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        Expr* func = newExprType(USERFUNCTION_EXPR);
+        Expr* func = newExpression(USERFUNCTION_EXPR);
         func->symbol = $2;
         $$ = make_call(func, reverseElist($5), yylineno);
     };
@@ -834,34 +924,33 @@ objectdef
         Expr* tmp;
         int i = 0;
 
-        $$ = newExprType(NEW_TABLE_EXPR);
-        Symbol* newSymbol = newTempSymbol();
+        $$ = newExpression(NEW_TABLE_EXPR);
+        Symbol* newSymbol = newTemp();
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
         std::string val = newSymbol->getId();
-        std::cerr << "symbol: " << val << std::endl;
-        emit(OP_TABLECREATE, $$, NULL, NULL, yylineno, 0);
+        emit(OP_TABLECREATE, $$, NULL, NULL, 0, yylineno);
 
         tmp = $2;
         while(tmp != NULL) {
-            emit(OP_TABLESETELEM, tmp, newIntegerExpr(i++),$$, yylineno, 0);
+            emit(OP_TABLESETELEM, newIntegerExpr(i++), tmp, $$, 0, yylineno);
             tmp = tmp->next;
         }
     }
     | LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
         Expr* tmp;
 
-        $$ = newExprType(NEW_TABLE_EXPR);
-        Symbol* newSymbol = newTempSymbol();
+        $$ = newExpression(NEW_TABLE_EXPR);
+        Symbol* newSymbol = newTemp();
         symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
-        emit(OP_TABLECREATE, $$, NULL, NULL, yylineno, 0);
+        emit(OP_TABLECREATE, $$, NULL, NULL, 0, yylineno);
 
         tmp = $2;
         while(tmp != NULL) {
-            emit(OP_TABLESETELEM, $$, tmp, tmp->index, yylineno, 0);
+            emit(OP_TABLESETELEM, tmp, tmp->index, $$, 0, yylineno);
             tmp = tmp->next;
         }
     };
@@ -904,64 +993,58 @@ funcname
 
 funcprefix
     : FUNCTION {currentLine = yylineno;} funcname {
-        scopeOffsetStack.push(getCurrentScopeOffset());
-        incCurrentScopeOffset();
-        resetFormalArgsOffset();
-
+        
         if(symtable.contains(currentFunctionName, LIBRARYFUNC)) {
             yyerror("function shadows library function.");
         } else if (symtable.scopeLookup(currentFunctionName, currentScope) != NULL) {
             yyerror("function already exists.");
         } else {
-            functionStack.push(currentFunctionName);
             Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
+            function_symbol->setAddressQuad(nextQuadLabel());
+            emit(OP_FUNCSTART, symbolToExpr(function_symbol), NULL, NULL, 0, yylineno);
+
+            scopeOffsetStack.push(getCurrentScopeOffset()); //Save current offset
+            incCurrentScopeOffset();
+            enterScopespace(); //Entering function arguments scope space
+            resetFormalArgsOffset(); //Start formals from zero
+
             symtable.insert(function_symbol);
             $$ = function_symbol;
-            jumpStack.push(Quads.size());
-            emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
-            emit(OP_FUNCSTART, symbolToExpr(function_symbol), NULL, NULL, yylineno, 0);
-            incCurrentScopeOffset();
         }
     }
     ;
 
 funcargs
-    : LEFT_PARENTHESES {
-        enterScopespace();
-        scopeOffsetStack.push(getCurrentScopeOffset());
-    } idlist {
-        resetFunctionLocalOffset();
-    } RIGHT_PARENTHESES {
+    : LEFT_PARENTHESES idlist RIGHT_PARENTHESES {
         functionOpen++;
         isFunc = true;
-        enterScopespace();
-        resetFunctionLocalOffset();
+        stackLoop.push(loopOpen);
+        loopOpen=0;
+        enterScopespace(); //Now entering function locals space
+        resetFunctionLocalOffset(); //Start counting locals from zero
     }
     ;
 
 funcbody
     : block {
-        restoreCurrentScopeOffset(scopeOffsetStack.top());
-        scopeOffsetStack.pop();
-        exitScopepace();
-        $$ = getCurrentScopeOffset();
-    }
+        $$ = getCurrentScopeOffset(); //Extract #total locals
+        exitScopepace();  //Exiting function locals space
+     }
     ;
 
 funcdef
-    : funcprefix funcargs {
-        enterScopespace();
-        resetFunctionLocalOffset();
-    } funcbody {
-        exitScopepace();
-        functionOpen--;
-        Symbol* function_symbol = new Symbol(functionStack.top(), USERFUNC, currentLine, currentScope, true);
-        functionStack.pop();
-        emit(OP_FUNCEND, symbolToExpr(function_symbol), NULL, NULL, yylineno, 0);
-        Quads[jumpStack.top()]->label = Quads.size() + 1;
-        jumpStack.pop();
-        restoreCurrentScopeOffset(scopeOffsetStack.top());
+    : funcprefix funcargs funcbody {
+        exitScopepace(); //Exiting function definition space
+        $1->setTotalLocals($3); //Store #locals in symbol entry
+
+        restoreCurrentScopeOffset(scopeOffsetStack.top()); //Restore previous scope offset
         scopeOffsetStack.pop();
+
+        functionOpen--;
+        loopOpen = stackLoop.top();
+        stackLoop.pop();
+        $$ = $1; //The function definition returns the symbol
+        emit(OP_FUNCEND, symbolToExpr($1), NULL, NULL, 0, yylineno);
     }
     ;
 
@@ -973,7 +1056,7 @@ const
         $$ = newDoubleExpr(yylval.real);
     }
     | STRING{
-        $$ = newStringExpr(yylval.string);
+        $$ = newExprConstString(yylval.string);
     }
     | NIL{
         $$ = newNilExpr();
@@ -987,15 +1070,15 @@ const
 
 idlist
     : ID nextid {
-        if(currentFunctionName.compare("_Error_") != 0) {
+        if(currentFunctionName.compare("_Error_") != 0) { //It could never be _Error_
                 Symbol* function = symtable.lookup(currentFunctionName, currentScope);
             if(symtable.contains($1, LIBRARYFUNC)) {
                 yyerror("formal argument shadows library function.");
             } else if (function->containsArgument($1)){
                 yyerror("formal argument redeclaration.");
             } else {
-                // std::cout << "new formal: " << $1 << std::endl;
                 Symbol* newSym = new Symbol($1, FORMALVAR, yylineno, currentScope+1, true);
+                newSym->setScopespace(FORMAL_ARG);
                 newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);
                 function->insertArgument(newSym);
@@ -1004,22 +1087,22 @@ idlist
             }
         }
     }
-    | %empty { //This code does nothing
+    | %empty {
         $$ = NULL;
     }
     ;
 
 nextid
     : COMMA ID nextid {
-        if( currentFunctionName.compare("_Error_") != 0 ) {
+        if( currentFunctionName.compare("_Error_") != 0 ) { //It could never be _Error_
             Symbol* function = symtable.lookup(currentFunctionName, currentScope);
             if(symtable.contains($2, LIBRARYFUNC)) {
                 yyerror("formal argument shadows library function.");
             } else if (function->containsArgument($2)){
                 yyerror("formal argument redeclaration.");
             } else {
-                // std::cout << "new formal: " << $2 << std::endl;
                 Symbol* newSym = new Symbol($2, FORMALVAR, yylineno, currentScope+1, true);
+                newSym->setScopespace(FORMAL_ARG);
                 newSym->setOffset(getCurrentScopeOffset());
                 symtable.insert(newSym);
                 function->insertArgument(newSym);
@@ -1037,15 +1120,15 @@ ifprefix
     : IF LEFT_PARENTHESES expr RIGHT_PARENTHESES {
         Symbol* symbol;
         Expr* varBool;
-        symbol = newTempSymbol();
+        symbol = newTemp();
         varBool = symbolToExpr(symbol);
         varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
         varBool = changeValue(varBool, true);
 
-        emit(OP_IF_EQ, $3, varBool, NULL, yylineno, nextQuadLabel() + 2);
-        $$ = nextQuadLabel();
+        emit(OP_IF_EQ, $3, varBool, NULL, nextQuadLabel() + 2, yylineno);
+        $$ = nextQuadLabel()-1;
 
-        emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+        emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
 
     };
 
@@ -1053,7 +1136,7 @@ elseprefix
     : ELSE {
         $$ = nextQuadLabel();
 
-        emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+        emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
 
     };
 
@@ -1065,12 +1148,14 @@ ifstmt
     | ifprefix stmt elseprefix stmt {
 
         patchlabel($1, $3 + 1);
-        patchlabel($3, nextQuadLabel());
+        patchlabel($3-1, nextQuadLabel());
 
     };
 
 whilestart
     : WHILE {
+        timesInLoop.push(countLoop);
+        countLoop = 0;
         $$ = nextQuadLabel();
 
     };
@@ -1079,47 +1164,55 @@ whilecond
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
         Symbol* symbol;
         Expr* varBool;
-        symbol = newTempSymbol();
+        symbol = newTemp();
         varBool = symbolToExpr(symbol);
         varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
         varBool = changeValue(varBool, true);
-        emit(OP_IF_EQ, $2, varBool, NULL, yylineno, nextQuadLabel() + 2);
+        emit(OP_IF_EQ, $2, varBool, NULL, nextQuadLabel() + 2, yylineno);
         $$ = nextQuadLabel()-1;
-        emit(OP_JUMP, NULL, NULL, NULL, yylineno, 0);
+        emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
 
     };
 
 whilestmt
-    : whilestart {currentLine = yylineno; stmtOpen++;} whilecond stmt {stmtOpen--;} {
+    : whilestart {currentLine = yylineno; loopOpen++;} whilecond stmt {loopOpen--;} {
 
-        emit(OP_JUMP, NULL, NULL, NULL, yylineno, $1);
-        patchlabel($3, nextQuadLabel()-1);
+        emit(OP_JUMP, NULL, NULL, NULL, $1, yylineno);
+        patchlabel($3, nextQuadLabel());
 
+        patchlist(breakStack, nextQuadLabel(), countLoop);
+        patchlist(continueStack, $1, countLoop);
+        countLoop = timesInLoop.top();
+        timesInLoop.pop();
     };
 
 
 forprefix
-    : FOR{currentLine = yylineno; stmtOpen++;} LEFT_PARENTHESES elist SEMICOLON {betweenElistExprInFor = nextQuadLabel();} expr SEMICOLON {
-        std::cout << "forprefix: " << betweenElistExprInFor << std::endl;
+    : FOR{currentLine = yylineno; loopOpen++;} LEFT_PARENTHESES elist SEMICOLON {betweenElistExprInFor = nextQuadLabel();} expr SEMICOLON {
+        timesInLoop.push(countLoop);
+        countLoop = 0;
         Symbol* symbol;
         Expr* varBool;
-        symbol = newTempSymbol();
+        symbol = newTemp();
         varBool = symbolToExpr(symbol);
         varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
         varBool = changeValue(varBool, true);
         $$ = nextQuadLabel();
-        emit(OP_IF_EQ, $7, varBool, NULL, yylineno, 0);
+        emit(OP_IF_EQ, $7, varBool, NULL, 0, yylineno);
     };
 
 forstmt
-    : forprefix { falseJumpInFor = betweenFor();} elist RIGHT_PARENTHESES { loopJumpInFor = betweenFor();} stmt { closureJumpInFor = betweenFor(); stmtOpen--;} {
-            std::cerr << "forprefix " << $1 << std::endl;
-            std::cerr << "falsejumpinfor "<< falseJumpInFor << std::endl;
-            std::cerr << "closurejmpinfor " << closureJumpInFor << std::endl;
-            patchlabel($1, loopJumpInFor + 1);
-            patchlabel(falseJumpInFor, nextQuadLabel());
-            patchlabel(loopJumpInFor, betweenElistExprInFor);
-            patchlabel(closureJumpInFor-1, falseJumpInFor+1);
+    : forprefix { falseJumpInFor = betweenFor();} elist RIGHT_PARENTHESES { loopJumpInFor = betweenFor();} stmt { closureJumpInFor = betweenFor(); loopOpen--;} {
+            
+            patchlabel($1-1, loopJumpInFor );
+            patchlabel(falseJumpInFor-2, nextQuadLabel());
+            patchlabel(loopJumpInFor-2, betweenElistExprInFor);
+            patchlabel(closureJumpInFor-2, falseJumpInFor);
+
+            patchlist(breakStack, nextQuadLabel(), countLoop);
+            patchlist(continueStack, falseJumpInFor, countLoop);
+            countLoop = timesInLoop.top();
+            timesInLoop.pop();
 
     };
 
@@ -1128,7 +1221,7 @@ returnstmt
         if(functionOpen == 0)
             yyerror("return outside of function");
         else {
-            emit(OP_RET, NULL, NULL, NULL, yylineno, 0);
+            emit(OP_RET, NULL, NULL, NULL, 0, yylineno);
         }
 
     }
@@ -1137,7 +1230,7 @@ returnstmt
             yyerror("return outside of function");
         else {
 
-            emit(OP_RET, $2, NULL, NULL, yylineno, 0);
+            emit(OP_RET, $2, NULL, NULL, 0, yylineno);
         }
 
     };
@@ -1160,13 +1253,20 @@ int main(int argc, char** argv) {
 
     // Initialization
     symtable = SymbolTable();
-    functionStack = std::stack<std::string>();
     blockStack = std::stack<bool>();
-    jumpStack = std::stack<int>();
+    stackLoop = std::stack<int>();
+    breakStack = std::stack<int>();
+    continueStack = std::stack<int>();
+
+    timesInLoop = std::stack<int>();
+    countLoop = 0;
+
+    numberListOfBreak = -1;
+    numberListOfContinue = -1;
 
     currentScope = 0;
     functionOpen = 0;
-    stmtOpen = 0;
+    loopOpen = 0;
     newNameFunction = 1;
     newName = "";
     isFunc = false;
@@ -1175,19 +1275,17 @@ int main(int argc, char** argv) {
     functionLocalOffset = 0;
     formalArgOffset = 0;
     scopeSpaceCounter = 1;
-    tempNameCounter = 1;
+    tempCounter = 1;
+
+   
 
     Quads = std::vector<Quad*>();
 
     // Start the parser
     yyparse();
 
-    // EVA
-    
-
-
     // Ending Lexical Analysis
-    if ( argc > 1)
+    if ( argc > 1) 
         fclose(yyin);
 
     if(hadError) {

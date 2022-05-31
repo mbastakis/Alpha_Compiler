@@ -16,3 +16,18 @@ function f2(x, y) {
 
 e = 5;
 
+if (3>9){
+d=3;
+} else if(3==3){
+d=0;}
+
+x=f();
+while (x) {
+	function g() {
+		break;
+		while (true) {
+			continue;
+		}	
+	}
+	break;
+}

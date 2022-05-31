@@ -299,7 +299,6 @@ UNKNOWN_CHARACTER           [!@#$^?`'~|\\_&]
                             }
                         }
 {ID}                    {
-
                             if( state == DEFAULT) {
                                 std::string str = std::string(yytext);
                                 char * cStr = strcpy(new char[str.length() + 1], str.c_str());

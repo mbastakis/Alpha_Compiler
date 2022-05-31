@@ -1,13 +1,3 @@
-function iamafunction(a, b) { 
-	a + b;
-	return 8;
-	9-0;
-}
+a=b=c=d=e=f=g=h=i=j=k=l=0;
 
-function iamnothing() { iamafunction; }
-
-ihavenoname = (function(){ 10-0; return 12; 11-0; });
-
-function(){}
-
-function(){ function() { iamafunction(3,4); } }
+a > b or c < d and e >= f or g <= h and not i == j or not k != l;

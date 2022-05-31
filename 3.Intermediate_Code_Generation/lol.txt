@@ -1,0 +1,66 @@
+
+quad#	opcode		result		arg1		arg2		label
+=============================================================================
+1:	jump								7
+2:	funcstart			iamafunction				
+3:	add		$1		a		b		
+4:	return				8				
+5:	sub		$2		9		0		
+6:	funcend				iamafunction				
+7:	jump								10
+8:	funcstart			iamnothing				
+9:	funcend				iamnothing				
+10:	jump								16
+11:	funcstart			_f1				
+12:	sub		$3		10		0		
+13:	return				12				
+14:	sub		$4		11		0		
+15:	funcend				_f1				
+16:	assign		ihavenoname		_f1				
+17:	assign		$5		ihavenoname				
+18:	jump								21
+19:	funcstart			_f2				
+20:	funcend				_f2				
+21:	jump								31
+22:	funcstart			_f3				
+23:	jump								30
+24:	funcstart			_f4				
+25:	param				4				
+26:	param				3				
+27:	call				iamafunction				
+28:	getretval	$6						
+29:	funcend				_f4				
+30:	funcend				_f3				
+
+-----------	 Scope #0	-----------
+"argument" [library function] (line 0) (scope 0) (offset 0) 
+"cos" [library function] (line 0) (scope 0) (offset 0) 
+"input" [library function] (line 0) (scope 0) (offset 0) 
+"objectcopy" [library function] (line 0) (scope 0) (offset 0) 
+"objectmemberkeys" [library function] (line 0) (scope 0) (offset 0) 
+"objecttotalmembers" [library function] (line 0) (scope 0) (offset 0) 
+"print" [library function] (line 0) (scope 0) (offset 0) 
+"sin" [library function] (line 0) (scope 0) (offset 0) 
+"sqrt" [library function] (line 0) (scope 0) (offset 0) 
+"strtonum" [library function] (line 0) (scope 0) (offset 0) 
+"totalarguments" [library function] (line 0) (scope 0) (offset 0) 
+"typeof" [library function] (line 0) (scope 0) (offset 0) 
+"iamafunction" [user function] (line 1) (scope 0) (offset 0) 
+"iamnothing" [user function] (line 7) (scope 0) (offset 0) 
+"$5" [global variable] (line 9) (scope 0) (offset 0) 
+"_f1" [user function] (line 9) (scope 0) (offset 0) 
+"ihavenoname" [global variable] (line 9) (scope 0) (offset 0) 
+"_f2" [user function] (line 11) (scope 0) (offset 0) 
+"_f3" [user function] (line 13) (scope 0) (offset 0) 
+
+
+-----------	 Scope #1	-----------
+"a" [formal argument] (line 1) (scope 1) (offset 1) 
+"b" [formal argument] (line 1) (scope 1) (offset 0) 
+"$1" [local variable] (line 2) (scope 1) (offset 0) 
+"$2" [local variable] (line 4) (scope 1) (offset 0) 
+"$3" [local variable] (line 9) (scope 1) (offset 0) 
+"$4" [local variable] (line 9) (scope 1) (offset 0) 
+"_f4" [user function] (line 13) (scope 1) (offset 0) 
+
+

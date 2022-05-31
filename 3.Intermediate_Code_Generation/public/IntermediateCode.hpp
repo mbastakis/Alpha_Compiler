@@ -36,30 +36,36 @@ typedef enum {
     OP_TABLESETELEM
 } Opcode;
 
-typedef enum {   //expression type   //tableitem_e, newtable_e, assignexpr_e sel.15 front
-    CONST_INTEGER_EXPR,
-    INTEGER_EXPR,
-    CONST_REAL_EXPR,
-    REAL_EXPR,
-    CONST_BOOLEAN_EXPR,
-    BOOLEAN_EXPR,
-    CONST_STRING_EXPR,
-    STRING_EXPR,
-    NIL_EXPR,
+typedef enum { 
+    VAR_EXPR,
+    TABLE_ITEM_EXPR,
+
     USERFUNCTION_EXPR,
     LIBRARYFUNCTION_EXPR,
-    VAR_EXPR,
-    ASSIGN_EXPR,
+
     ARITHMETIC_EXPR,
+    BOOLEAN_EXPR,
+    ASSIGN_EXPR,
     NEW_TABLE_EXPR,
-    TABLE_ITEM_EXPR,
-    NUMBER_EXPR,
+
+    CONST_INTEGER_EXPR,
+    CONST_BOOLEAN_EXPR,
+    CONST_STRING_EXPR,
+
+    NIL_EXPR,
+
+    NUMBER_EXPR, //Why all of these?
+    INTEGER_EXPR,
+    REAL_EXPR,
+    STRING_EXPR,
+
+    CONST_REAL_EXPR,
     CONST_NUMBER_EXPR
 } Expr_T;
 
-typedef struct Expr Expr;
+typedef struct Expr Expr; //Ti fasi??
 
-struct Expr {
+struct Expr{
     Expr_T type;
     Symbol* symbol;
     std::variant<std::string, int, double, bool> value;
@@ -67,9 +73,9 @@ struct Expr {
     struct Expr* next;
 };
 
-typedef struct Call Call;
+typedef struct Call Call; //Ti fasi??
 
-struct Call {
+struct Call{
     std::list<Expr*> revElist;
     unsigned char method;
     std::string name;
@@ -87,14 +93,21 @@ typedef struct {
 /* Global Variables */
 extern std::vector<Quad*> Quads;
 extern SymbolTable symtable;
-extern unsigned int currentScope; //we never initialize this
+extern unsigned int currentScope;
 extern int yylineno;
+
 
 extern unsigned int programVarOffset;
 extern unsigned int functionLocalOffset;
 extern unsigned int formalArgOffset;
 extern unsigned int scopeSpaceCounter;
-extern unsigned int tempNameCounter;
+extern unsigned int tempCounter; // for the temporary variables
+
+std::string newTempName();
+
+Symbol* newTemp();
+
+void resetTemp();
 
 Scopespace_T getCurrentScopespace();
 
@@ -108,12 +121,6 @@ void incCurrentScopeOffset();
 
 void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
     unsigned int label);
-
-std::string newTempName();
-
-void resetTemp();
-
-Symbol* newTempSymbol();
 
 bool isValidArithmeticOperation(Expr* e1, Expr* e2);
 
@@ -133,7 +140,7 @@ Expr* newNilExpr();
 
 Expr* newBoolExpr(bool value);
 
-Expr* newStringExpr(std::string value);
+Expr* newExprConstString(std::string value);
 
 Expr* newIntegerExpr(int value);
 
@@ -147,9 +154,11 @@ bool areExprTypesEq(Expr* expr1, Expr* expr2);
 
 bool isFunctionExpr(Expr* expr);
 
-Expr* newExprType(Expr_T type);
+Expr* newExpression(Expr_T type);
 
 void patchlabel (unsigned int quadNo, unsigned int label);
+
+void patchlist(std::stack<int> stackLoop, int label, int countLoop);
 
 unsigned int nextQuadLabel();
 
@@ -163,7 +172,7 @@ bool isFunctionExpr(Expr* expr);
 
 Expr* emit_iftableitem(Expr* expr, unsigned int lineno);
 
-Expr* emit_table(Expr* arg1, Expr* arg2, unsigned int lineno);
+Expr* member_itemExpr(Expr* lv, Expr* arg2, unsigned int lineno);
 
 bool isValidArithmeticExpr(Expr* expr);
 
