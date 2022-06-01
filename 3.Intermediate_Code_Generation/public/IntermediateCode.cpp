@@ -179,16 +179,48 @@ Expr* newExprConstBool(bool value) {
     return newExpr;
 }
 
-bool isValidArithmeticOperation(Expr* e1, Expr* e2) {
-    if (e1 == NULL || e2 == NULL) return false;
-    return isValidArithmeticExpr(e1) && isValidArithmeticExpr(e2);
+std::list<Expr*> reverseElist(Expr* expr) {
+    std::list<Expr*> list = std::list<Expr*>();
+    std::stack<Expr*> stack = std::stack<Expr*>();
+
+    while (expr) {
+        stack.push(expr);
+        expr = expr->next;
+    }
+
+    while (!stack.empty()) {
+        list.push_front(stack.top());
+        stack.pop();
+    }
+
+    return list;
 }
 
-bool isValidArithmeticExpr(Expr* expr) {
+Expr* make_call(Expr* lvalue, std::list<Expr*> eList, unsigned int line) {
+    Expr* called_func = emit_iftableitem(lvalue, line);
+    while (!eList.empty()) {
+        emit(OP_PARAM, eList.back(), NULL, NULL, 0, line);
+        eList.pop_back();
+    }
+    emit(OP_CALL, called_func, NULL, NULL, 0, line);
+
+    Expr* result = newExpression(VAR_EXPR);
+    result->symbol = newTemp();
+    emit(OP_GETRETVAL, NULL, NULL, result, 0, line);
+    return result;
+}
+
+bool isValidArithmeticOperation(Expr* e1, Expr* e2) {
+    if (e1 == NULL || e2 == NULL) return false;
+    return check_arith(e1) && check_arith(e2);
+}
+
+bool check_arith(Expr* expr) {
     return expr->type == CONST_INTEGER_EXPR ||
         expr->type == CONST_REAL_EXPR ||
         expr->type == VAR_EXPR ||
-        expr->type == ARITHMETIC_EXPR;
+        expr->type == ARITHMETIC_EXPR ||
+        expr->type == TABLE_ITEM_EXPR;
 }
 
 std::string opcodeToString(Opcode opcode) {
@@ -286,7 +318,7 @@ Expr* newBoolExpr(bool value) {
     return newExpr;
 }
 
-Expr* newIntegerExpr(int value) {
+Expr* newExprConstNum(int value) {
     Expr* newExpr = new Expr;
 
     newExpr->type = CONST_INTEGER_EXPR;
@@ -332,38 +364,6 @@ void patchlist(std::stack<int> stackLoop, int label, int countLoop) {
         }
     }
 
-}
-
-Expr* make_call(Expr* lvalue, std::list<Expr*> revElist, unsigned int line) {
-    Expr* called_func = emit_iftableitem(lvalue, line);
-    while (!revElist.empty()) {
-        emit(OP_PARAM, revElist.back(), NULL, NULL, 0, line);
-        revElist.pop_back();
-    }
-    emit(OP_CALL, called_func, NULL, NULL, 0, line);
-
-    Expr* result = new Expr();
-    result->symbol = newTemp();
-    result->type = VAR_EXPR;
-    emit(OP_GETRETVAL, NULL, NULL, result, 0, line);
-    return result;
-}
-
-std::list<Expr*> reverseElist(Expr* expr) {
-    std::list<Expr*> list = std::list<Expr*>();
-    std::stack<Expr*> stack = std::stack<Expr*>();
-
-    while (expr) {
-        stack.push(expr);
-        expr = expr->next;
-    }
-
-    while (!stack.empty()) {
-        list.push_front(stack.top());
-        stack.pop();
-    }
-
-    return list;
 }
 
 std::string fixPrecision(std::string num) {

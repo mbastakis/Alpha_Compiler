@@ -56,7 +56,7 @@ typedef enum {
     NIL_EXPR
 } Expr_T;
 
-typedef struct Expr Expr; //Ti fasi??
+typedef struct Expr Expr;
 
 struct Expr {
     Expr_T type;
@@ -66,10 +66,10 @@ struct Expr {
     struct Expr* next;
 };
 
-typedef struct Call Call; //Ti fasi??
+typedef struct Call Call;
 
 struct Call {
-    std::list<Expr*> revElist;
+    std::list<Expr*> eList;
     unsigned char method;
     std::string name;
 };
@@ -137,7 +137,7 @@ Expr* newExprConstString(std::string value);
 
 Expr* newExprConstBool(bool);
 
-Expr* newIntegerExpr(int value);
+Expr* newExprConstNum(int value);
 
 Expr* newDoubleExpr(double value);
 
@@ -169,9 +169,9 @@ Expr* emit_iftableitem(Expr* expr, unsigned int lineno);
 
 Expr* member_itemExpr(Expr* lv, Expr* arg2, unsigned int lineno);
 
-bool isValidArithmeticExpr(Expr* expr);
+bool check_arith(Expr* expr);
 
-Expr* make_call(Expr* lv, std::list<Expr*> revElist, unsigned int line);
+Expr* make_call(Expr* lv, std::list<Expr*> eList, unsigned int line);
 
 Expr* member_item(Expr* lv, std::string name, int line);
 
