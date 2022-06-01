@@ -26,7 +26,9 @@ Symbol* newTemp() {
     Symbol* symbol = symtable.scopeLookup(name, currentScope);
     Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
     if (symbol == NULL) {
-        return new Symbol(name, type, yylineno, currentScope, true);
+        Symbol* sym = new Symbol(name, type, yylineno, currentScope, true);
+        symtable.insert(sym);
+        return sym;
     }
     else
         return symbol;
@@ -79,7 +81,7 @@ void enterScopespace() {
     ++scopeSpaceCounter;
 }
 
-void exitScopepace() {
+void exitScopespace() {
     assert(scopeSpaceCounter > 1); //The scopeSpaceCounter can never be <=0
     --scopeSpaceCounter;
 }
@@ -108,7 +110,7 @@ void restoreCurrentScopeOffset(unsigned int offset) {
 }
 
 unsigned int nextQuadLabel() {
-    return Quads.size() + 1;
+    return Quads.size();
 }
 
 void patchlabel(unsigned int quadNo, unsigned int label) {
@@ -120,6 +122,7 @@ Expr* member_item(Expr* lv, std::string name, int line) {
     lv = emit_iftableitem(lv, line); // Emit code if r-value use of table item
     Expr* ti = newExpression(TABLE_ITEM_EXPR); // Make a new expression
     ti->symbol = lv->symbol;
+    ti->value = lv->value;
     ti->index = newExprConstString(name); // Const string index
     return ti;
 }
@@ -129,6 +132,7 @@ Expr* member_itemExpr(Expr* lv, Expr* expr, unsigned int lineno) {
 
     Expr* ti = newExpression(TABLE_ITEM_EXPR);
     ti->symbol = lv->symbol;
+    ti->value = lv->value;
     ti->index = expr; //The index is the expression
     return ti;
 }
@@ -140,7 +144,6 @@ Expr* emit_iftableitem(Expr* expr, unsigned int lineno) {
 
     Expr* result = newExpression(VAR_EXPR);
     Symbol* newSymbol = newTemp();
-    symtable.insert(newSymbol);
     result->symbol = newSymbol;
     result->value = newSymbol->getId();
     emit(OP_TABLEGETELEM, expr, expr->index, result, 0, lineno);
@@ -215,35 +218,28 @@ Expr* symbolToExpr(Symbol* symbol) {
     assert(symbol);
     Expr* newExpr = new Expr;
 
+    newExpr->symbol = symbol;
+    newExpr->value = symbol->getId();
+    newExpr->next = nullptr;
     switch (symbol->getType()) {
     case GLOBALVAR: {
         newExpr->type = VAR_EXPR;
-        newExpr->symbol = symbol;
-        newExpr->value = symbol->getId();
         break;
     };
     case LOCALVAR: {
         newExpr->type = VAR_EXPR;
-        newExpr->symbol = symbol;
-        newExpr->value = symbol->getId();
         break;
     };
     case FORMAL_ARG: {
         newExpr->type = VAR_EXPR;
-        newExpr->symbol = symbol;
-        newExpr->value = symbol->getId();
         break;
     };
     case LIBRARYFUNC: {
         newExpr->type = LIBRARYFUNCTION_EXPR;
-        newExpr->symbol = symbol;
-        newExpr->value = symbol->getId();
         break;
     };
     case USERFUNC: {
         newExpr->type = USERFUNCTION_EXPR;
-        newExpr->symbol = symbol;
-        newExpr->value = symbol->getId();
         break;
     }
     case SYMERROR:

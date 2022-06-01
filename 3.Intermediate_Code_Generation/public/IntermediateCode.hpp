@@ -115,7 +115,7 @@ unsigned int getCurrentScopeOffset();
 
 void enterScopespace();
 
-void exitScopepace();
+void exitScopespace();
 
 void incCurrentScopeOffset();
 

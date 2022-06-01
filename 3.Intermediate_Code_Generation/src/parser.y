@@ -292,7 +292,6 @@ expr
             symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            symtable.insert(symbol);
             emit(OP_MOD, $1, $3, result, 0, yylineno);
             $$ = result;
         }
@@ -308,7 +307,6 @@ expr
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
-            symtable.insert(symbol);
 
             emit(OP_IF_GREATER, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
@@ -337,7 +335,6 @@ expr
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
-            symtable.insert(symbol);
 
             emit(OP_IF_LESS, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
@@ -366,7 +363,6 @@ expr
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
-            symtable.insert(symbol);
 
             emit(OP_IF_GREATEQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
@@ -395,7 +391,6 @@ expr
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
-            symtable.insert(symbol);
 
             emit(OP_IF_LESSEQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
@@ -424,7 +419,6 @@ expr
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
-            symtable.insert(symbol);
 
             emit(OP_IF_EQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
@@ -453,7 +447,6 @@ expr
             result = symbolToExpr(symbol);
             varBool1 = symbolToExpr(symbol);
             varBool2 = symbolToExpr(symbol);
-            symtable.insert(symbol);
 
             emit(OP_IF_NOTEQ, $1, $3, NULL, nextQuadLabel()+3, yylineno);
             result = changeType(result, BOOLEAN_EXPR);
@@ -504,7 +497,6 @@ expr
             symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            symtable.insert(symbol);
             emit(OP_AND, arg1, arg2, result, 0, yylineno);
             $$ = result;
         }
@@ -542,7 +534,6 @@ expr
             symbol = newTemp();
             result = symbolToExpr(symbol);
             result = changeType(result, a);
-            symtable.insert(symbol);
             emit(OP_OR, arg1, arg2, result, 0, yylineno);
             $$ = result;
         }
@@ -561,7 +552,6 @@ term
 
         $$ = newExpression(ARITHMETIC_EXPR);
         Symbol* newSymbol = newTemp();
-        symtable.insert(newSymbol); 
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
         emit(OP_UMINUS, $2, NULL, $$, 0, yylineno);
@@ -569,7 +559,6 @@ term
     | NOT expr {
         $$ = newExpression(VAR_EXPR);  //BOOLEAN_EXPR
         Symbol* newSymbol = newTemp();
-        symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
         emit(OP_NOT, $2, NULL, $$, 0, yylineno);
@@ -597,7 +586,6 @@ term
                 $$->symbol = $2->symbol;
             } else {
                 Symbol* newSymbol = newTemp();
-                symtable.insert(newSymbol);
                 $$->symbol = newSymbol;
                 $$->value = newSymbol->getId();
                 emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
@@ -617,7 +605,6 @@ term
 
         $$ = newExpression(VAR_EXPR);
         Symbol* newSymbol = newTemp();
-        symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
         emit(OP_ASSIGN, $1, NULL, $$, 0, yylineno);
@@ -654,7 +641,6 @@ term
                 $$->symbol = $2->symbol;
             } else {
                 Symbol* newSymbol = newTemp();
-                symtable.insert(newSymbol);
                 $$->symbol = newSymbol;
                 $$->value = newSymbol->getId();
                 emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
@@ -674,7 +660,6 @@ term
 
         $$ = newExpression(VAR_EXPR);
         Symbol* newSymbol = newTemp();
-        symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
 
@@ -715,21 +700,20 @@ assignexpr
         } else {
             if($3 != NULL) {
                 emit(OP_ASSIGN, $3, NULL, $1 , 0, yylineno);
-                Symbol* symbol;
                 Expr* result;
-                symbol = newTemp();
-                symtable.insert(symbol);
                 result = newExpression(ASSIGN_EXPR);
-                result->symbol = symbol;
+                result->symbol = newTemp();
                 emit(OP_ASSIGN, $1, NULL, result, 0, yylineno);
-                $$= result;
+                $$ = result;
             }
         }
     };
 
 primary
     : lvalue {
-         Symbol* symbol = $1->symbol;
+        $$ = emit_iftableitem($1, yylineno);
+
+        Symbol* symbol = $1->symbol;
 
         if( symbol == NULL ); // An error came up ignore.
         else if( !symbol->isActive() ) {
@@ -743,8 +727,7 @@ primary
             $$->type = LIBRARYFUNCTION_EXPR;
         else
             $$->type = VAR_EXPR;
-
-        $$ = emit_iftableitem($1, yylineno);
+        
     }
     | call {
     }
@@ -766,10 +749,7 @@ lvalue
 
         if( search == NULL ) {// If no symbol was found.
             Symbol* newSymbol = new Symbol($1, type, yylineno, currentScope, false);
-            if( functionOpen == 0 )
-                newSymbol->setScopespace(PROGRAM_VAR);
-            else
-                newSymbol->setScopespace(FUNCTION_LOCAL);
+            newSymbol->setScopespace(getCurrentScopespace());
             newSymbol->setOffset(getCurrentScopeOffset());
             incCurrentScopeOffset();
             $$ = symbolToExpr(newSymbol);
@@ -790,10 +770,7 @@ lvalue
             $$ = symbolToExpr(search);
         else if( !symtable.contains($2, LIBRARYFUNC) ) { 
             Symbol* newSymbol = new Symbol($2, type, yylineno, currentScope, false);
-            if( functionOpen == 0 )
-                newSymbol->setScopespace(PROGRAM_VAR);
-            else
-                newSymbol->setScopespace(FUNCTION_LOCAL);
+            newSymbol->setScopespace(getCurrentScopespace());
             newSymbol->setOffset(getCurrentScopeOffset());
             incCurrentScopeOffset();
             $$ = symbolToExpr(newSymbol);
@@ -836,7 +813,6 @@ member
             symbol->setActive(true);
             symtable.insert(symbol);
         }
-
 
         $$ = member_itemExpr($1, $3, yylineno);
     }
@@ -926,7 +902,6 @@ objectdef
 
         $$ = newExpression(NEW_TABLE_EXPR);
         Symbol* newSymbol = newTemp();
-        symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
         std::string val = newSymbol->getId();
@@ -943,7 +918,6 @@ objectdef
 
         $$ = newExpression(NEW_TABLE_EXPR);
         Symbol* newSymbol = newTemp();
-        symtable.insert(newSymbol);
         $$->symbol = newSymbol;
         $$->value = newSymbol->getId();
         emit(OP_TABLECREATE, $$, NULL, NULL, 0, yylineno);
@@ -1028,13 +1002,13 @@ funcargs
 funcbody
     : block {
         $$ = getCurrentScopeOffset(); //Extract #total locals
-        exitScopepace();  //Exiting function locals space
+        exitScopespace();  //Exiting function locals space
      }
     ;
 
 funcdef
     : funcprefix funcargs funcbody {
-        exitScopepace(); //Exiting function definition space
+        exitScopespace(); //Exiting function definition space
         $1->setTotalLocals($3); //Store #locals in symbol entry
 
         restoreCurrentScopeOffset(scopeOffsetStack.top()); //Restore previous scope offset
@@ -1045,6 +1019,7 @@ funcdef
         stackLoop.pop();
         $$ = $1; //The function definition returns the symbol
         emit(OP_FUNCEND, symbolToExpr($1), NULL, NULL, 0, yylineno);
+        //patchLabel for jump
     }
     ;
 
