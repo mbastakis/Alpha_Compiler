@@ -27,7 +27,11 @@ Symbol* newTemp() {
     Symbol_T type = currentScope == 0 ? GLOBALVAR : LOCALVAR;
     if (symbol == NULL) {
         Symbol* sym = new Symbol(name, type, yylineno, currentScope, true);
+        sym->setOffset(getCurrentScopeOffset());
+        sym->setScope(getCurrentScopespace());
+        incCurrentScopeOffset();
         symtable.insert(sym);
+
         return sym;
     }
     else
@@ -167,6 +171,14 @@ Expr* newExprConstString(std::string value) {
     return newExpr;
 }
 
+Expr* newExprConstBool(bool value) {
+    Expr* newExpr = newExpression(CONST_BOOLEAN_EXPR);
+
+    newExpr->value = value;
+
+    return newExpr;
+}
+
 bool isValidArithmeticOperation(Expr* e1, Expr* e2) {
     if (e1 == NULL || e2 == NULL) return false;
     return isValidArithmeticExpr(e1) && isValidArithmeticExpr(e2);
@@ -174,11 +186,7 @@ bool isValidArithmeticOperation(Expr* e1, Expr* e2) {
 
 bool isValidArithmeticExpr(Expr* expr) {
     return expr->type == CONST_INTEGER_EXPR ||
-        expr->type == INTEGER_EXPR ||
         expr->type == CONST_REAL_EXPR ||
-        expr->type == REAL_EXPR ||
-        expr->type == CONST_NUMBER_EXPR ||
-        expr->type == NUMBER_EXPR ||
         expr->type == VAR_EXPR ||
         expr->type == ARITHMETIC_EXPR;
 }
@@ -306,6 +314,7 @@ bool isFunctionExpr(Expr* expr) {
 
 bool areExprTypesEq(Expr* expr1, Expr* expr2) {
     if (expr1 == NULL || expr2 == NULL) return false;
+    if (expr1->type == VAR_EXPR || expr2->type == VAR_EXPR) return true;
     return expr1->type == expr2->type;
 }
 
@@ -324,7 +333,6 @@ void patchlist(std::stack<int> stackLoop, int label, int countLoop) {
     }
 
 }
-
 
 Expr* make_call(Expr* lvalue, std::list<Expr*> revElist, unsigned int line) {
     Expr* called_func = emit_iftableitem(lvalue, line);
@@ -380,40 +388,16 @@ int betweenFor() {
 
 std::string exprValueToString(Expr* expr) {
     switch (expr->type) {
-    case CONST_NUMBER_EXPR:
-        if (expr->value.index() == 1)
-            return std::to_string(std::get<int>(expr->value));
-        if (expr->value.index() == 2)
-            return fixPrecision(std::to_string(std::get<double>(expr->value)));
-    case NUMBER_EXPR:
-        if (expr->value.index() == 1)
-            return std::to_string(std::get<int>(expr->value));
-        if (expr->value.index() == 2)
-            return fixPrecision(std::to_string(std::get<double>(expr->value)));
-    case CONST_INTEGER_EXPR:
-    case INTEGER_EXPR:
-        return std::to_string(std::get<int>(expr->value));
-    case CONST_REAL_EXPR:
-    case REAL_EXPR:
-        return fixPrecision(std::to_string(std::get<double>(expr->value)));
     case CONST_BOOLEAN_EXPR:
         return std::get<bool>(expr->value) ? "true" : "false";
+    case CONST_REAL_EXPR:
+        return std::to_string(std::get<double>(expr->value));
+    case CONST_INTEGER_EXPR:
+        return std::to_string(std::get<int>(expr->value));
     case CONST_STRING_EXPR:
-    case STRING_EXPR:
         return std::get<std::string>(expr->value);
-    case NIL_EXPR:
-        return "NIL";
-    case USERFUNCTION_EXPR:
-    case LIBRARYFUNCTION_EXPR:
-    case VAR_EXPR:
-    case ASSIGN_EXPR:
-    case ARITHMETIC_EXPR:
-    case BOOLEAN_EXPR:
-    case NEW_TABLE_EXPR:
-    case TABLE_ITEM_EXPR:
-        return expr->symbol->getId();
     default:
-        return "UKNOWN";
+        return expr->symbol->getId();
     }
 }
 
@@ -442,7 +426,7 @@ void printQuadsInFile(char* argv) {
         if (quad->result != NULL) myfile << exprValueToString(quad->result) << "\t\t";
         else myfile << "" << "\t\t";
         if (quad->arg1 != NULL) {
-            if (quad->arg1->type == CONST_NUMBER_EXPR || quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
+            if (quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
                 myfile << exprValueToString(quad->arg1) << "\t\t";
             }
             else {
@@ -451,7 +435,7 @@ void printQuadsInFile(char* argv) {
         }
         else myfile << "" << "\t\t";
         if (quad->arg2 != NULL) {
-            if (quad->arg2->type == CONST_NUMBER_EXPR || quad->arg2->type == CONST_BOOLEAN_EXPR || quad->arg2->type == CONST_STRING_EXPR)
+            if (quad->arg2->type == CONST_BOOLEAN_EXPR || quad->arg2->type == CONST_STRING_EXPR)
                 myfile << exprValueToString(quad->arg2) << "\t\t";
             else
                 myfile << exprValueToString(quad->arg2) << "\t\t";
@@ -483,7 +467,7 @@ void printQuads() {
         if (quad->result != NULL) std::cout << exprValueToString(quad->result) << "\t\t";
         else std::cout << "" << "\t\t";
         if (quad->arg1 != NULL) {
-            if (quad->arg1->type == CONST_NUMBER_EXPR || quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
+            if (quad->arg1->type == CONST_BOOLEAN_EXPR || quad->arg1->type == CONST_STRING_EXPR) {
                 std::cout << exprValueToString(quad->arg1) << "\t\t";
             }
             else {
@@ -492,7 +476,7 @@ void printQuads() {
         }
         else std::cout << "" << "\t\t";
         if (quad->arg2 != NULL) {
-            if (quad->arg2->type == CONST_NUMBER_EXPR || quad->arg2->type == CONST_BOOLEAN_EXPR || quad->arg2->type == CONST_STRING_EXPR)
+            if (quad->arg2->type == CONST_BOOLEAN_EXPR || quad->arg2->type == CONST_STRING_EXPR)
                 std::cout << exprValueToString(quad->arg2) << "\t\t";
             else
                 std::cout << exprValueToString(quad->arg2) << "\t\t";

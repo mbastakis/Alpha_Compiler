@@ -1181,11 +1181,7 @@ whilestart
 whilecond
     : LEFT_PARENTHESES expr RIGHT_PARENTHESES {
         Symbol* symbol;
-        Expr* varBool;
-        symbol = newTemp();
-        varBool = symbolToExpr(symbol);
-        varBool = changeType(varBool, CONST_BOOLEAN_EXPR);
-        varBool = changeValue(varBool, true);
+        Expr* varBool = newExprConstBool(true);
         emit(OP_IF_EQ, $2, varBool, NULL, nextQuadLabel() + 2, yylineno);
         $$ = nextQuadLabel()-1;
         emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);

@@ -36,7 +36,7 @@ typedef enum {
     OP_TABLESETELEM
 } Opcode;
 
-typedef enum { 
+typedef enum {
     VAR_EXPR,
     TABLE_ITEM_EXPR,
 
@@ -49,23 +49,16 @@ typedef enum {
     NEW_TABLE_EXPR,
 
     CONST_INTEGER_EXPR,
+    CONST_REAL_EXPR,
     CONST_BOOLEAN_EXPR,
     CONST_STRING_EXPR,
 
-    NIL_EXPR,
-
-    NUMBER_EXPR, //Why all of these?
-    INTEGER_EXPR,
-    REAL_EXPR,
-    STRING_EXPR,
-
-    CONST_REAL_EXPR,
-    CONST_NUMBER_EXPR
+    NIL_EXPR
 } Expr_T;
 
 typedef struct Expr Expr; //Ti fasi??
 
-struct Expr{
+struct Expr {
     Expr_T type;
     Symbol* symbol;
     std::variant<std::string, int, double, bool> value;
@@ -75,7 +68,7 @@ struct Expr{
 
 typedef struct Call Call; //Ti fasi??
 
-struct Call{
+struct Call {
     std::list<Expr*> revElist;
     unsigned char method;
     std::string name;
@@ -142,6 +135,8 @@ Expr* newBoolExpr(bool value);
 
 Expr* newExprConstString(std::string value);
 
+Expr* newExprConstBool(bool);
+
 Expr* newIntegerExpr(int value);
 
 Expr* newDoubleExpr(double value);
@@ -156,7 +151,7 @@ bool isFunctionExpr(Expr* expr);
 
 Expr* newExpression(Expr_T type);
 
-void patchlabel (unsigned int quadNo, unsigned int label);
+void patchlabel(unsigned int quadNo, unsigned int label);
 
 void patchlist(std::stack<int> stackLoop, int label, int countLoop);
 
