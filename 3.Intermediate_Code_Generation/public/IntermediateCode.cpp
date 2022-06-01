@@ -168,6 +168,7 @@ Expr* newExprConstString(std::string value) {
 }
 
 bool isValidArithmeticOperation(Expr* e1, Expr* e2) {
+    if (e1 == NULL || e2 == NULL) return false;
     return isValidArithmeticExpr(e1) && isValidArithmeticExpr(e2);
 }
 
@@ -220,7 +221,7 @@ Expr* symbolToExpr(Symbol* symbol) {
 
     newExpr->symbol = symbol;
     newExpr->value = symbol->getId();
-    newExpr->next = nullptr;
+    newExpr->next = NULL;
     switch (symbol->getType()) {
     case GLOBALVAR: {
         newExpr->type = VAR_EXPR;
@@ -304,6 +305,7 @@ bool isFunctionExpr(Expr* expr) {
 }
 
 bool areExprTypesEq(Expr* expr1, Expr* expr2) {
+    if (expr1 == NULL || expr2 == NULL) return false;
     return expr1->type == expr2->type;
 }
 
@@ -327,15 +329,15 @@ void patchlist(std::stack<int> stackLoop, int label, int countLoop) {
 Expr* make_call(Expr* lvalue, std::list<Expr*> revElist, unsigned int line) {
     Expr* called_func = emit_iftableitem(lvalue, line);
     while (!revElist.empty()) {
-        emit(OP_PARAM, revElist.back(), NULL, NULL, line, 0);
+        emit(OP_PARAM, revElist.back(), NULL, NULL, 0, line);
         revElist.pop_back();
     }
-    emit(OP_CALL, called_func, NULL, NULL, line, 0);
+    emit(OP_CALL, called_func, NULL, NULL, 0, line);
 
     Expr* result = new Expr();
     result->symbol = newTemp();
     result->type = VAR_EXPR;
-    emit(OP_GETRETVAL, NULL, NULL, result, line, 0);
+    emit(OP_GETRETVAL, NULL, NULL, result, 0, line);
     return result;
 }
 

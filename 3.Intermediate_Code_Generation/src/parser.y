@@ -13,7 +13,7 @@
     #include "../public/IntermediateCode.hpp"
 
     /* Defines */
-    #define FUNCTION_TYPE 6969
+    #define DEBUG 0
 
     /* External Variables */
     extern int yylineno;
@@ -118,11 +118,6 @@
 %type<expression> primary
 %type<expression> const
 %type<expression> lvalue
-%type<integer> ifprefix
-%type<integer> elseprefix
-%type<integer> funcbody
-%type<symbol> funcprefix
-%type<symbol> funcdef
 %type<expression> objectdef
 %type<expression> elist
 %type<expression> nextexpr
@@ -133,10 +128,19 @@
 %type<expression> call
 %type<expression> idlist
 %type<expression> nextid
-%type<call> callsufix normcall methodcall
+%type<symbol> funcprefix
+%type<symbol> funcdef
+%type<call> callsufix 
+%type<call> normcall 
+%type<call> methodcall
+%type<integer> ifprefix
+%type<integer> elseprefix
+%type<integer> funcbody
 %type<integer> whilestart
 %type<integer> whilecond
 %type<integer> forprefix
+
+
 
 /* Rules for priority and associativeness.*/
 %right ASSIGNMENT
@@ -161,6 +165,7 @@ program
 
 statements
     : statements stmt {
+        resetTemp();
     }
     | %empty
     ;
@@ -548,13 +553,17 @@ term
         $$ = $2;
     }
     | SUBTRACTION expr %prec UMINUS {
-        if (!isValidArithmeticExpr($2)) yyerror("invalid arithmetic expression");
-
-        $$ = newExpression(ARITHMETIC_EXPR);
-        Symbol* newSymbol = newTemp();
-        $$->symbol = newSymbol;
-        $$->value = newSymbol->getId();
-        emit(OP_UMINUS, $2, NULL, $$, 0, yylineno);
+        if (!isValidArithmeticExpr($2)){
+            yyerror("invalid arithmetic expression");
+            $$ = NULL;
+        }    
+        else {
+            $$ = newExpression(ARITHMETIC_EXPR);
+            Symbol* newSymbol = newTemp();
+            $$->symbol = newSymbol;
+            $$->value = newSymbol->getId();
+            emit(OP_UMINUS, $2, NULL, $$, 0, yylineno);
+        }
     }
     | NOT expr {
         $$ = newExpression(VAR_EXPR);  //BOOLEAN_EXPR
@@ -564,113 +573,121 @@ term
         emit(OP_NOT, $2, NULL, $$, 0, yylineno);
     }
     | INCREMENT lvalue {
-        Symbol* symbol = $2->symbol;
+        if( $2 == NULL || $2->symbol == NULL) $$ = NULL; // An error came up, ignore.
+        else {
+            Symbol* symbol = $2->symbol;
+            if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+                yyerror("cannot increment the value of a function.");
+                $$ = NULL;
+            } else if ( !symbol->isActive() ) {
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
 
-        if( symbol == NULL ); // An error came up, ignore.
-        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
-            yyerror("cannot increment the value of a function.");
-        } else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
-        }
-
-        if($2->type == TABLE_ITEM_EXPR) {
-            $$ = emit_iftableitem($2, yylineno);
-            emit(OP_ADD, newIntegerExpr(1), $$, $$, 0, yylineno);
-            emit(OP_TABLESETELEM, $2, $2->index, $$, 0, yylineno);
-        } else {
-            emit(OP_ADD, newIntegerExpr(1), $2, $2, 0, yylineno);
-            $$ = newExpression(ARITHMETIC_EXPR);
-
-            if(isTempSymbol($2->symbol)) {
-                $$->symbol = $2->symbol;
+            if($2->type == TABLE_ITEM_EXPR) {
+                $$ = emit_iftableitem($2, yylineno);
+                emit(OP_ADD, newIntegerExpr(1), $$, $$, 0, yylineno);
+                emit(OP_TABLESETELEM, $2, $2->index, $$, 0, yylineno);
             } else {
-                Symbol* newSymbol = newTemp();
-                $$->symbol = newSymbol;
-                $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
+                emit(OP_ADD, newIntegerExpr(1), $2, $2, 0, yylineno);
+                $$ = newExpression(ARITHMETIC_EXPR);
+
+                if(isTempSymbol($2->symbol)) {
+                    $$->symbol = $2->symbol;
+                } else {
+                    Symbol* newSymbol = newTemp();
+                    $$->symbol = newSymbol;
+                    $$->value = newSymbol->getId();
+                    emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
+                }
             }
         }
     }
     | lvalue INCREMENT {
-        Symbol* symbol = $1->symbol;
+        if( $1 == NULL || $1->symbol == NULL) $$ = NULL; // An error came up, ignore.
+        else {
+            Symbol* symbol = $1->symbol;
+            if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+                yyerror("cannot increment the value of a function.");
+                $$ = NULL;
+            }else if ( !symbol->isActive() ) {
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
 
-        if( symbol == NULL ); // An error came up, ignore.
-        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
-            yyerror("cannot increment the value of a function.");
-        }else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
-        }
+            $$ = newExpression(VAR_EXPR);
+            Symbol* newSymbol = newTemp();
+            $$->symbol = newSymbol;
+            $$->value = newSymbol->getId();
 
-        $$ = newExpression(VAR_EXPR);
-        Symbol* newSymbol = newTemp();
-        $$->symbol = newSymbol;
-        $$->value = newSymbol->getId();
-        emit(OP_ASSIGN, $1, NULL, $$, 0, yylineno);
-
-        if($1->type == TABLE_ITEM_EXPR) {
-            Expr* newExpr = emit_iftableitem($1, yylineno);
-            emit(OP_ASSIGN, newExpr, NULL, $$, 0, yylineno);
-            emit(OP_ADD, newExpr, newExpr, newIntegerExpr(1), 0, yylineno);
-            emit(OP_TABLESETELEM, $1->index, $1, newExpr, 0, yylineno);
-        } else {
-            emit(OP_ADD, newIntegerExpr(1), $1, $1, 0, yylineno);
+            if($1->type == TABLE_ITEM_EXPR) {
+                Expr* newExpr = emit_iftableitem($1, yylineno);
+                emit(OP_ASSIGN, newExpr, NULL, $$, 0, yylineno);
+                emit(OP_ADD, newIntegerExpr(1), newExpr, newExpr, 0, yylineno);
+                emit(OP_TABLESETELEM, $1, $1->index, newExpr, 0, yylineno);
+            } else {
+                emit(OP_ASSIGN, $1, NULL, $$, 0, yylineno);
+                emit(OP_ADD, newIntegerExpr(1), $1, $1, 0, yylineno);
+            }
         }
     }
     | DECREMENT lvalue {
-        Symbol* symbol = $2->symbol;
+        if( $2 == NULL || $2->symbol == NULL ) $$ = NULL; // An error came up, ignore.
+        else {
+            Symbol* symbol = $2->symbol;
+            if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+                yyerror("cannot decrement the value of a function.");
+                $$ = NULL;
+            } else if ( !symbol->isActive() ) {
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
 
-        if( symbol == NULL ); // An error came up, ignore.
-        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
-            yyerror("cannot decrement the value of a function.");
-        } else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
-        }
-
-        if($2->type == TABLE_ITEM_EXPR) {
-            $$ = emit_iftableitem($2, yylineno);
-            emit(OP_SUB, newIntegerExpr(1), $$, $$, 0, yylineno);
-            emit(OP_TABLESETELEM, $2, $2->index, $$, 0, yylineno);
-        } else {
-            emit(OP_SUB, $2, $2, newIntegerExpr(1), 0, yylineno);
-            $$ = newExpression(ARITHMETIC_EXPR);
-
-            if(isTempSymbol($2->symbol)) {
-                $$->symbol = $2->symbol;
+            if($2->type == TABLE_ITEM_EXPR) {
+                $$ = emit_iftableitem($2, yylineno);
+                emit(OP_SUB, newIntegerExpr(1), $$, $$, 0, yylineno);
+                emit(OP_TABLESETELEM, $2, $2->index, $$, 0, yylineno);
             } else {
-                Symbol* newSymbol = newTemp();
-                $$->symbol = newSymbol;
-                $$->value = newSymbol->getId();
-                emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
+                emit(OP_SUB, newIntegerExpr(1), $2, $2, 0, yylineno);
+                $$ = newExpression(ARITHMETIC_EXPR);
+
+                if(isTempSymbol($2->symbol)) {
+                    $$->symbol = $2->symbol;
+                } else {
+                    Symbol* newSymbol = newTemp();
+                    $$->symbol = newSymbol;
+                    $$->value = newSymbol->getId();
+                    emit(OP_ASSIGN, $2, NULL, $$, 0, yylineno);
+                }
             }
         }
     }
     | lvalue DECREMENT {
-        Symbol* symbol = $1->symbol;
+        if( $1 == NULL || $1->symbol == NULL ) $$ = NULL; // An error came up, ignore.
+        else {
+            Symbol* symbol = $1->symbol;
+            if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
+                yyerror("cannot decrement the value of a function.");
+                $$ = NULL;
+            } else if ( !symbol->isActive() ) {
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
 
-        if( symbol == NULL ); // An error came up, ignore.
-        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC ) { // If the symbol is a function.
-            yyerror("cannot decrement the value of a function.");
-        } else if ( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
-        }
+            $$ = newExpression(VAR_EXPR);
+            Symbol* newSymbol = newTemp();
+            $$->symbol = newSymbol;
+            $$->value = newSymbol->getId();
 
-        $$ = newExpression(VAR_EXPR);
-        Symbol* newSymbol = newTemp();
-        $$->symbol = newSymbol;
-        $$->value = newSymbol->getId();
-
-        if($1->type == TABLE_ITEM_EXPR) {
-            Expr* newExpr = emit_iftableitem($1, yylineno);
-            emit(OP_ASSIGN, newExpr, NULL, $$, 0, yylineno);
-            emit(OP_SUB, newExpr, newExpr, newIntegerExpr(1), 0, yylineno);
-            emit(OP_TABLESETELEM, $1, $1->index, newExpr, 0, yylineno);
-        } else {
-            emit(OP_ASSIGN, $1, NULL, $$, 0, yylineno);
-            emit(OP_SUB, newIntegerExpr(1), $1, $1, 0, yylineno);
+            if($1->type == TABLE_ITEM_EXPR) {
+                Expr* newExpr = emit_iftableitem($1, yylineno);
+                emit(OP_ASSIGN, newExpr, NULL, $$, 0, yylineno);
+                emit(OP_SUB, newIntegerExpr(1), newExpr, newExpr, 0, yylineno);
+                emit(OP_TABLESETELEM, $1, $1->index, newExpr, 0, yylineno);
+            } else {
+                emit(OP_ASSIGN, $1, NULL, $$, 0, yylineno);
+                emit(OP_SUB, newIntegerExpr(1), $1, $1, 0, yylineno);
+            }
         }
     }
     | primary {
@@ -682,51 +699,55 @@ term
 
 assignexpr
     : lvalue ASSIGNMENT expr {
-        Symbol* symbol = $1->symbol;
 
-        if( symbol == NULL ); // An error came up, ignore.
-        else if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC) { // The symbol is a function.
-            yyerror("cannot change the value of a function.");
-        } else if( !symbol->isActive() ) { // The symbol didn't exist.
-            symbol->setActive(true);
-            symtable.insert(symbol);
-        }
+        if( $1 == NULL || $1->symbol == NULL || $3 == NULL ) $$ = NULL; // An error came up, ignore.
+        else {
+            Symbol* symbol = $1->symbol;
+            if( symbol->getType() == USERFUNC || symbol->getType() == LIBRARYFUNC) { // The symbol is a function.
+                yyerror("cannot change the value of a function.");
+                $$ = NULL;
+            } else if( !symbol->isActive() ) { // The symbol didn't exist.
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
 
-        if($1->type == TABLE_ITEM_EXPR) {
-            
-            emit(OP_TABLESETELEM, $1->index, $3, $1, 0, yylineno);
-            $$ = emit_iftableitem($1, yylineno);
-            $$->type = ASSIGN_EXPR;
-        } else {
-            if($3 != NULL) {
-                emit(OP_ASSIGN, $3, NULL, $1 , 0, yylineno);
-                Expr* result;
-                result = newExpression(ASSIGN_EXPR);
-                result->symbol = newTemp();
-                emit(OP_ASSIGN, $1, NULL, result, 0, yylineno);
-                $$ = result;
+            if($1->type == TABLE_ITEM_EXPR) {
+                
+                emit(OP_TABLESETELEM, $1->index, $3, $1, 0, yylineno);
+                $$ = emit_iftableitem($1, yylineno);
+                $$->type = ASSIGN_EXPR;
+            } else {
+                if($3 != NULL) {
+                    emit(OP_ASSIGN, $3, NULL, $1 , 0, yylineno);
+                    Expr* result;
+                    result = newExpression(ASSIGN_EXPR);
+                    result->symbol = newTemp();
+                    emit(OP_ASSIGN, $1, NULL, result, 0, yylineno);
+                    $$ = result;
+                }
             }
         }
     };
 
 primary
     : lvalue {
-        $$ = emit_iftableitem($1, yylineno);
+        if( $1 == NULL || $1->symbol == NULL) $$ = NULL; // An error came up ignore.
+        else {
+            $$ = emit_iftableitem($1, yylineno);
+            Symbol* symbol = $1->symbol;
 
-        Symbol* symbol = $1->symbol;
+            if( !symbol->isActive() ) {
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
 
-        if( symbol == NULL ); // An error came up ignore.
-        else if( !symbol->isActive() ) {
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            if(symbol->getType() == USERFUNC)
+                $$->type = USERFUNCTION_EXPR;
+            else if(symbol->getType() == LIBRARYFUNC)
+                $$->type = LIBRARYFUNCTION_EXPR;
+            else
+                $$->type = VAR_EXPR;
         }
-
-        if( symbol != NULL && symbol->getType() == USERFUNC)
-            $$->type = USERFUNCTION_EXPR;
-        else if(symbol != NULL && symbol->getType() == LIBRARYFUNC)
-            $$->type = LIBRARYFUNCTION_EXPR;
-        else
-            $$->type = VAR_EXPR;
         
     }
     | call {
@@ -795,26 +816,30 @@ lvalue
 
 member
     : lvalue DOT ID {
-        Symbol* symbol = $1->symbol;
+        if($1 == NULL || $1->symbol == NULL) $$ = NULL;
+        else {
+            Symbol* symbol = $1->symbol;
 
-        if( symbol == NULL ); // An error came up, ignore.
-        else if( !symbol->isActive() ) { // If the symbol doesn't exist.
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            if( symbol == NULL ); // An error came up, ignore.
+            else if( !symbol->isActive() ) { // If the symbol doesn't exist.
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
+
+            $$ = member_item($1, $3, yylineno);
         }
-
-        $$ = member_item($1, $3, yylineno);
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
-        Symbol* symbol = $1->symbol;
+        if( $1 == NULL || $1->symbol == NULL || $3 == NULL); // An error came up, ignore.
+        else {
+            Symbol* symbol = $1->symbol;
+            if( !symbol->isActive() ) { // If the symbol doesn't exist.
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
 
-        if( symbol == NULL ); // An error came up, ignore.
-        else if( !symbol->isActive() ) { // If the symbol doesn't exist.
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            $$ = member_itemExpr($1, $3, yylineno);
         }
-
-        $$ = member_itemExpr($1, $3, yylineno);
     }
     | call DOT ID {
     }
@@ -823,30 +848,37 @@ member
 
 call
     : call LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        $$ = make_call($1, reverseElist($3),yylineno);
+        if($1 == NULL) $$ = NULL;
+        else $$ = make_call($1, reverseElist($3),yylineno);
     }
     | lvalue callsufix {
-        Expr* lva = emit_iftableitem($1, yylineno);
+        if($1 == NULL) $$ = NULL;
+        else {
+            Expr* lva = emit_iftableitem($1, yylineno);
 
-        if($2->method){
-            Expr* tmp = lva;
-            lva = emit_iftableitem(member_item(tmp,$2->name,yylineno),yylineno);
-            $2->revElist.push_front(tmp);
-        }
-        $$ = make_call(lva,$2->revElist,yylineno);
+            if($2->method){
+                Expr* tmp = lva;
+                lva = emit_iftableitem(member_item(tmp,$2->name,yylineno),yylineno);
+                $2->revElist.push_front(tmp);
+            }
+            $$ = make_call(lva,$2->revElist,yylineno);
 
-        Symbol* symbol = $1->symbol;
+            Symbol* symbol = $1->symbol;
 
-        if ( symbol == NULL ); // An error came up ignore.
-        else if( !symbol->isActive() ) { // Symbol we are trying to call doesn't exist so we create it.
-            symbol->setActive(true);
-            symtable.insert(symbol);
+            if ( symbol == NULL ); // An error came up ignore.
+            else if( !symbol->isActive() ) { // Symbol we are trying to call doesn't exist so we create it.
+                symbol->setActive(true);
+                symtable.insert(symbol);
+            }
         }
     }
     | LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-        Expr* func = newExpression(USERFUNCTION_EXPR);
-        func->symbol = $2;
-        $$ = make_call(func, reverseElist($5), yylineno);
+        if($2 == NULL) $$ = NULL;
+        else {
+            Expr* func = newExpression(USERFUNCTION_EXPR);
+            func->symbol = $2;
+            $$ = make_call(func, reverseElist($5), yylineno);
+        }
     };
 
 callsufix
@@ -878,7 +910,8 @@ methodcall
 elist
     : expr nextexpr {
         $$ = $1;
-        $$->next = $2;
+        if($$ != NULL)
+            $$->next = $2;
     }
     | %empty {
         $$ = NULL;
@@ -888,7 +921,8 @@ elist
 nextexpr
     : COMMA expr nextexpr {
         $$ = $2;
-        $$->next = $3;
+        if($$ != NULL)
+            $$->next = $3;
     }
     | %empty {
         $$ = NULL;
@@ -970,8 +1004,10 @@ funcprefix
         
         if(symtable.contains(currentFunctionName, LIBRARYFUNC)) {
             yyerror("function shadows library function.");
+            $$ = NULL;
         } else if (symtable.scopeLookup(currentFunctionName, currentScope) != NULL) {
             yyerror("function already exists.");
+            $$ = NULL;
         } else {
             Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
             function_symbol->setAddressQuad(nextQuadLabel());
@@ -1008,18 +1044,21 @@ funcbody
 
 funcdef
     : funcprefix funcargs funcbody {
-        exitScopespace(); //Exiting function definition space
-        $1->setTotalLocals($3); //Store #locals in symbol entry
+        if($1 == NULL) $$ = NULL;
+        else{
+            exitScopespace(); //Exiting function definition space
+            $1->setTotalLocals($3); //Store #locals in symbol entry
 
-        restoreCurrentScopeOffset(scopeOffsetStack.top()); //Restore previous scope offset
-        scopeOffsetStack.pop();
+            restoreCurrentScopeOffset(scopeOffsetStack.top()); //Restore previous scope offset
+            scopeOffsetStack.pop();
 
-        functionOpen--;
-        loopOpen = stackLoop.top();
-        stackLoop.pop();
-        $$ = $1; //The function definition returns the symbol
-        emit(OP_FUNCEND, symbolToExpr($1), NULL, NULL, 0, yylineno);
-        //patchLabel for jump
+            functionOpen--;
+            loopOpen = stackLoop.top();
+            stackLoop.pop();
+            $$ = $1; //The function definition returns the symbol
+            emit(OP_FUNCEND, symbolToExpr($1), NULL, NULL, 0, yylineno);
+            //patchLabel for jump
+        }
     }
     ;
 
@@ -1049,8 +1088,10 @@ idlist
                 Symbol* function = symtable.lookup(currentFunctionName, currentScope);
             if(symtable.contains($1, LIBRARYFUNC)) {
                 yyerror("formal argument shadows library function.");
+                $$ = NULL;
             } else if (function->containsArgument($1)){
                 yyerror("formal argument redeclaration.");
+                $$ = NULL;
             } else {
                 Symbol* newSym = new Symbol($1, FORMALVAR, yylineno, currentScope+1, true);
                 newSym->setScopespace(FORMAL_ARG);
@@ -1073,8 +1114,10 @@ nextid
             Symbol* function = symtable.lookup(currentFunctionName, currentScope);
             if(symtable.contains($2, LIBRARYFUNC)) {
                 yyerror("formal argument shadows library function.");
+                $$ = NULL;
             } else if (function->containsArgument($2)){
                 yyerror("formal argument redeclaration.");
+                $$ = NULL;
             } else {
                 Symbol* newSym = new Symbol($2, FORMALVAR, yylineno, currentScope+1, true);
                 newSym->setScopespace(FORMAL_ARG);
@@ -1265,6 +1308,7 @@ int main(int argc, char** argv) {
 
     if(hadError) {
         std::cout << "Program compiled with errors, terminating..." << std::endl;
+        if (!DEBUG) return 0;
     }
 
     if ( argc == 3 ) {
