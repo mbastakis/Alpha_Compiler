@@ -56,23 +56,19 @@ typedef enum {
     NIL_EXPR
 } Expr_T;
 
-typedef struct Expr Expr;
-
-struct Expr {
+typedef struct Expr {
     Expr_T type;
     Symbol* symbol;
     std::variant<std::string, int, double, bool> value;
     struct Expr* index;
     struct Expr* next;
-};
+} Expr;
 
-typedef struct Call Call;
-
-struct Call {
+typedef struct Call {
     std::list<Expr*> eList;
     unsigned char method;
     std::string name;
-};
+} Call;
 
 typedef struct {
     Opcode opcode;
