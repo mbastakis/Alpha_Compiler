@@ -1070,10 +1070,10 @@ forprefix
 forstmt
     : forprefix { falseJumpInFor = betweenFor();} elist RIGHT_PARENTHESES { loopJumpInFor = betweenFor();} stmt { closureJumpInFor = betweenFor(); loopOpen--;} {
             
-            patchlabel($1, loopJumpInFor +1);
-            patchlabel(falseJumpInFor, nextQuadLabel());
-            patchlabel(loopJumpInFor, betweenElistExprInFor);
-            patchlabel(closureJumpInFor-1, falseJumpInFor+1);
+            patchlabel($1, loopJumpInFor);
+            patchlabel(falseJumpInFor-1, nextQuadLabel());
+            patchlabel(loopJumpInFor-1, betweenElistExprInFor);
+            patchlabel(closureJumpInFor-1, falseJumpInFor);
 
             patchlist(breakStack, nextQuadLabel(), countLoop); //fix
             patchlist(continueStack, falseJumpInFor, countLoop); //fix
