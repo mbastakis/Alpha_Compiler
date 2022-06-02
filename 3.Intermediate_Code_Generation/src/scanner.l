@@ -25,8 +25,9 @@
     char* formatEscapedCharacters(char* string){
         int stringSize = strlen(string);
         char* formatedString = new char[stringSize + 1];
+
         int j = 0;
-        for(int i = 0; i < stringSize; ++i) {
+        for(int i = 0; i < stringSize + 1; ++i) {
             if(string[i] != '\\') formatedString[j++] = string[i];
             else {
                 switch(string[i + 1]) {
@@ -38,11 +39,19 @@
                         formatedString[j++] = '\t';
                         i++;
                         break;
+                    case 'r':
+                        formatedString[j++] = '\r';
+                        i++;
+                        break;
+                    case 'v':
+                        formatedString[j++] = '\v';
+                        i++;
+                        break;
                     case '\\':
                         formatedString[j++] = '\\';
                         i++;
                         break;
-                    case '\"':
+                    case '"':
                         formatedString[j++] = '"';
                         i++;
                         break;
@@ -54,6 +63,8 @@
                 }
             }
         }
+
+        formatedString[j] = '\0';
 
         return formatedString;
     }

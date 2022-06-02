@@ -459,7 +459,7 @@ void printQuads() {
     std::cout << "quad#\topcode\t\tresult\t\targ1\t\targ2\t\tlabel" << std::endl;
     std::cout << "=============================================================================" << std::endl;
     int counter = 1;
-    for (auto it = Quads.begin()+1; it != Quads.end(); ++it) {
+    for (auto it = Quads.begin() + 1; it != Quads.end(); ++it) {
         Quad* quad = *it;
         std::string opcode = opcodeToString(quad->opcode);
         std::cout << counter++ << ':';
