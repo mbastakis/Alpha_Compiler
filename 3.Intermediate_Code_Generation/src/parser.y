@@ -363,16 +363,6 @@ expr
             yyerror("An argument in operation 'and' had not type");
             $$ = NULL;
         } else {
-            if($1->type == NIL_EXPR)
-                $1->symbol->setId("false");
-            else if($1->type != CONST_BOOLEAN_EXPR)
-                $1->symbol->setId("true");
-
-            if($3->type == NIL_EXPR)
-                $3->symbol->setId("false");
-            else if($3->type != CONST_BOOLEAN_EXPR)
-                $3->symbol->setId("true");
-
             $$ = newExpression(BOOLEAN_EXPR);
             $$->symbol = newTemp();
             $$->value = $$->symbol->getId();
@@ -386,16 +376,6 @@ expr
             yyerror("An argument in operation 'or' had not type");
             $$ = NULL;
         } else {
-            if($1->type == NIL_EXPR)
-                $1->symbol->setId("false");
-            else if($1->type != CONST_BOOLEAN_EXPR)
-                $1->symbol->setId("true");
-
-            if($3->type == NIL_EXPR)
-                $3->symbol->setId("false");
-            else if($3->type != CONST_BOOLEAN_EXPR)
-                $3->symbol->setId("true");
-
             $$ = newExpression(BOOLEAN_EXPR);
             $$->symbol = newTemp();
             $$->value = $$->symbol->getId();
