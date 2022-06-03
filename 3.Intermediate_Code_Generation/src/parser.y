@@ -29,11 +29,10 @@
     std::stack<bool> blockStack;
     unsigned int currentScope;
     std::stack<int> stackLoop;
-    std::stack<int> breakStack;
-    std::stack<int> continueStack;
 
-    std::stack<int> timesInLoop;
-    int countLoop;
+    int loopCounter = 0;
+    std::stack<std::list<Quad*>> breakStack = std::stack<std::list<Quad*>>();
+    std::stack<std::list<Quad*>> continueStack = std::stack<std::list<Quad*>>();
 
     bool isFunc;
     int functionOpen;
@@ -67,8 +66,13 @@
          std::cout << "\033[0;31m";
      }
 
+
+    void yellowc() {
+         std::cout << "\033[33m";
+     }
+
      void reset() {
-         std::cout << "\033[0;37m";
+         std::cout << "\033[01;37m";
      }
 
      void yyerror (const std::string errorMsg) {
@@ -185,18 +189,16 @@ stmt
         if(loopOpen == 0)
             yyerror("break outside of loop");
         else {
-            countLoop = countLoop + 1; //fix
-            breakStack.push(nextQuadLabel()-1); //fix
-            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno); //fix
+            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
+            breakStack.top().push_back(Quads.back());
         }
     }
     | CONTINUE SEMICOLON {
         if(loopOpen == 0)
             yyerror("continue outside of loop");
         else {
-            countLoop = countLoop + 1; //fix
-            continueStack.push(nextQuadLabel()-1); //fix
-            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno); //fix
+            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
+            continueStack.top().push_back(Quads.back());
         }
     }
     | block {
@@ -666,8 +668,7 @@ member
         else {
             Symbol* symbol = $1->symbol;
 
-            if( symbol == NULL ); // An error came up, ignore.
-            else if( !symbol->isActive() ) { // If the symbol doesn't exist.
+            if( !symbol->isActive() ) { // If the symbol doesn't exist.
                 symbol->setActive(true);
                 symtable.insert(symbol);
             }
@@ -688,8 +689,20 @@ member
         }
     }
     | call DOT ID {
+        if($1==NULL || $1->symbol == NULL) $$ = NULL;
+        else {
+            Symbol* symbol = $1->symbol;
+
+            $$ = member_item($1, $3, yylineno);
+        }
     }
     | call LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
+        if($1==NULL || $1->symbol == NULL || $3 == NULL) $$ = NULL;
+        else {
+            Symbol* symbol = $1->symbol;
+
+            $$ = member_itemExpr($1, $3, yylineno);
+        }
     };
 
 call
@@ -1011,8 +1024,8 @@ ifstmt
 
 whilestart
     : WHILE {
-        timesInLoop.push(countLoop);
-        countLoop = 0;
+        breakStack.push(std::list<Quad*>());
+        continueStack.push(std::list<Quad*>());
         $$ = nextQuadLabel();
 
     };
@@ -1031,17 +1044,15 @@ whilestmt
         emit(OP_JUMP, NULL, NULL, NULL, $1, yylineno);
         patchlabel($3, nextQuadLabel());
 
-        patchlist(breakStack, nextQuadLabel(), countLoop); //fix
-        patchlist(continueStack, $1, countLoop); //fix
-        countLoop = timesInLoop.top(); //fix
-        timesInLoop.pop(); //fix
+        patchlist(&breakStack, nextQuadLabel());
+        patchlist(&continueStack, $1);
     };
 
 
 forprefix
     : FOR{currentLine = yylineno; loopOpen++;} LEFT_PARENTHESES elist SEMICOLON {betweenElistExprInFor = nextQuadLabel();} expr SEMICOLON {
-        timesInLoop.push(countLoop); //fix
-        countLoop = 0; //fix 
+        breakStack.push(std::list<Quad*>());
+        continueStack.push(std::list<Quad*>());
 
         $$ = nextQuadLabel();
         emit(OP_IF_EQ, $7, newExprConstBool(true), NULL, 0, yylineno);
@@ -1050,16 +1061,13 @@ forprefix
 forstmt
     : forprefix { falseJumpInFor = betweenFor();} elist RIGHT_PARENTHESES { loopJumpInFor = betweenFor();} stmt { closureJumpInFor = betweenFor(); loopOpen--;} {
             
-            patchlabel($1, loopJumpInFor);
-            patchlabel(falseJumpInFor-1, nextQuadLabel());
-            patchlabel(loopJumpInFor-1, betweenElistExprInFor);
-            patchlabel(closureJumpInFor-1, falseJumpInFor);
+        patchlabel($1, loopJumpInFor);
+        patchlabel(falseJumpInFor-1, nextQuadLabel());
+        patchlabel(loopJumpInFor-1, betweenElistExprInFor);
+        patchlabel(closureJumpInFor-1, falseJumpInFor);
 
-            patchlist(breakStack, nextQuadLabel(), countLoop); //fix
-            patchlist(continueStack, falseJumpInFor, countLoop); //fix
-            countLoop = timesInLoop.top(); //fix
-            timesInLoop.pop(); //fix
-
+        patchlist(&breakStack, nextQuadLabel());
+        patchlist(&continueStack, $1 + 2);
     };
 
 returnstmt
@@ -1101,11 +1109,6 @@ int main(int argc, char** argv) {
     symtable = SymbolTable();
     blockStack = std::stack<bool>();
     stackLoop = std::stack<int>();
-    breakStack = std::stack<int>();
-    continueStack = std::stack<int>();
-
-    timesInLoop = std::stack<int>();
-    countLoop = 0;
 
     numberListOfBreak = -1;
     numberListOfContinue = -1;
@@ -1136,7 +1139,9 @@ int main(int argc, char** argv) {
         fclose(yyin);
 
     if(hadError) {
+        yellowc();
         std::cout << "Program compiled with errors, terminating..." << std::endl;
+        reset();
         if (!DEBUG) return 0;
     }
 

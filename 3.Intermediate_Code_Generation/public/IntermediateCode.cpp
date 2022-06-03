@@ -118,9 +118,13 @@ unsigned int nextQuadLabel() {
 }
 
 void patchlabel(unsigned int quadNo, unsigned int label) {
-    std::cout << "quadNo: " << quadNo << ", label" << Quads.size() << std::endl;
     assert(quadNo < Quads.size());
     Quads[quadNo]->label = label;
+}
+
+void patchlabel(Quad* quad, unsigned int label) {
+    assert(quad);
+    quad->label = label;
 }
 
 Expr* member_item(Expr* lv, std::string name, int line) {
@@ -356,15 +360,14 @@ bool areExprBoolTypes(Expr* expr1, Expr* expr2) {
         (expr2->type == BOOLEAN_EXPR || expr2->type == CONST_BOOLEAN_EXPR);
 }
 
-void patchlist(std::stack<int> stackLoop, int label, int countLoop) {
-    if (!stackLoop.empty()) {
-        while (countLoop > 0) {
-            Quads[stackLoop.top()]->label = label;
-            stackLoop.pop();
-            countLoop = countLoop - 1;
-        }
-    }
+void patchlist(std::stack<std::list<Quad*>>* stack, int label) {
+    auto list = stack->top();
+    stack->pop();
 
+    while (!list.empty()) {
+        patchlabel(list.back(), label);
+        list.pop_back();
+    }
 }
 
 std::string fixPrecision(std::string num) {

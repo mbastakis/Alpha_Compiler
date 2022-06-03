@@ -149,7 +149,9 @@ Expr* newExpression(Expr_T type);
 
 void patchlabel(unsigned int quadNo, unsigned int label);
 
-void patchlist(std::stack<int> stackLoop, int label, int countLoop);
+void patchlabel(Quad* quad, unsigned int label);
+
+void patchlist(std::stack<std::list<Quad*>>*, int label);
 
 unsigned int nextQuadLabel();
 
