@@ -869,6 +869,7 @@ funcprefix
             $$ = NULL;
         } else {
             Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
+            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
             function_symbol->setAddressQuad(nextQuadLabel());
             emit(OP_FUNCSTART, symbolToExpr(function_symbol), NULL, NULL, 0, yylineno);
 
@@ -916,6 +917,7 @@ funcdef
             stackLoop.pop();
             $$ = $1; //The function definition returns the symbol
             emit(OP_FUNCEND, symbolToExpr($1), NULL, NULL, 0, yylineno);
+            patchlabel($1->getAddressQuad()-1, nextQuadLabel());
             //patchLabel for jump
         }
     }
