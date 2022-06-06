@@ -1150,15 +1150,15 @@ int main(int argc, char** argv) {
 
     generate_final_instructions();
     if ( argc == 3 ) {
-        write_abc(fopen(argv[2], "wb"));
+        /* write_abc(fopen(argv[2], "wb")); */
         print_tcode(fopen(argv[2], "wb"));
         printQuadsInFile(argv[2]);
-        symtable.printSymbolsInFile(argv[2]);
+        /* symtable.printSymbolsInFile(argv[2]); */
     } else {
-        write_abc(stdout);
-        print_tcode(stdout);
+        /* write_abc(stdout); */
         printQuads();
-        symtable.printSymTable();
+        print_tcode(stdout);
+        /* symtable.printSymTable(); */
     }
 
     return 0;

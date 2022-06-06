@@ -108,8 +108,8 @@ void exitScopespace();
 
 void incCurrentScopeOffset();
 
-void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int line,
-    unsigned int label);
+void emit(Opcode op, Expr* arg1, Expr* arg2, Expr* result, unsigned int label,
+    unsigned int line);
 
 bool isValidArithmeticOperation(Expr* e1, Expr* e2);
 
@@ -180,5 +180,9 @@ std::string opcodeToString(Opcode opcode);
 void printQuadsInFile(char*);
 
 int betweenFor();
+
+std::string remove_extra_zero(std::string);
+
+std::string modify_number(double);
 
 #endif

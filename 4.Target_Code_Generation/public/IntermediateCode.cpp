@@ -1,5 +1,6 @@
 #include "IntermediateCode.hpp"
 #include <iomanip>
+#include <cmath>
 #include <algorithm>
 
 /*To emit a quad*/
@@ -390,12 +391,31 @@ int betweenFor() {
     return nextQuadLabel();
 }
 
+std::string modify_number(double number) {
+    if (floor(number) == ceil(number))
+        return std::to_string((int)number);
+    else return std::to_string(number);
+}
+
+std::string remove_extra_zero(std::string number) {
+    if (number.find(".") == std::string::npos)
+        return number;
+    reverse(number.begin(), number.end());
+    int i;
+    for (i = 0; i < number.size(); i++) {
+        if (number[i] != '0') break;
+    }
+    number = number.substr(i, number.size());
+    reverse(number.begin(), number.end());
+    return number;
+}
+
 std::string exprValueToString(Expr* expr) {
     switch (expr->type) {
     case CONST_BOOLEAN_EXPR:
         return std::get<bool>(expr->value) ? "true" : "false";
     case CONST_REAL_EXPR:
-        return std::to_string(std::get<double>(expr->value));
+        return remove_extra_zero(modify_number(std::get<double>(expr->value)));
     case CONST_INTEGER_EXPR:
         return std::to_string(std::get<int>(expr->value));
     case CONST_STRING_EXPR:

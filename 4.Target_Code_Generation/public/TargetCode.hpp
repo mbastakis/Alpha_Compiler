@@ -1,25 +1,13 @@
 #include <string.h>
 #include <string>
-
 #include <stack>
 #include <algorithm>
 
-
 #include "Symbol.hpp"
 #include "IntermediateCode.hpp"
+
 extern std::vector<Quad*> Quads;
-extern unsigned int curr_quad;
-
-typedef struct {
-    int line_number;
-    typedef enum { COMMENT, LOOP, FUNC_BLOCK, FUNC_OFFSET } StackType;
-    Symbol *entry;
-    // struct stack_node *prev;
-} stack_node; //TODO: rename this
-
-std::stack<stack_node> funcstack; //rename
-
-int current_processed_quad = 0; //rename
+unsigned int currProcessedQuad;
 
 //--------------------------
 typedef enum {
@@ -35,45 +23,48 @@ typedef enum {
     libfunc_a,
     retval_a,
     undefined_a
-} VMarg_type;
+} VMarg_T;
 
 typedef enum {
-    assign_t = 0,
-    add_t,
-    sub_t,
-    mul_t,
-    division_t,
-    mod_t,
-    if_eq_t,
-    if_noteq_t,
-    if_lesseq_t,
-    if_greatereq_t,
-    if_less_t,
-    if_greater_t,
-    jump_t,
-    callfunc_t,
-    pusharg_t,
-    enterfunc_t,
-    funcend_t,
-    tablecreate_t,
-    tablegetelem_t,
-    tablesetelem_t,
-    nop_t
+    assign_op = 0,
+    add_op,
+    sub_op,
+    mul_op,
+    div__op,
+    mod_op,
+    if_eq_op,
+    if_noteq_op,
+    if_lesseq_op,
+    if_greatereq_op,
+    if_less_op,
+    if_greater_op,
+    and_op,
+    not_op,
+    or_op,
+    jump_op,
+    callfunc_op,
+    pusharg_op,
+    enterfunc_op,
+    funcend_op,
+    tablecreate_op,
+    tablegetelem_op,
+    tablesetelem_op,
+    nop_op
 } VMopcode;
 
-std::string vmtype_to_string(VMarg_type);
+std::string vmtype_to_string(VMarg_T);
 
 typedef struct {
-    VMarg_type type;
+    VMarg_T type;
     unsigned int val;
 
     std::string to_string() {
-        if(this->type == undefined_a)
+        if (this->type == undefined_a)
             return "";
         if (this->type == retval_a)
-            return std::to_string(this->type) + "(" +  vmtype_to_string(this->type) + ")";
+            return std::to_string(this->type) + "(" + vmtype_to_string(this->type) + ")";
         else
-            return std::to_string(this->type) + "(" +  vmtype_to_string(this->type) + ")," + std::to_string(this->type == label_a ? this->val + 1 : this->val);
+            return std::to_string(this->type) + "(" + vmtype_to_string(this->type) + ")," + std::to_string(this->type == label_a ? this->val + 1 : this->val);
     }
 } VMarg;
 
@@ -86,7 +77,7 @@ public:
     int srcLine;
 
     Instruction() {
-        opcode = nop_t;
+        opcode = nop_op;
         result.type = undefined_a;
         result.val = 0;
         arg1.type = undefined_a;
@@ -113,20 +104,22 @@ extern unsigned int scopeSpaceCounter;
 
 unsigned int consts_newstring(std::string s) { //TODO rename function
     auto it = std::find(const_strings.begin(), const_strings.end(), s);
-    if(it == const_strings.end()) {
+    if (it == const_strings.end()) {
         const_strings.push_back(s);
         return const_strings.size() - 1;
-    } else {
+    }
+    else {
         return it - const_strings.begin();
     }
 }
 
 unsigned int consts_newnumber(double n) { //TODO: RENAME
     auto it = std::find(const_numbers.begin(), const_numbers.end(), n);
-    if(it == const_numbers.end()) {
+    if (it == const_numbers.end()) {
         const_numbers.push_back(n);
         return const_numbers.size() - 1;
-    } else {
+    }
+    else {
         return it - const_numbers.begin();
     }
 }
@@ -134,96 +127,101 @@ unsigned int consts_newnumber(double n) { //TODO: RENAME
 
 unsigned int libfuncs_newused(std::string s) {
     auto it = std::find(libfuncs_used.begin(), libfuncs_used.end(), s);
-    if(it == libfuncs_used.end()) {
+    if (it == libfuncs_used.end()) {
         libfuncs_used.push_back(s);
         return libfuncs_used.size() - 1;
-    } else {
+    }
+    else {
         return it - libfuncs_used.begin();
     }
 }
 
-unsigned int userfuncs_newfunc(Symbol *sym) {
-    for(auto it = userfunctions.begin(); it != userfunctions.end(); it++) {
-        if((*it)->getId() == sym->getId() && (*it)->get_taddress() == sym->get_taddress())
+unsigned int userfuncs_newfunc(Symbol* sym) {
+    for (auto it = userfunctions.begin(); it != userfunctions.end(); it++) {
+        if ((*it)->getId() == sym->getId() && (*it)->get_taddress() == sym->get_taddress())
             return it - userfunctions.begin();
     }
     userfunctions.push_back(sym);
     return userfunctions.size() - 1;
 }
 
-void make_operand(Expr *e, VMarg *arg) {
+VMarg make_operand(Expr* e) {
+    VMarg vmarg{};
+
     if (!e) {
-        arg->type = undefined_a;
-        arg->val = 0;
-        return;
+        vmarg.type = undefined_a;
+        vmarg.val = 0;
+        return vmarg;
     }
 
     switch (e->type) {
         /* all those below use a var for storage */
-        case ASSIGN_EXPR:
-        case VAR_EXPR:
-        case TABLE_ITEM_EXPR:
-        case ARITHMETIC_EXPR:
-        case BOOLEAN_EXPR:
-        case NEW_TABLE_EXPR:
-            assert(e->symbol);
-            
-            arg->val = e->symbol->getOffset();
+    case ASSIGN_EXPR:
+    case VAR_EXPR:
+    case TABLE_ITEM_EXPR:
+    case ARITHMETIC_EXPR:
+    case BOOLEAN_EXPR:
+    case NEW_TABLE_EXPR:
+        assert(e->symbol);
 
-            switch (e->symbol->getScopespace()) {
-                case PROGRAM_VAR:
-                    arg->type = global_a;
-                    break;
-                case FUNCTION_LOCAL:
-                    arg->type = local_a;
-                    break;
-                case FORMAL_ARG:
-                    arg->type = formal_a;
-                    break;
-                default:
-                    assert(0);
-            }
-            break; /* from case new_table_e */
-        case CONST_BOOLEAN_EXPR:
-            arg->val = std::get<bool>(e->value);
-            arg->type = bool_a;
+        vmarg.val = e->symbol->getOffset();
+
+        switch (e->symbol->getScopespace()) {
+        case PROGRAM_VAR:
+            vmarg.type = global_a;
             break;
-        case CONST_STRING_EXPR:
-            arg->val = consts_newstring(std::get<std::string>(e->value));
-            arg->type = string_a;
+        case FUNCTION_LOCAL:
+            vmarg.type = local_a;
             break;
-        case CONST_REAL_EXPR: //was const_num_e before, check if it is ok with integers. 
-            arg->val = consts_newnumber(std::get<double>(e->value));
-            arg->type = number_a;
-            break;
-        case NIL_EXPR:
-            arg->type = nil_a;
-            break;
-        case USERFUNCTION_EXPR:
-            arg->type = userfunc_a;
-            arg->val = userfuncs_newfunc(e->symbol);
-            break;
-        case LIBRARYFUNCTION_EXPR:
-            arg->type = libfunc_a;
-            arg->val = libfuncs_newused(e->symbol->getId());
+        case FORMAL_ARG:
+            vmarg.type = formal_a;
             break;
         default:
             assert(0);
+        }
+        break; /* from case new_table_e */
+    case CONST_BOOLEAN_EXPR:
+        vmarg.val = std::get<bool>(e->value);
+        vmarg.type = bool_a;
+        break;
+    case CONST_STRING_EXPR:
+        vmarg.val = consts_newstring(std::get<std::string>(e->value));
+        vmarg.type = string_a;
+        break;
+    case CONST_REAL_EXPR: //was const_num_e before, check if it is ok with integers. 
+        vmarg.val = consts_newnumber(std::get<double>(e->value));
+        vmarg.type = number_a;
+        break;
+    case NIL_EXPR:
+        vmarg.type = nil_a;
+        break;
+    case USERFUNCTION_EXPR:
+        vmarg.type = userfunc_a;
+        vmarg.val = userfuncs_newfunc(e->symbol);
+        break;
+    case LIBRARYFUNCTION_EXPR:
+        vmarg.type = libfunc_a;
+        vmarg.val = libfuncs_newused(e->symbol->getId());
+        break;
+    default:
+        assert(0);
     }
+
+    return vmarg;
 }
 
 
-void make_numberoperand(VMarg *arg, double val) {
+void make_numberoperand(VMarg* arg, double val) {
     arg->val = consts_newnumber(val);
     arg->type = number_a;
 }
 
-void make_booloperand(VMarg *arg, unsigned int val) {
+void make_booloperand(VMarg* arg, unsigned int val) {
     arg->val = val;
     arg->type = bool_a;
 }
 
-void make_retvaloperand(VMarg *arg) { arg->type = retval_a; }
+void make_retvaloperand(VMarg* arg) { arg->type = retval_a; }
 
 void  emit_t(Instruction instr) {
     instructions.push_back(instr);
@@ -233,110 +231,132 @@ void generate(VMopcode op, Quad* quad) {
     Instruction t{};
     t.srcLine = quad->line;
     t.opcode = op;
-    make_operand(quad->arg1, &t.arg1);
-    make_operand(quad->arg2, &t.arg2);
-    if (op >= if_eq_t && op <= if_greater_t) {
+    t.arg1 = make_operand(quad->arg1);
+    t.arg2 = make_operand(quad->arg2);
+    if (op >= if_eq_op && op <= if_greater_op) {
         t.result.type = label_a;
         t.result.val = quad->label;
-    } else
-        make_operand(quad->result, &t.result);
+    }
+    else
+        t.result = make_operand(quad->result);
 
     emit_t(t);
 }
 
-void generate_ADD(Quad* q) { generate(add_t, q); }
+void generate_relational(VMopcode op, Quad* quad) {
+    Instruction t{};
+    t.srcLine = quad->line;
+    t.opcode = op;
+    t.arg1 = make_operand(quad->arg1);
+    t.arg2 = make_operand(quad->arg2);
+    t.result.type = label_a;
+    if (quad->label < currProcessedQuad)
+        t.result.val = Quads[quad->label].taddress;
+    else
+        
 
-void generate_SUB(Quad* q) { generate(sub_t, q); }
+}
 
-void generate_MUL(Quad* q) { generate(mul_t, q); }
+void generate_ADD(Quad* q) { generate(add_op, q); }
 
-void generate_DIV(Quad* q) { generate(division_t, q); }
+void generate_SUB(Quad* q) { generate(sub_op, q); }
+
+void generate_MUL(Quad* q) { generate(mul_op, q); }
+
+void generate_DIV(Quad* q) { generate(div__op, q); }
 
 void generate_UMINUS(Quad* q) {
     q->arg2 = newDoubleExpr(-1); //TODO: check if it is ok with double (instead of int ->newExprConstNum)
-    generate(mul_t, q);
+    generate(mul_op, q);
+    q->arg2 = NULL;
 }
 
-void generate_MOD(Quad* q) { generate(mod_t, q); }
+void generate_MOD(Quad* q) { generate(mod_op, q); }
 
-void generate_NEWTABLE(Quad* q) { generate(tablecreate_t, q); }
+void generate_NEWTABLE(Quad* q) { generate(tablecreate_op, q); }
 
-void generate_TABLEGETELEM(Quad* q) { generate(tablegetelem_t, q); }
+void generate_TABLEGETELEM(Quad* q) { generate(tablegetelem_op, q); }
 
-void generate_TABLESETELEM(Quad* q) { generate(tablesetelem_t, q); }
+void generate_TABLESETELEM(Quad* q) { generate(tablesetelem_op, q); }
 
-void generate_ASSIGN(Quad* q) { generate(assign_t, q); }
+void generate_ASSIGN(Quad* q) { generate(assign_op, q); }
 
 void generate_NOP(Quad* q) {
     Instruction t{};
-    t.opcode = nop_t;
+    t.opcode = nop_op;
     emit_t(t);
 }
 
 void generate_JUMP(Quad* q) {
     Instruction t{};
     t.srcLine = q->line;
-    t.opcode = jump_t;
+    t.opcode = jump_op;
     t.result.type = label_a;
     t.result.val = q->label;
     emit_t(t);
 }
 
-void generate_IF_EQ(Quad* q) { generate(if_eq_t, q); }
+void generate_IF_EQ(Quad* q) { generate(if_eq_op, q); }
 
-void generate_NOTEQ(Quad* q) { generate(if_noteq_t, q); }
+void generate_NOTEQ(Quad* q) { generate(if_noteq_op, q); }
 
-void generate_GREATER(Quad* q) { generate(if_greater_t, q); }
+void generate_GREATER(Quad* q) { generate(if_greater_op, q); }
 
-void generate_GREATEREQ(Quad* q) { generate(if_greatereq_t, q); }
+void generate_GREATEREQ(Quad* q) { generate(if_greatereq_op, q); }
 
-void generate_LESS(Quad* q) { generate(if_less_t, q); }
+void generate_LESS(Quad* q) { generate(if_less_op, q); }
 
-void generate_LESSEQ(Quad* q) { generate(if_lesseq_t, q); }
+void generate_LESSEQ(Quad* q) { generate(if_lesseq_op, q); }
+
+void generate_NOT(Quad* q) { generate(not_op, q); }
+
+void generate_OR(Quad* q) { generate(or_op, q); }
+
+void generate_AND(Quad* q) { generate(and_op, q); }
 
 void generate_PARAM(Quad* q) {
     Instruction t{};
     t.srcLine = q->line;
-    t.opcode = pusharg_t;
-    make_operand(q->arg1, &t.arg1);  // TODO: check if arg1 is right
+    t.opcode = pusharg_op;
+    t.arg1 = make_operand(q->arg1);
     emit_t(t);
 }
 
 void generate_CALL(Quad* q) {
     Instruction t{};
     t.srcLine = q->line;
-    t.opcode = callfunc_t;
-    make_operand(q->arg1, &t.arg1);  // TODO: check if arg1 is right
+    t.opcode = callfunc_op;
+    t.arg1 = make_operand(q->arg1);
     emit_t(t);
 }
 
 void generate_GETRETVAL(Quad* q) {
     Instruction t{};
     t.srcLine = q->line;
-    t.opcode = assign_t;
-    make_operand(q->result, &t.result);
-    make_retvaloperand(&t.arg1);  // TODO: check if arg1 is right
+    t.opcode = assign_op;
+    t.result = make_operand(q->result);
+    make_retvaloperand(&t.arg1);
     emit_t(t);
 }
 
 void generate_FUNCSTART(Quad* q) {
     Instruction t{};
     t.srcLine = q->line;
-    t.opcode = enterfunc_t;
-    make_operand(q->arg1, &t.result);
+    t.opcode = enterfunc_op;
+    t.result = make_operand(q->arg1);
     emit_t(t);
 }
 
 void generate_RETURN(Quad* q) {
     Instruction t{};
     t.srcLine = q->line;
-    t.opcode = assign_t;
+    t.opcode = assign_op;
     make_retvaloperand(&t.result);
-    make_operand(q->result, &t.arg1);
+    t.arg1 = make_operand(q->result);
     emit_t(t);
 }
 
-void reset_operand(VMarg *arg) {
+void reset_operand(VMarg* arg) {
     arg->val = 0;
     arg->type = undefined_a;
 }
@@ -344,181 +364,178 @@ void reset_operand(VMarg *arg) {
 void generate_FUNCEND(Quad* q) {
     Instruction t{};
     t.srcLine = q->line;
-    t.opcode = funcend_t;
-    make_operand(q->arg1, &t.result);
+    t.opcode = funcend_op;
+    t.result = make_operand(q->arg1);
     emit_t(t);
 }
 
 generator_func_t generators[] = {
         generate_ASSIGN, generate_ADD, generate_SUB,
         generate_MUL, generate_DIV, generate_MOD,
-        generate_UMINUS, generate_IF_EQ, generate_NOTEQ,
+        generate_UMINUS, generate_AND, generate_OR,
+        generate_NOT, generate_IF_EQ, generate_NOTEQ,
         generate_LESSEQ, generate_GREATEREQ, generate_LESS,
         generate_GREATER, generate_JUMP, generate_CALL,
         generate_PARAM, generate_RETURN, generate_GETRETVAL,
         generate_FUNCSTART, generate_FUNCEND, generate_NEWTABLE,
-        generate_TABLEGETELEM, generate_TABLESETELEM, generate_NOP};
-        //TODO: generate_NOT, generate_OR
+        generate_TABLEGETELEM, generate_TABLESETELEM, generate_NOP };
 
 void generate_final_instructions(void) {
-    for (current_processed_quad = 0; current_processed_quad < Quads.size() - 1;
-         ++current_processed_quad) {
-        (*generators[Quads[current_processed_quad]->opcode])(
-                Quads[current_processed_quad]);
+    for (currProcessedQuad = 1; currProcessedQuad < Quads.size(); currProcessedQuad++) {
+        (*generators[Quads[currProcessedQuad]->opcode]) (Quads[currProcessedQuad]);
     }
 }
-
 
 unsigned int next_instruction_label(void) {
     return instructions.size();
 }
 
-const char *vmopc_to_string(VMopcode op) {
+const char* vmopc_to_string(VMopcode op) {
     switch (op) {
-        case assign_t:
-            return "assign";
-        case add_t:
-            return "add";
-        case sub_t:
-            return "sub";
-        case mul_t:
-            return "mul";
-        case division_t:
-            return "div";
-        case mod_t:
-            return "mod";
-        case if_eq_t:
-            return "if_eq";
-        case if_noteq_t:
-            return "if_noteq";
-        case if_lesseq_t:
-            return "if_lesseq";
-        case if_greatereq_t:
-            return "if_greatereq";
-        case if_less_t:
-            return "if_less";
-        case if_greater_t:
-            return "if_greater";
-        case callfunc_t:
-            return "call";
-        case pusharg_t:
-            return "pusharg";
-        case enterfunc_t:
-            return "enterfunc";
-        case funcend_t:
-            return "exitfunc";
-        case tablecreate_t:
-            return "tablecreate";
-        case tablegetelem_t:
-            return "tablegetelem";
-        case tablesetelem_t:
-            return "tablesetelem";
-        case jump_t:
-            return "jump";
-        default:
-            assert(0);
+    case assign_op:
+        return "assign";
+    case add_op:
+        return "add";
+    case sub_op:
+        return "sub";
+    case mul_op:
+        return "mul";
+    case div__op:
+        return "div";
+    case mod_op:
+        return "mod";
+    case if_eq_op:
+        return "if_eq";
+    case if_noteq_op:
+        return "if_noteq";
+    case if_lesseq_op:
+        return "if_lesseq";
+    case if_greatereq_op:
+        return "if_greatereq";
+    case if_less_op:
+        return "if_less";
+    case if_greater_op:
+        return "if_greater";
+    case callfunc_op:
+        return "call";
+    case pusharg_op:
+        return "pusharg";
+    case enterfunc_op:
+        return "enterfunc";
+    case funcend_op:
+        return "exitfunc";
+    case tablecreate_op:
+        return "tablecreate";
+    case tablegetelem_op:
+        return "tablegetelem";
+    case tablesetelem_op:
+        return "tablesetelem";
+    case jump_op:
+        return "jump";
+    default:
+        assert(0);
     }
 }
 
-void print_tcode(FILE *fp) {
+void print_tcode(FILE* fp) {
     unsigned int i;
     if (!fp) {
         printf("File could not be opened!\n");
         return;
     }
     fprintf(fp,
-            "Instruction#"
-            "          Opcode"
-            "          Result"
-            "            Arg1"
-            "            Arg2\n");
+        "Instruction#"
+        "          Opcode"
+        "          Result"
+        "            Arg1"
+        "            Arg2\n");
     fprintf(fp,
-            "-----------------------------------------------------------------"
-            "-----------\n");
+        "================================================================="
+        "===========\n");
 
     for (i = 0; i < instructions.size(); i++) {
 
         Instruction curr = instructions[i];
-        fprintf(fp, "%12d%16s%16s%16s%16s\n", i + 1,
-                vmopc_to_string(curr.opcode), curr.result.to_string().c_str(),
-                curr.arg1.to_string().c_str(), curr.arg2.to_string().c_str());
+        fprintf(fp, "%d:%27s%16s%16s%16s\n", i + 1,
+            vmopc_to_string(curr.opcode), curr.result.to_string().c_str(),
+            curr.arg1.to_string().c_str(), curr.arg2.to_string().c_str());
     }
 
     if (!const_numbers.empty()) {
         fprintf(fp, "\nConst Numbers:\n");
         for (i = 0; i < const_numbers.size(); ++i)
-            fprintf(fp, "%d\t%lf\n", i, const_numbers[i]);
+            fprintf(fp, "%d:\t%s\n", i, remove_extra_zero(modify_number(const_numbers[i])).c_str());
         fprintf(
-                fp,
-                "-----------------------------------------------------------------"
-                "-----------\n");
+            fp,
+            "================================================================="
+            "===========\n");
     }
 
     if (!const_strings.empty()) {
         fprintf(fp, "\nConst Strings:\n");
         for (i = 0; i < const_strings.size(); ++i)
-            fprintf(fp, "%d\t%s\n", i, const_strings[i].c_str());
+            fprintf(fp, "%d:\t%s\n", i, const_strings[i].c_str());
         fprintf(
-                fp,
-                "-----------------------------------------------------------------"
-                "-----------\n");
+            fp,
+            "================================================================="
+            "===========\n");
     }
 
     if (!userfunctions.empty()) {
         fprintf(fp, "\nUser Functions:\n");
         for (i = 0; i < userfunctions.size(); ++i)
-            fprintf(fp, "%d\t%s\n", i, userfunctions[i]->getId().c_str());
+            fprintf(fp, "%d:\t%s\n", i, userfunctions[i]->getId().c_str());
         fprintf(
-                fp,
-                "-----------------------------------------------------------------"
-                "-----------\n");
+            fp,
+            "================================================================="
+            "===========\n");
     }
 
     if (!libfuncs_used.empty()) {
         fprintf(fp, "\nLibrary Functions:\n");
         for (i = 0; i < libfuncs_used.size(); ++i)
-            fprintf(fp, "%d\t%s\n", i,  libfuncs_used[i].c_str());
+            fprintf(fp, "%d:\t%s\n", i, libfuncs_used[i].c_str());
         fprintf(
-                fp,
-                "-----------------------------------------------------------------"
-                "-----------\n");
+            fp,
+            "================================================================="
+            "===========\n");
     }
 }
 
 
-std::string vmtype_to_string(VMarg_type type) {
+std::string vmtype_to_string(VMarg_T type) {
     switch (type) {
-        case label_a:
-            return "label";
-        case global_a:
-            return "global";
-        case formal_a:
-            return "formal";
-        case local_a:
-            return "local";
-        case number_a:
-            return "number";
-        case string_a:
-            return "string";
-        case bool_a:
-            return "bool";
-        case nil_a:
-            return "nil";
-        case userfunc_a:
-            return "userfunc";
-        case libfunc_a:
-            return "libfunc";
-        case retval_a:
-            return "retval";
-        case undefined_a:
-            return "undefined";
-        default:
-            assert(0);
+    case label_a:
+        return "label";
+    case global_a:
+        return "global";
+    case formal_a:
+        return "formal";
+    case local_a:
+        return "local";
+    case number_a:
+        return "number";
+    case string_a:
+        return "string";
+    case bool_a:
+        return "bool";
+    case nil_a:
+        return "nil";
+    case userfunc_a:
+        return "userfunc";
+    case libfunc_a:
+        return "libfunc";
+    case retval_a:
+        return "retval";
+    case undefined_a:
+        return "undefined";
+    default:
+        assert(0);
     }
 }
 
 void write_abc(
-    FILE *abc_file) {
+    FILE* abc_file) {
     unsigned int number, i;
 
     // Magic number
@@ -530,10 +547,11 @@ void write_abc(
         number = const_strings.size();
         fwrite(&number, sizeof(number), 1, abc_file);
         for (i = 0; i < number; ++i) {
-            const char *string = const_strings[i].c_str();
+            const char* string = const_strings[i].c_str();
             fwrite(string, sizeof(char), strlen(string) + 1, abc_file);
         }
-    } else {
+    }
+    else {
         number = 0;
         fwrite(&number, sizeof(number), 1, abc_file);
     }
@@ -546,7 +564,8 @@ void write_abc(
             double num = const_numbers[i];
             fwrite(&num, sizeof(double), 1, abc_file);
         }
-    } else {
+    }
+    else {
         number = 0;
         fwrite(&number, sizeof(number), 1, abc_file);
     }
@@ -558,12 +577,13 @@ void write_abc(
         for (i = 0; i < number; ++i) {
             unsigned int address = userfunctions[i]->get_taddress();
             unsigned int localsize = userfunctions[i]->getOffset();
-            const char *id = userfunctions[i]->getId().c_str();
+            const char* id = userfunctions[i]->getId().c_str();
             fwrite(&address, sizeof(unsigned int), 1, abc_file);
             fwrite(&localsize, sizeof(unsigned int), 1, abc_file);
             fwrite(id, sizeof(char), strlen(id) + 1, abc_file);
         }
-    } else {
+    }
+    else {
         number = 0;
         fwrite(&number, sizeof(number), 1, abc_file);
     }
@@ -573,10 +593,11 @@ void write_abc(
         number = libfuncs_used.size();
         fwrite(&number, sizeof(number), 1, abc_file);
         for (i = 0; i < number; ++i) {
-            const char *id = libfuncs_used[i].c_str();
+            const char* id = libfuncs_used[i].c_str();
             fwrite(id, sizeof(char), strlen(id) + 1, abc_file);
         }
-    } else {
+    }
+    else {
         number = 0;
         fwrite(&number, sizeof(number), 1, abc_file);
     }
@@ -590,12 +611,12 @@ void write_abc(
             fwrite(&line, sizeof(int), 1, abc_file);
         }
         for (i = 0; i < number; ++i) {
-            const char *opcode = vmopc_to_string(instructions[i].opcode);
-            const char *result_type = vmtype_to_string(instructions[i].result.type).c_str();
+            const char* opcode = vmopc_to_string(instructions[i].opcode);
+            const char* result_type = vmtype_to_string(instructions[i].result.type).c_str();
             unsigned int result_val = instructions[i].result.val;
-            const char *arg1_type = vmtype_to_string(instructions[i].arg1.type).c_str();
+            const char* arg1_type = vmtype_to_string(instructions[i].arg1.type).c_str();
             unsigned int arg1_val = instructions[i].arg1.val;
-            const char *arg2_type = vmtype_to_string(instructions[i].arg2.type).c_str();
+            const char* arg2_type = vmtype_to_string(instructions[i].arg2.type).c_str();
             unsigned int arg2_val = instructions[i].arg2.val;
             fwrite(opcode, sizeof(char), 1, abc_file);
             fwrite(result_type, sizeof(char), 1, abc_file);
@@ -605,7 +626,8 @@ void write_abc(
             fwrite(arg2_type, sizeof(char), 1, abc_file);
             fwrite(&arg2_val, sizeof(unsigned int), 1, abc_file);
         }
-    } else {
+    }
+    else {
         number = 0;
         fwrite(&number, sizeof(number), 1, abc_file);
     }
