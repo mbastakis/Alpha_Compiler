@@ -34,6 +34,7 @@
     int loopCounter = 0;
     std::stack<std::list<Quad*>> breakStack = std::stack<std::list<Quad*>>();
     std::stack<std::list<Quad*>> continueStack = std::stack<std::list<Quad*>>();
+    std::stack<std::stack<Quad*>> returnStack{};
 
     bool isFunc;
     int functionOpen;
@@ -881,6 +882,9 @@ funcprefix
 
             symtable.insert(function_symbol);
             $$ = function_symbol;
+
+            
+            returnStack.push(std::stack<Quad*>()); // for the returns in this function
         }
     }
     ;
@@ -900,6 +904,13 @@ funcbody
     : block {
         $$ = getCurrentScopeOffset(); //Extract #total locals
         exitScopespace();  //Exiting function locals space
+        // Patch label in all return statements of function
+        std::stack<Quad*> stack = returnStack.top();
+        returnStack.pop();
+        while(!stack.empty()) {
+            patchlabel(stack.top(), nextQuadLabel());
+            stack.pop();
+        }
      }
     ;
 
@@ -1079,6 +1090,8 @@ returnstmt
             yyerror("return outside of function");
         else {
             emit(OP_RET, NULL, NULL, NULL, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
+            returnStack.top().push(Quads[Quads.size() - 1]);
         }
 
     }
@@ -1086,8 +1099,9 @@ returnstmt
         if(functionOpen == 0)
             yyerror("return outside of function");
         else {
-
             emit(OP_RET, $2, NULL, NULL, 0, yylineno);
+            emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
+            returnStack.top().push(Quads[Quads.size() - 1]);
         }
 
     };
@@ -1150,15 +1164,15 @@ int main(int argc, char** argv) {
 
     generate_final_instructions();
     if ( argc == 3 ) {
-        /* write_abc(fopen(argv[2], "wb")); */
-        print_tcode(fopen(argv[2], "wb"));
-        printQuadsInFile(argv[2]);
+        printTargetCode(argv[2]);
+        printTargetInBinary(argv[2]);
+        /* printQuadsInFile(argv[2]); */
         /* symtable.printSymbolsInFile(argv[2]); */
     } else {
         /* write_abc(stdout); */
         printQuads();
-        print_tcode(stdout);
-        /* symtable.printSymTable(); */
+        symtable.printSymTable();
+        printTargetCode("");
     }
 
     return 0;

@@ -24,10 +24,12 @@
 
     char* formatEscapedCharacters(char* string){
         int stringSize = strlen(string);
+
+
         char* formatedString = new char[stringSize + 1];
 
         int j = 0;
-        for(int i = 0; i < stringSize + 1; ++i) {
+        for(int i = 1; i < stringSize - 1; ++i) {
             if(string[i] != '\\') formatedString[j++] = string[i];
             else {
                 switch(string[i + 1]) {
