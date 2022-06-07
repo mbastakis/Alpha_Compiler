@@ -35,7 +35,7 @@ std::string VMtypeToString(VMarg_T type) {
     case LOCAL_T:
         return "local";
     case NUMBER_T:
-        return "size";
+        return "number";
     case STRING_T:
         return "string";
     case BOOL_T:
@@ -482,11 +482,13 @@ void printTargetCode(std::string filename) {
 
         Instruction curr = instructions[i];
 
-        fprintf(file, "%d:\t\t\t%s\t\t%s\t%s\t%s\n", i + 1,
-            VMopToString(curr.opcode),
-            curr.result.to_string().c_str(),
-            curr.arg1.to_string().c_str(),
-            curr.arg2.to_string().c_str());
+        fprintf(file, "%d:\t\t\t%s\t\t%s\t%s\t%s\n",
+                i + 1,
+                VMopToString(curr.opcode),
+                curr.result.to_string() == "" ? "\t\t" : curr.result.to_string().c_str(),
+                curr.arg1.to_string() == "" ? "\t\t" : curr.arg1.to_string().c_str(),
+                curr.arg2.to_string() == "" ? "\t\t" : curr.arg2.to_string().c_str()
+            );
     }
     fprintf(file, "===================================================================================\n");
 

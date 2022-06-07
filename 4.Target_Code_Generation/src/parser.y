@@ -667,6 +667,10 @@ lvalue
 member
     : lvalue DOT ID {
         if($1 == NULL || $1->symbol == NULL) $$ = NULL;
+        if($1->type == LIBRARYFUNCTION_EXPR || $1->symbol->getType() == LIBRARYFUNC || $1->type == USERFUNCTION_EXPR || $1->symbol->getType() == USERFUNC ) {
+            yyerror("functions cannot have members.");
+            $$ = NULL;
+        }
         else {
             Symbol* symbol = $1->symbol;
 
@@ -679,7 +683,11 @@ member
         }
     }
     | lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {
-        if( $1 == NULL || $1->symbol == NULL || $3 == NULL); // An error came up, ignore.
+        if( $1 == NULL || $1->symbol == NULL || $3 == NULL) $$ = NULL; // An error came up, ignore.
+        if($1->type == LIBRARYFUNCTION_EXPR || $1->symbol->getType() == LIBRARYFUNC || $1->type == USERFUNCTION_EXPR || $1->symbol->getType() == USERFUNC ) {
+            yyerror("functions cannot have members.");
+            $$ = NULL;
+        }
         else {
             Symbol* symbol = $1->symbol;
             if( !symbol->isActive() ) { // If the symbol doesn't exist.
@@ -871,6 +879,7 @@ funcprefix
             $$ = NULL;
         } else {
             Symbol* function_symbol = new Symbol(currentFunctionName, USERFUNC, currentLine, currentScope, true);
+            function_symbol->set_taddress(nextQuadLabel());
             emit(OP_JUMP, NULL, NULL, NULL, 0, yylineno);
             function_symbol->setAddressQuad(nextQuadLabel());
             emit(OP_FUNCSTART, symbolToExpr(function_symbol), NULL, NULL, 0, yylineno);
@@ -904,13 +913,6 @@ funcbody
     : block {
         $$ = getCurrentScopeOffset(); //Extract #total locals
         exitScopespace();  //Exiting function locals space
-        // Patch label in all return statements of function
-        std::stack<Quad*> stack = returnStack.top();
-        returnStack.pop();
-        while(!stack.empty()) {
-            patchlabel(stack.top(), nextQuadLabel());
-            stack.pop();
-        }
      }
     ;
 
@@ -931,6 +933,14 @@ funcdef
             emit(OP_FUNCEND, symbolToExpr($1), NULL, NULL, 0, yylineno);
             patchlabel($1->getAddressQuad()-1, nextQuadLabel());
             //patchLabel for jump
+
+            // Patch label in all return statements of function
+            std::stack<Quad*> stack = returnStack.top();
+            returnStack.pop();
+            while(!stack.empty()) {
+                patchlabel(stack.top(), nextQuadLabel());
+                stack.pop();
+            }
         }
     }
     ;
