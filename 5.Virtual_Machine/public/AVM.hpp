@@ -1,17 +1,38 @@
 #ifndef AVM_HPP
 #define AVM_HPP
 
+#include <map>
+
 #include "helper.hpp"
 #include "Instruction.hpp"
+#include "libfuncs_Impl.hpp"
 
 typedef struct {
     unsigned int address;
     unsigned int localSize;
     std::string id;
-} Func_T;
+} userFunc;
 
 class AVM {
 public:
+    AVM() {
+        libfuncs_map.insert("print", libfunc_print);
+        libfuncs_map.insert("input", libfunc_input);
+        libfuncs_map.insert("objectmemberkeys", libfunc_objectmemberkeys);
+        libfuncs_map.insert("objecttotalmembers", libfunc_objecttotalmembers);
+        libfuncs_map.insert("objectcopy", libfunc_objectcopy);
+        libfuncs_map.insert("totalarguments", libfunc_totalarguments);
+        libfuncs_map.insert("argument", libfunc_argument);
+        libfuncs_map.insert("typeof", libfunc_typeof);
+        libfuncs_map.insert("strtonum", libfunc_strtonum);
+        libfuncs_map.insert("sqrt", libfunc_sqrt);
+        libfuncs_map.insert("cos", libfunc_cos);
+        libfuncs_map.insert("sin", libfunc_sin);
+    }
+
+    void callLibFunc(std::string libfuncName) {
+        libfuncs_map.get()
+    }
 
     void loadDataFromBinary(FILE* file) {
         // Check magic number
@@ -52,7 +73,7 @@ public:
             fread(&address, sizeof(address), 1, file);
             fread(&localSize, sizeof(localSize), 1, file);
             std::cout << "addr, localsize: " << address << "," << localSize << std::endl;
-            Func_T userfunc;
+            userFunc userfunc;
             userfunc.address = address;
             userfunc.localSize = localSize;
             userfunc.id = loadBinaryString(file);
@@ -154,11 +175,15 @@ public:
     }
 
 private:
+    // Code
     std::vector<Instruction> instructions{};
+    // Const Tables
     std::vector<double> const_numbers{};
     std::vector<std::string> const_strings{};
-    std::vector<Func_T> userfunctions{};
+    std::vector<userFunc> userfunctions{};
     std::vector<std::string> libfuncs_used{};
+    // Lib func map
+    std::map<std::function<void(void)>> libfuncs_map{};
 };
 
 #endif
