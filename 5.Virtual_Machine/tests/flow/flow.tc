@@ -1,0 +1,88 @@
+Instruction#		Opcode		Result		Arg1		Arg2
+===================================================================================
+1:			assign		1(global),0	4(number),0			
+2:			assign		1(global),1	1(global),0			
+3:			if_eq		0(label),5	1(global),1	6(bool),1
+4:			jump		0(label),10						
+5:			sub		1(global),2	4(number),1	4(number),2
+6:			jump		0(label),10						
+7:			sub		1(global),3	4(number),3	4(number),2
+8:			jump		0(label),1						
+9:			jump		0(label),1						
+10:			if_eq		0(label),12	4(number),4	6(bool),1
+11:			jump		0(label),19						
+12:			if_eq		0(label),14	4(number),5	6(bool),1
+13:			jump		0(label),18						
+14:			if_eq		0(label),16	4(number),6	6(bool),1
+15:			jump		0(label),17						
+16:			jump		0(label),14						
+17:			jump		0(label),12						
+18:			jump		0(label),10						
+19:			if_eq		0(label),21	4(number),7	6(bool),1
+20:			jump		0(label),27						
+21:			if_eq		0(label),23	4(number),8	6(bool),1
+22:			jump		0(label),25						
+23:			sub		1(global),1	4(number),9	4(number),2
+24:			jump		0(label),26						
+25:			sub		1(global),2	4(number),10	4(number),2
+26:			jump		0(label),19						
+27:			if_eq		0(label),29	4(number),11	6(bool),1
+28:			jump		0(label),47						
+29:			sub		1(global),1	4(number),12	4(number),2
+30:			if_eq		0(label),34	4(number),13	6(bool),1
+31:			jump		0(label),46						
+32:			sub		1(global),2	4(number),14	4(number),2
+33:			jump		0(label),30						
+34:			if_eq		0(label),36	4(number),15	6(bool),1
+35:			jump		0(label),38						
+36:			sub		1(global),4	4(number),16	4(number),2
+37:			jump		0(label),43						
+38:			if_eq		0(label),40	4(number),17	6(bool),1
+39:			jump		0(label),42						
+40:			sub		1(global),5	4(number),18	4(number),2
+41:			jump		0(label),43						
+42:			sub		1(global),6	4(number),19	4(number),2
+43:			jump		0(label),46						
+44:			jump		0(label),32						
+45:			jump		0(label),32						
+46:			jump		0(label),27						
+47:			sub		1(global),1	4(number),20	4(number),2
+48:			if_eq		0(label),52	4(number),21	6(bool),1
+49:			jump		0(label),58						
+50:			sub		1(global),2	4(number),22	4(number),2
+51:			jump		0(label),48						
+52:			if_eq		0(label),54	4(number),23	6(bool),1
+53:			jump		0(label),56						
+54:			jump		0(label),56						
+55:			jump		0(label),52						
+56:			jump		0(label),50						
+57:			jump		0(label),50						
+===================================================================================
+
+Const Numbers:
+===================================================================================
+0:	1
+1:	2
+2:	0
+3:	3
+4:	4
+5:	5
+6:	6
+7:	7
+8:	8
+9:	9
+10:	10
+11:	11
+12:	12
+13:	13
+14:	14
+15:	15
+16:	16
+17:	17
+18:	18
+19:	19
+20:	20
+21:	21
+22:	22
+23:	23
+===================================================================================

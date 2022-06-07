@@ -1,0 +1,83 @@
+Instruction#		Opcode		Result		Arg1		Arg2
+===================================================================================
+1:			tablecreate					1(global),0			
+2:			tablecreate					1(global),0			
+3:			tablesetelem		1(global),0	4(number),0	4(number),1
+4:			tablesetelem		1(global),0	4(number),1	4(number),2
+5:			tablesetelem		1(global),0	4(number),2	4(number),3
+6:			tablecreate					1(global),0			
+7:			tablecreate					1(global),1			
+8:			tablesetelem		1(global),1	4(number),0	5(string),0
+9:			tablesetelem		1(global),1	4(number),1	5(string),1
+10:			tablecreate					1(global),2			
+11:			tablecreate					1(global),3			
+12:			tablesetelem		1(global),3	4(number),0	6(bool),0
+13:			tablesetelem		1(global),3	4(number),1	6(bool),1
+14:			tablesetelem		1(global),3	4(number),2	1(global),0
+15:			tablesetelem		1(global),3	4(number),3	4(number),4
+16:			tablesetelem		1(global),3	4(number),5	1(global),1
+17:			tablesetelem		1(global),3	4(number),4	1(global),2
+18:			jump		0(label),22						
+19:			enterfunc		8(userfunc),0						
+20:			tablecreate					1(global),0			
+21:			exitfunc		8(userfunc),0						
+22:			tablecreate					1(global),0			
+23:			tablesetelem		1(global),0	4(number),0	4(number),1
+24:			tablesetelem		1(global),0	4(number),1	4(number),2
+25:			tablesetelem		1(global),0	4(number),2	4(number),3
+26:			tablecreate					1(global),1			
+27:			tablesetelem		1(global),1	4(number),1	4(number),2
+28:			tablesetelem		1(global),1	5(string),2	6(bool),0
+29:			tablesetelem		1(global),1	4(number),4	9(libfunc),0
+30:			tablecreate					1(global),2			
+31:			tablesetelem		1(global),2	4(number),5	4(number),4
+32:			tablesetelem		1(global),2	4(number),2	4(number),6
+33:			tablesetelem		1(global),2	5(string),3	8(userfunc),0
+34:			tablesetelem		1(global),2	5(string),4	1(global),0
+35:			tablesetelem		1(global),2	5(string),5	1(global),1
+36:			jump		0(label),41						
+37:			enterfunc		8(userfunc),1						
+38:			assign		2(formal),0	4(number),5			
+39:			assign		1(global),0	2(formal),0			
+40:			exitfunc		8(userfunc),1						
+41:			tablecreate					1(global),0			
+42:			tablesetelem		1(global),0	4(number),5	8(userfunc),1
+43:			tablecreate					1(global),1			
+44:			tablesetelem		1(global),1	4(number),5	1(global),0
+45:			tablecreate					1(global),2			
+46:			tablesetelem		1(global),2	4(number),5	1(global),1
+47:			tablecreate					1(global),3			
+48:			tablesetelem		1(global),3	4(number),5	1(global),2
+===================================================================================
+
+Const Numbers:
+===================================================================================
+0:	0
+1:	1
+2:	2
+3:	3
+4:	5
+5:	4
+6:	18
+===================================================================================
+
+Const Strings:
+===================================================================================
+0:	hello
+1:	lol
+2:	bool
+3:	lulz
+4:	wot
+5:	wut
+===================================================================================
+
+User Functions:
+===================================================================================
+0:	_f1
+1:	four
+===================================================================================
+
+Library Functions:
+===================================================================================
+0:	print
+===================================================================================

@@ -483,12 +483,12 @@ void printTargetCode(std::string filename) {
         Instruction curr = instructions[i];
 
         fprintf(file, "%d:\t\t\t%s\t\t%s\t%s\t%s\n",
-                i + 1,
-                VMopToString(curr.opcode),
-                curr.result.to_string() == "" ? "\t\t" : curr.result.to_string().c_str(),
-                curr.arg1.to_string() == "" ? "\t\t" : curr.arg1.to_string().c_str(),
-                curr.arg2.to_string() == "" ? "\t\t" : curr.arg2.to_string().c_str()
-            );
+            i + 1,
+            VMopToString(curr.opcode),
+            curr.result.to_string() == "" ? "\t\t" : curr.result.to_string().c_str(),
+            curr.arg1.to_string() == "" ? "\t\t" : curr.arg1.to_string().c_str(),
+            curr.arg2.to_string() == "" ? "\t\t" : curr.arg2.to_string().c_str()
+        );
     }
     fprintf(file, "===================================================================================\n");
 
@@ -596,22 +596,26 @@ void printTargetInBinary(std::string filename) {
         unsigned int size = instructions.size();
         fwrite(&size, sizeof(size), 1, file);
         for (int i = 0; i < size; ++i) {
-            const char* opcode = VMopToString(instructions[i].opcode);
-            const char* result_type = VMtypeToString(instructions[i].result.type).c_str();
+            char* opcode = (char*)&(instructions[i].opcode);
+            const char* result_type = (char*)&(instructions[i].result.type);
             unsigned int result_val = instructions[i].result.val;
-            const char* arg1_type = VMtypeToString(instructions[i].arg1.type).c_str();
+            const char* arg1_type = (char*)&(instructions[i].arg1.type);
             unsigned int arg1_val = instructions[i].arg1.val;
-            const char* arg2_type = VMtypeToString(instructions[i].arg2.type).c_str();
+            const char* arg2_type = (char*)&(instructions[i].arg2.type);
             unsigned int arg2_val = instructions[i].arg2.val;
             unsigned int srcLine = instructions[i].srcLine;
             fwrite(opcode, sizeof(char), 1, file);
+
             fwrite(result_type, sizeof(char), 1, file);
             fwrite(&result_val, sizeof(unsigned int), 1, file);
+
             fwrite(arg1_type, sizeof(char), 1, file);
             fwrite(&arg1_val, sizeof(unsigned int), 1, file);
+
             fwrite(arg2_type, sizeof(char), 1, file);
             fwrite(&arg2_val, sizeof(unsigned int), 1, file);
-            fwrite(&srcLine, sizeof(int), 1, file);
+
+            fwrite(&srcLine, sizeof(unsigned int), 1, file);
         }
     }
     else {
