@@ -464,8 +464,6 @@ unsigned int next_instruction_label(void) {
     return instructions.size();
 }
 
-
-
 void printTargetCode(std::string filename) {
     FILE* file;
     if (filename == "") file = stdout;

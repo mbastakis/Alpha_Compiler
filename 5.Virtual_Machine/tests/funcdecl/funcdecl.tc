@@ -1,0 +1,57 @@
+Instruction#		Opcode		Result		Arg1		Arg2
+===================================================================================
+1:			jump		0(label),8						
+2:			enterfunc		8(userfunc),0						
+3:			add		1(global),0	2(formal),1	2(formal),0
+4:			assign		10(retval)	4(number),0			
+5:			jump		0(label),8						
+6:			sub		1(global),0	4(number),1	4(number),2
+7:			exitfunc		8(userfunc),0						
+8:			jump		0(label),11						
+9:			enterfunc		8(userfunc),1						
+10:			exitfunc		8(userfunc),1						
+11:			jump		0(label),18						
+12:			enterfunc		8(userfunc),2						
+13:			sub		1(global),0	4(number),3	4(number),2
+14:			assign		10(retval)	4(number),4			
+15:			jump		0(label),18						
+16:			sub		1(global),0	4(number),5	4(number),2
+17:			exitfunc		8(userfunc),2						
+18:			assign		1(global),0	8(userfunc),2			
+19:			assign		1(global),1	1(global),0			
+20:			jump		0(label),23						
+21:			enterfunc		8(userfunc),3						
+22:			exitfunc		8(userfunc),3						
+23:			jump		0(label),33						
+24:			enterfunc		8(userfunc),4						
+25:			jump		0(label),32						
+26:			enterfunc		8(userfunc),5						
+27:			pusharg					4(number),6			
+28:			pusharg					4(number),7			
+29:			call					8(userfunc),0			
+30:			assign		1(global),0	10(retval)			
+31:			exitfunc		8(userfunc),5						
+32:			exitfunc		8(userfunc),4						
+===================================================================================
+
+Const Numbers:
+===================================================================================
+0:	8
+1:	9
+2:	0
+3:	10
+4:	12
+5:	11
+6:	4
+7:	3
+===================================================================================
+
+User Functions:
+===================================================================================
+0:	iamafunction
+1:	iamnothing
+2:	_f1
+3:	_f2
+4:	_f3
+5:	_f4
+===================================================================================

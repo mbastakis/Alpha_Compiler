@@ -1,6 +1,8 @@
 #ifndef LIBFUNCS_IMPL
 #define LIBFUNCS_IMPL
 
+#include <functional>
+
 std::function<void(void)> libfunc_print;
 std::function<void(void)> libfunc_input;
 std::function<void(void)> libfunc_objectmemberkeys;
