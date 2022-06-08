@@ -5,7 +5,7 @@
 #include <stack>
 #include <map>
 #include <cassert>
-#incldue <variant>
+#include <variant>
 
 typedef enum {
     NUMBER_T = 0,
@@ -17,6 +17,32 @@ typedef enum {
     NIL_M,
     UNDEFINED_T
 } avm_memcell_t;
+
+class avm_table;
+
+class avm_memcell {
+public:
+    avm_memcell_t type;
+    // std::variant<
+    //     double,
+    //     std::string,
+    //     bool,
+    //     avm_table,
+    //     unsigned int,
+    //     std::string,
+    // > data;
+
+    avm_memcell() {
+        this->type = UNDEFINED_T;
+    }
+
+    avm_memcell(avm_memcell_t type) {
+        this->type = type;
+
+    }
+
+};
+
 
 class avm_table {
 public:
@@ -58,32 +84,8 @@ avm_table& avm_table::operator--() {
 
 avm_table& avm_table::operator++() {
     ++this->refCounter;
+    return *this;
 }
-
-
-
-class avm_memcell {
-public:
-    avm_memcell_t type;
-    std::variant{
-        double,
-        std::string,
-        bool,
-        avm_table,
-        unsigned int,
-        std::string,
-    } data;
-
-    avm_memcell() {
-        this->type = UNDEFINED_T;
-    }
-
-    avm_memcell(avm_memcell_t type) {
-        this->type = type;
-
-    }
-
-};
 
 // Variables
 std::stack<avm_memcell> avm_memcell_stack{};
