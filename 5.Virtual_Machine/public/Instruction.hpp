@@ -57,7 +57,6 @@ typedef enum {
     MUL_OP,
     DIV_OP,
     MOD_OP,
-    UMINUS_OP,
     AND_OP,
     OR_OP,
     NOT_OP,
@@ -92,8 +91,6 @@ const char* VMopToString(VMopcode op) {
         return "div";
     case MOD_OP:
         return "mod";
-    case UMINUS_OP:
-        return "uminus";
     case AND_OP:
         return "and";
     case OR_OP:

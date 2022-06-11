@@ -18,7 +18,7 @@ typedef void (*execute_func_t)(Instruction*);
 execute_func_t executeFuncs[] = {
         execute_assign, execute_add, execute_sub,
         execute_mul, execute_div, execute_mod,
-        execute_uminus, execute_add, execute_or,
+        execute_and, execute_or,
         execute_not, execute_jeq, execute_jne,
         execute_jle, execute_jge, execute_jlt,
         execute_jgt, execute_call, execute_pusharg,
@@ -34,7 +34,7 @@ void execute_cycle () {
         return;
     } else {
         assert(pc < codeSize);
-        Instruction* instr = code + pc;
+        Instruction* instr = avm.get(code, pc);
         assert(instr->opcode >= 0 && instr->opcode <= NOP_OP);
         if (instr->srcLine)
             currLine = instr->srcLine;
@@ -64,15 +64,11 @@ int main(int argc, char** argv) {
     avm.loadDataFromBinary(file);
     //avm.printTargetCode("");
 
-    std::vector<Instruction> instructions{};
-    instructions = avm.getInstructions();
+    std::vector<Instruction*> instructions = avm.getInstructions();
     codeSize = instructions.size();
-    for (int i = 0; i < instructions.size(); i++) {
-        //Instruction* curr = &instructions[i];
-        code = &instructions[i];
-        //execute_cycle();
-        std::cout << code->result.val << std::endl;
-    }
+    while(true) 
+        execute_cycle();
+    
 
     return 0;
 }

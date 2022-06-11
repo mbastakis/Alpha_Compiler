@@ -29,7 +29,6 @@ extern void execute_sub(Instruction*);
 extern void execute_mul(Instruction*);
 extern void execute_div(Instruction*);
 extern void execute_mod(Instruction*);
-extern void execute_uminus(Instruction*);
 extern void execute_and(Instruction*);
 extern void execute_or(Instruction*);
 extern void execute_not(Instruction*);
@@ -53,10 +52,6 @@ void execute_arithmetic (Instruction * instr) {
         lv->type = NUMBER_M;
         //lv->data = (*op) (rv1->data, rv2->data);
     }
-}
-
-void execute_uminus(Instruction * instr) {
-
 }
 
 void execute_and(Instruction * instr) {

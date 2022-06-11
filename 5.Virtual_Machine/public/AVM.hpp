@@ -10,14 +10,14 @@
 #include "Memory_Cell.hpp"
 
 #define AVM_STACKENV_SIZE 4
+avm_memcell ax, bx, cx, retval;
+unsigned int top = AMV_STACKSIZE, topsp = AMV_STACKSIZE;
 
-unsigned int executionFinished = 0; //unsigned char executionFinished = 0
+unsigned char executionFinished = 0;
 unsigned int pc = 0;
 unsigned int currLine = 0;
 unsigned int codeSize = 0;
-avm_memcell ax, bx, cx, retval;
-unsigned int top = AMV_STACKSIZE, topsp = AMV_STACKSIZE;
-Instruction* code = new Instruction();
+Instruction* code;
 
 typedef struct {
     unsigned int address;
@@ -108,27 +108,28 @@ public:
         fread(&size, sizeof(size), 1, file);
         // std::cout << "size instructions: " << size << std::endl;
         for (int i = 0; i < size; i++) {
-            Instruction inst;
-            fread(&inst.opcode, sizeof(char), 1, file);
-            // std::cout << "op: " << inst.opcode << std::endl;
+            Instruction* inst = new Instruction();
+            fread(&inst->opcode, sizeof(char), 1, file);
+            std::cout << "op: " << inst->opcode << std::endl;
 
-            fread(&inst.result.type, sizeof(char), 1, file);
-            fread(&inst.result.val, sizeof(unsigned int), 1, file);
-            // std::cout << "result type, val: " << inst.result.to_string() << "," << inst.result.val << std::endl;
+            fread(&inst->result.type, sizeof(char), 1, file);
+            fread(&inst->result.val, sizeof(unsigned int), 1, file);
+            std::cout << "result type, val: " << inst->result.to_string() << "," << inst->result.val << std::endl;
 
-            fread(&inst.arg1.type, sizeof(char), 1, file);
-            fread(&inst.arg1.val, sizeof(unsigned int), 1, file);
-            // std::cout << "arg1 type, val: " << inst.arg1.to_string() << "," << inst.arg1.val << std::endl;
+            fread(&inst->arg1.type, sizeof(char), 1, file);
+            fread(&inst->arg1.val, sizeof(unsigned int), 1, file);
+            std::cout << "arg1 type, val: " << inst->arg1.to_string() << "," << inst->arg1.val << std::endl;
 
-            fread(&inst.arg2.type, sizeof(char), 1, file);
-            fread(&inst.arg2.val, sizeof(unsigned int), 1, file);
-            // std::cout << "arg2 type, val: " << inst.arg2.to_string() << "," << inst.arg2.val << std::endl;
+            fread(&inst->arg2.type, sizeof(char), 1, file);
+            fread(&inst->arg2.val, sizeof(unsigned int), 1, file);
+            std::cout << "arg2 type, val: " << inst->arg2.to_string() << "," << inst->arg2.val << std::endl;
 
-            fread(&inst.srcLine, sizeof(int), 1, file);
-            // std::cout << "src line: " << inst.srcLine << std::endl;
+            fread(&inst->srcLine, sizeof(int), 1, file);
+            std::cout << "src line: " << inst->srcLine << std::endl;
             instructions.push_back(inst);
         }
 
+        code = instructions[0];
     }
 
     void printTargetCode(std::string filename) {
@@ -145,7 +146,7 @@ public:
 
         for (int i = 0; i < instructions.size(); i++) {
 
-            Instruction curr = instructions[i];
+            Instruction curr = *instructions[i];
 
             fprintf(file, "%d:\t\t\t%s\t\t%s\t%s\t%s\n",
                 i + 1,
@@ -190,6 +191,12 @@ public:
         }
     }
 
+    Instruction* get(Instruction* inst, unsigned int pc) {
+        auto it = std::find(instructions.begin(), instructions.end(), inst);
+        it = it + pc;
+        return *it;
+    }
+
     double getConstNumber(unsigned int index) {
          std::cout << index << " " << const_numbers.size() << std::endl;
         assert(index <= const_numbers.size());
@@ -211,7 +218,7 @@ public:
         return libfuncs_used[index];
     }
 
-    std::vector<Instruction> getInstructions() {
+    std::vector<Instruction*> getInstructions() {
         return instructions;
     }
 
@@ -262,7 +269,7 @@ public:
 
 private:
     // Code
-    std::vector<Instruction> instructions{};
+    std::vector<Instruction*> instructions{};
     // Const Tables
     std::vector<double> const_numbers{};
     std::vector<std::string> const_strings{};

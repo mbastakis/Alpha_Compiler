@@ -69,7 +69,7 @@ avm_table& avm_table::operator++() {
 class avm_memcell {
 public:
     avm_memcell_t type;
-    std::variant<double, std::string, bool, avm_table, unsigned int> data;
+    std::variant<double, std::string, bool, avm_table*, unsigned int> data;
 
     avm_memcell() {
         this->type = UNDEFINED_M;
@@ -77,7 +77,18 @@ public:
 
     avm_memcell(avm_memcell_t type) {
         this->type = type;
+    }
 
+    void avm_memcellclear() {
+        if(this->type == UNDEFINED_M) return; 
+
+        if(this->type == STRING_M) {
+            std::get<std::string>(this->data).erase();
+        }else if(this->type == TABLE_M) {
+            assert(std::get<avm_table*>(this->data));
+            std::get<avm_table*>(this->data)--;
+        }
+        this->type = UNDEFINED_M;
     }
 
 };
