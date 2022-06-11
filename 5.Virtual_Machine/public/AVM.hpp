@@ -24,6 +24,9 @@ typedef struct {
     std::string id;
 } userFunc;
 
+/*extern void avm_warning(char* format,...)
+  extern void avm_error(char* format,...)*/
+
 class AVM {
 public:
     AVM() {

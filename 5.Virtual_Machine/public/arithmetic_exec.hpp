@@ -45,7 +45,7 @@ void execute_arithmetic (Instruction * instr) {
     assert(rv1 && rv2);
 
     if (rv1->type != NUMBER_M || rv2->type != NUMBER_M) {
-        std::cout << "Not a number in arithmetic." << std::endl;
+        std::cout << "Not a number in arithmetic." << std::endl;  //avm_error
         executionFinished = 1;
     } else {
         arithmetic_func_t op = arithmeticFuncs[instr->opcode - ADD_OP];
@@ -88,7 +88,7 @@ void avm_assign(avm_memcell* lv, avm_memcell* rv) {
         return;
 
     if (rv->type == UNDEFINED_M) // From undefined r-value? warn!
-        std::cout << "Assigning from 'Undefined' content." << std::endl;
+        std::cout << "Assigning from 'Undefined' content." << std::endl; //avm_warning
 
     //avm_memcellclear(lv); //Clear old cell contents.
 
