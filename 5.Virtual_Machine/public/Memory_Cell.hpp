@@ -2,47 +2,25 @@
 #define MEMORY_CELL
 
 #include <string>
-#include <stack>
+#include <vector>
 #include <map>
 #include <cassert>
 #include <variant>
 
+#define AMV_STACKSIZE 4096
+
 typedef enum {
-    NUMBER_T = 0,
-    STRING_T,
+    NUMBER_M = 0,
+    STRING_M,
     BOOL_M,
     TABLE_M,
     USERFUNC_M,
     LIBFUNC_M,
     NIL_M,
-    UNDEFINED_T
+    UNDEFINED_M
 } avm_memcell_t;
 
-class avm_table;
-
-class avm_memcell {
-public:
-    avm_memcell_t type;
-    // std::variant<
-    //     double,
-    //     std::string,
-    //     bool,
-    //     avm_table,
-    //     unsigned int,
-    //     std::string,
-    // > data;
-
-    avm_memcell() {
-        this->type = UNDEFINED_T;
-    }
-
-    avm_memcell(avm_memcell_t type) {
-        this->type = type;
-
-    }
-
-};
-
+class avm_memcell;
 
 class avm_table {
 public:
@@ -79,7 +57,8 @@ public:
 
 avm_table& avm_table::operator--() {
     assert(this->refCounter > 0);
-    if (--this->refCounter == 1) this->~avm_table();
+    if (--this->refCounter == 0) this->~avm_table();
+    return *this;
 }
 
 avm_table& avm_table::operator++() {
@@ -87,11 +66,25 @@ avm_table& avm_table::operator++() {
     return *this;
 }
 
+class avm_memcell {
+public:
+    avm_memcell_t type;
+    std::variant<double, std::string, bool, avm_table, unsigned int> data;
+
+    avm_memcell() {
+        this->type = UNDEFINED_M;
+    }
+
+    avm_memcell(avm_memcell_t type) {
+        this->type = type;
+
+    }
+
+};
+
 // Variables
-std::stack<avm_memcell> avm_memcell_stack{};
+std::vector<avm_memcell> stack(AMV_STACKSIZE);
 #endif
-
-
 
 
 // avm_table* table = new avm_table();  OK

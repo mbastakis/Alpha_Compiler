@@ -57,16 +57,16 @@ typedef enum {
     MUL_OP,
     DIV_OP,
     MOD_OP,
+    UMINUS_OP,
+    AND_OP,
+    OR_OP,
+    NOT_OP,
     IF_EQ_OP,
     IF_NOTEQ_OP,
     IF_LESSEQ_OP,
     IF_GREATEREQ_OP,
     IF_LESS_OP,
     IF_GREATER_OP,
-    AND_OP,
-    NOT_OP,
-    OR_OP,
-    JUMP_OP,
     CALLFUNC_OP,
     PUSHARG_OP,
     ENTERFUNC_OP,
@@ -74,7 +74,8 @@ typedef enum {
     TABLECREATE_OP,
     TABLEGETELEM_OP,
     TABLESETELEM_OP,
-    NOP_OP
+    NOP_OP,
+    JUMP_OP
 } VMopcode;
 
 const char* VMopToString(VMopcode op) {
@@ -91,6 +92,8 @@ const char* VMopToString(VMopcode op) {
         return "div";
     case MOD_OP:
         return "mod";
+    case UMINUS_OP:
+        return "uminus";
     case AND_OP:
         return "and";
     case OR_OP:
@@ -123,6 +126,8 @@ const char* VMopToString(VMopcode op) {
         return "tablegetelem";
     case TABLESETELEM_OP:
         return "tablesetelem";
+    case NOP_OP:
+        return "nop";
     case JUMP_OP:
         return "jump";
     default:

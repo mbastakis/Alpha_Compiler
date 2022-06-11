@@ -7,6 +7,9 @@
 #include "helper.hpp"
 #include "Instruction.hpp"
 #include "libfuncs_Impl.hpp"
+#include "Memory_Cell.hpp"
+
+#define AVM_STACKENV_SIZE 4
 
 typedef struct {
     unsigned int address;
@@ -195,6 +198,56 @@ public:
         assert(index < libfuncs_used.size());
         return libfuncs_used[index];
     }
+
+    std::vector<Instruction> getInstructions() {
+        return instructions;
+    }
+
+    avm_memcell avm_translate_operand (VMarg arg, avm_memcell reg) {
+        switch (arg.type)
+        {
+        case GLOBAL_T:
+            return stack[AMV_STACKSIZE - 1 - arg.val];
+        case LOCAL_T:
+            return stack[topsp - arg.val];
+        case FORMAL_T:
+            return stack[topsp + AVM_STACKENV_SIZE + 1 + arg.val];
+        case RETVAL_T:
+            return retval;
+        case NUMBER_T: {
+            reg.type = NUMBER_M;
+            reg.data = getConstNumber(arg.val);
+            return reg;
+        }
+        case STRING_T: {
+            reg.type = STRING_M;
+            reg.data = getConstString(arg.val);
+            return reg;
+        }
+        case BOOL_T: {
+            reg.type = BOOL_M;
+            reg.data = arg.val;
+            return reg;
+        }
+        case NIL_T: {
+            reg.type = NIL_M;
+            return reg;
+        }
+        case USERFUNC_T: {
+            reg.type = USERFUNC_M;
+            reg.data = arg.val;
+            return reg;
+        }
+        case LIBFUNC_T: {
+            reg.type = LIBFUNC_M;
+            reg.data = getLibFunction(arg.val);
+            return reg;
+        }
+        default:
+            assert(0);
+        }
+    }
+
 private:
     // Code
     std::vector<Instruction> instructions{};
@@ -205,6 +258,9 @@ private:
     std::vector<std::string> libfuncs_used{};
     // Lib func map
     std::map<std::string, std::function<void(void)>> libfuncs_map{};
+    //Variables
+    avm_memcell ax, bx, cx, retval;
+    unsigned int top, topsp;
 };
 
 #endif
