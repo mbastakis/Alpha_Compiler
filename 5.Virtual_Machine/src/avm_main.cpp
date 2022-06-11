@@ -16,10 +16,6 @@
 typedef void (*execute_func_t)(Instruction*);
 
 //Global variables
-unsigned int executionFinished = 0; //unsigned char executionFinished = 0
-unsigned int pc = 0;
-unsigned int currLine = 0;
-unsigned int codeSize = 0;
 Instruction* code = new Instruction();
 execute_func_t executeFuncs[] = {
         execute_assign, execute_add, execute_sub,
@@ -32,7 +28,7 @@ execute_func_t executeFuncs[] = {
         execute_tablegetelem, execute_tablesetelem, execute_nop
 };
 
-void execute_cycle (void) {
+void execute_cycle () {
     if (executionFinished)
         return;
     if (pc == codeSize) {
@@ -45,7 +41,7 @@ void execute_cycle (void) {
         if (instr->srcLine)
             currLine = instr->srcLine;
         unsigned int oldPC = pc;
-        (*executeFuncs[instr->opcode]) (instr);
+        (*executeFuncs[instr->opcode])(instr);
         if (pc == oldPC)
             ++pc;
     }
@@ -67,19 +63,17 @@ int main(int argc, char** argv) {
         reset();
         return -1;
     }
-
-    AVM avm{};
     avm.loadDataFromBinary(file);
-
-    avm.printTargetCode("");
+    //avm.printTargetCode("");
 
     std::vector<Instruction> instructions{};
     instructions = avm.getInstructions();
-
+    codeSize = instructions.size();
     for (int i = 0; i < instructions.size(); i++) {
-        Instruction curr = instructions[i];
-
-
+        //Instruction* curr = &instructions[i];
+        code = &instructions[i];
+        //execute_cycle();
+        std::cout << code->result.val << std::endl;
     }
 
     return 0;

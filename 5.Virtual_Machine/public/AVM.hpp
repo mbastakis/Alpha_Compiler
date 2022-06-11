@@ -11,6 +11,13 @@
 
 #define AVM_STACKENV_SIZE 4
 
+unsigned int executionFinished = 0; //unsigned char executionFinished = 0
+unsigned int pc = 0;
+unsigned int currLine = 0;
+unsigned int codeSize = 0;
+avm_memcell ax, bx, cx, retval;
+unsigned int top = AMV_STACKSIZE, topsp = AMV_STACKSIZE;
+
 typedef struct {
     unsigned int address;
     unsigned int localSize;
@@ -180,22 +187,23 @@ public:
     }
 
     double getConstNumber(unsigned int index) {
-        assert(index < const_numbers.size());
+         std::cout << index << " " << const_numbers.size() << std::endl;
+        assert(index <= const_numbers.size());
         return const_numbers[index];
     }
 
     std::string getConstString(unsigned int index) {
-        assert(index < const_strings.size());
+        assert(index <= const_strings.size());
         return const_strings[index];
     }
 
     userFunc getUserFunction(unsigned int index) {
-        assert(index < userfunctions.size());
+        assert(index <= userfunctions.size());
         return userfunctions[index];
     }
 
     std::string getLibFunction(unsigned int index) {
-        assert(index < libfuncs_used.size());
+        assert(index <= libfuncs_used.size());
         return libfuncs_used[index];
     }
 
@@ -203,44 +211,44 @@ public:
         return instructions;
     }
 
-    avm_memcell avm_translate_operand (VMarg arg, avm_memcell reg) {
-        switch (arg.type)
+    avm_memcell* avm_translate_operand (VMarg* arg, avm_memcell* reg) {
+        switch (arg->type)
         {
         case GLOBAL_T:
-            return stack[AMV_STACKSIZE - 1 - arg.val];
+            return &stack[AMV_STACKSIZE - 1 - arg->val];
         case LOCAL_T:
-            return stack[topsp - arg.val];
+            return &stack[topsp - arg->val];
         case FORMAL_T:
-            return stack[topsp + AVM_STACKENV_SIZE + 1 + arg.val];
+            return &stack[topsp + AVM_STACKENV_SIZE + 1 + arg->val];
         case RETVAL_T:
-            return retval;
+            return &retval;
         case NUMBER_T: {
-            reg.type = NUMBER_M;
-            reg.data = getConstNumber(arg.val);
+            reg->type = NUMBER_M;
+            reg->data = getConstNumber(arg->val);
             return reg;
         }
         case STRING_T: {
-            reg.type = STRING_M;
-            reg.data = getConstString(arg.val);
+            reg->type = STRING_M;
+            reg->data = getConstString(arg->val);
             return reg;
         }
         case BOOL_T: {
-            reg.type = BOOL_M;
-            reg.data = arg.val;
+            reg->type = BOOL_M;
+            reg->data = arg->val;
             return reg;
         }
         case NIL_T: {
-            reg.type = NIL_M;
+            reg->type = NIL_M;
             return reg;
         }
         case USERFUNC_T: {
-            reg.type = USERFUNC_M;
-            reg.data = arg.val;
+            reg->type = USERFUNC_M;
+            reg->data = arg->val;
             return reg;
         }
         case LIBFUNC_T: {
-            reg.type = LIBFUNC_M;
-            reg.data = getLibFunction(arg.val);
+            reg->type = LIBFUNC_M;
+            reg->data = getLibFunction(arg->val);
             return reg;
         }
         default:
@@ -258,9 +266,8 @@ private:
     std::vector<std::string> libfuncs_used{};
     // Lib func map
     std::map<std::string, std::function<void(void)>> libfuncs_map{};
-    //Variables
-    avm_memcell ax, bx, cx, retval;
-    unsigned int top, topsp;
 };
+
+AVM avm{};
 
 #endif
