@@ -17,6 +17,7 @@ unsigned int currLine = 0;
 unsigned int codeSize = 0;
 avm_memcell ax, bx, cx, retval;
 unsigned int top = AMV_STACKSIZE, topsp = AMV_STACKSIZE;
+Instruction* code = new Instruction();
 
 typedef struct {
     unsigned int address;

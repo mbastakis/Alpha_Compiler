@@ -15,8 +15,6 @@
 // Function like macro definition
 typedef void (*execute_func_t)(Instruction*);
 
-//Global variables
-Instruction* code = new Instruction();
 execute_func_t executeFuncs[] = {
         execute_assign, execute_add, execute_sub,
         execute_mul, execute_div, execute_mod,
