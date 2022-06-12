@@ -420,6 +420,8 @@ std::string exprValueToString(Expr* expr) {
         return std::to_string(std::get<int>(expr->value));
     case CONST_STRING_EXPR:
         return std::get<std::string>(expr->value);
+    case NIL_EXPR:
+        return "NIL";
     default:
         return expr->symbol->getId();
     }

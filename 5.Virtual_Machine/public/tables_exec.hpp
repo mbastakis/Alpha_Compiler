@@ -4,7 +4,7 @@
 #include "global_def.hpp"
 
 void execute_newtable(Instruction* instr) {
-    avm_memcell* lv = avm.avm_translate_operand(&instr->result, NULL);
+    avm_memcell* lv = avm.avm_translate_operand(&instr->arg1, NULL);
     // assert(lv && (stack[AVM_STACKSIZE - 1] >= lv && lv > stack[top] || lv == &retval));
 
     lv->avm_memcellclear();
