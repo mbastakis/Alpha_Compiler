@@ -1,17 +1,11 @@
 #ifndef TABLES_EXEC
 #define TABLES_EXEC
 
-#include "Instruction.hpp"
-#include "AVM.hpp"
-
-extern void execute_newtable(Instruction*);
-extern void execute_tablegetelem(Instruction*);
-extern void execute_tablesetelem(Instruction*);
-extern void execute_nop(Instruction*);
+#include "global_def.hpp"
 
 void execute_newtable(Instruction* instr) {
     avm_memcell* lv = avm.avm_translate_operand(&instr->result, NULL);
-    // assert(lv && (stack[AMV_STACKSIZE - 1] >= lv && lv > stack[top] || lv == &retval));
+    // assert(lv && (stack[AVM_STACKSIZE - 1] >= lv && lv > stack[top] || lv == &retval));
 
     lv->avm_memcellclear();
 

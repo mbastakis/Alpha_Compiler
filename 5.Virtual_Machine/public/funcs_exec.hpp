@@ -1,31 +1,17 @@
 #ifndef FUNCS_EXEC
 #define FUNCS_EXEC
 
-#define AVM_NUMACTUALS_OFFSET +4
-#define AVM_SAVEDPC_OFFSET +3
-#define AVM_SAVEDTOP_OFFSET +2
-#define AVM_SAVEDTOPSP_OFFSET +1
+#include "global_def.hpp"
 
-#include "Instruction.hpp"
-#include "AVM.hpp"
-
-extern unsigned int top;
-extern unsigned int topsp;
-extern unsigned char executionFinished;
+extern unsigned int totalActuals;
 extern unsigned int pc;
-
-
-
-extern void execute_pusharg(Instruction*);
-extern void execute_funcenter(Instruction*);
-extern void execute_funcexit(Instruction*);
+extern unsigned int codeSize;
+extern avm_memcell ax;
 
 extern char* avm_tostring(avm_memcell*);
 extern void avm_callsaveEnvironment();
 //extern userFunc* avm_getfuncinfo (unsigned address);
 extern void avm_assign(avm_memcell*, avm_memcell*);
-
-extern unsigned int totalActuals;
 
 void avm_dec_top() {
     if (!top) { //Stack overflow

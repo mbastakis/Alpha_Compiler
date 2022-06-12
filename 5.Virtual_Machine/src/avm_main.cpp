@@ -1,13 +1,9 @@
 #include <iostream>
 #include <vector>
 
-#include "../public/helper.hpp"
+#include "../public/Instruction.hpp"
 #include "../public/AVM.hpp"
-#include "../public/arithmetic_exec.hpp"
-#include "../public/jumps_exec.hpp"
-#include "../public/funcs_exec.hpp"
-#include "../public/tables_exec.hpp"
-#include "../public/libfuncs_Impl.hpp"
+#include "../public/global_def.hpp"
 
 //Definitions
 //#define AVM_ENDING_PC codeSize;
@@ -15,6 +11,30 @@
 
 // Function like macro definition
 typedef void (*execute_func_t)(Instruction*);
+
+extern void execute_assign(Instruction*);
+extern void execute_add(Instruction*);
+extern void execute_sub(Instruction*);
+extern void execute_mul(Instruction*);
+extern void execute_div(Instruction*);
+extern void execute_mod(Instruction*);
+extern void execute_and(Instruction*);
+extern void execute_or(Instruction*);
+extern void execute_not(Instruction*);
+extern void execute_jeq(Instruction*);
+extern void execute_jne(Instruction*);
+extern void execute_jle(Instruction*);
+extern void execute_jge(Instruction*);
+extern void execute_jlt(Instruction*);
+extern void execute_jgt(Instruction*);
+extern void execute_call(Instruction*);
+extern void execute_pusharg(Instruction*);
+extern void execute_funcenter(Instruction*);
+extern void execute_funcexit(Instruction*);
+extern void execute_newtable(Instruction*);
+extern void execute_tablegetelem(Instruction*);
+extern void execute_tablesetelem(Instruction*);
+extern void execute_nop(Instruction*);
 
 execute_func_t executeFuncs[] = {
         execute_assign, execute_add, execute_sub,
@@ -66,6 +86,12 @@ int main(int argc, char** argv) {
     }
     avm.loadDataFromBinary(file);
     // avm.printTargetCode("");
+
+    avm.libfuncs_map["print"] = print;
+    avm.libfuncs_map["totalarguments"] = totalarguments;
+    avm.libfuncs_map["typeof"] = typeof;
+    avm.libfuncs_map["argument"] = argument;
+
 
     std::vector<Instruction*> instructions = avm.getInstructions();
     codeSize = instructions.size();

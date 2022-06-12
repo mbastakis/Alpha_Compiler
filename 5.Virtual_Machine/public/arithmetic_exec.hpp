@@ -1,9 +1,13 @@
 #ifndef ARITHMETIC_EXEC
 #define ARITHMETIC_EXEC
 
-#include "Instruction.hpp"
-#include "AVM.hpp"
 #include <string.h>
+
+#include "global_def.hpp"
+
+extern AVM avm;
+extern avm_memcell ax, bx;
+extern unsigned char executionFinished;
 
 typedef double (*arithmetic_func_t)(double x, double y);
 
@@ -23,16 +27,6 @@ arithmetic_func_t arithmeticFuncs[] = {
 #define execute_div execute_arithmetic
 #define execute_mod execute_arithmetic
 
-extern void execute_assign(Instruction*);
-extern void execute_add(Instruction*);
-extern void execute_sub(Instruction*);
-extern void execute_mul(Instruction*);
-extern void execute_div(Instruction*);
-extern void execute_mod(Instruction*);
-extern void execute_and(Instruction*);
-extern void execute_or(Instruction*);
-extern void execute_not(Instruction*);
-
 extern void avm_assign(avm_memcell* lv, avm_memcell* rv);
 
 void execute_arithmetic(Instruction* instr) {
@@ -40,7 +34,7 @@ void execute_arithmetic(Instruction* instr) {
     avm_memcell* rv1 = avm.avm_translate_operand(&instr->arg1, &ax);
     avm_memcell* rv2 = avm.avm_translate_operand(&instr->arg2, &bx);
 
-    // assert(&stack[AMV_STACKSIZE - 1] >= lv && lv > &stack[top] || lv == &retval);
+    // assert(&stack[AVM_STACKSIZE - 1] >= lv && lv > &stack[top] || lv == &retval);
     assert(rv1 && rv2);
 
     if (rv1->type != NUMBER_M || rv2->type != NUMBER_M) {
@@ -71,8 +65,8 @@ void execute_assign(Instruction* instr) {
     avm_memcell* lv = avm.avm_translate_operand(&instr->result, (avm_memcell*)0);
     avm_memcell* rv = avm.avm_translate_operand(&instr->arg1, &ax);
 
-    // assert(&stack[AMV_STACKSIZE - 1] >= lv && lv > &stack[top] || lv == &retval);
-    // assert(&stack[AMV_STACKSIZE - 1] >= rv && rv > &stack[top] || rv == &retval);
+    // assert(&stack[AVM_STACKSIZE - 1] >= lv && lv > &stack[top] || lv == &retval);
+    // assert(&stack[AVM_STACKSIZE - 1] >= rv && rv > &stack[top] || rv == &retval);
     avm_assign(lv, rv);
 }
 

@@ -3,22 +3,36 @@
 
 #include <map>
 #include <functional>
+#include <vector>
 
-#include "Instruction.hpp"
+#define AVM_STACKSIZE 4096  // memory_cell
+#define AVM_STACKENV_SIZE 4 // avm
+
 #include "helper.hpp"
+#include "Instruction.hpp"
 #include "Memory_Cell.hpp"
-#include "libfuncs_Impl.hpp"
 
-#define AVM_STACKENV_SIZE 4
-avm_memcell ax, bx, cx, retval;
-unsigned int top = AMV_STACKSIZE, topsp = AMV_STACKSIZE;
+std::function<void(void)> libfunc_print;
+std::function<void(void)> libfunc_input;
+std::function<void(void)> libfunc_objectmemberkeys;
+std::function<void(void)> libfunc_objecttotalmembers;
+std::function<void(void)> libfunc_objectcopy;
+std::function<void(void)> libfunc_totalarguments;
+std::function<void(void)> libfunc_argument;
+std::function<void(void)> libfunc_typeof;
+std::function<void(void)> libfunc_strtonum;
+std::function<void(void)> libfunc_sqrt;
+std::function<void(void)> libfunc_cos;
+std::function<void(void)> libfunc_sin;
 
+Instruction* code;
+std::vector<avm_memcell> stack(AVM_STACKSIZE);
+unsigned int top = AVM_STACKSIZE, topsp = AVM_STACKSIZE;
 unsigned char executionFinished = 0;
 unsigned int pc = 0;
-unsigned int currLine = 0;
 unsigned int codeSize = 0;
-unsigned int totalActuals = 0;
-Instruction* code;
+unsigned int currLine = 0;
+avm_memcell ax, bx, cx, retval;
 
 typedef struct {
     unsigned int address;
@@ -224,7 +238,7 @@ public:
         switch (arg->type)
         {
         case GLOBAL_T:
-            return &stack[AMV_STACKSIZE - 1 - arg->val];
+            return &stack[AVM_STACKSIZE - 1 - arg->val];
         case LOCAL_T:
             return &stack[topsp - arg->val];
         case FORMAL_T:
@@ -265,6 +279,8 @@ public:
         }
     }
 
+    // Lib func map
+    std::map<std::string, std::function<void(void)>> libfuncs_map{};
 private:
     // Code
     std::vector<Instruction*> instructions{};
@@ -273,8 +289,6 @@ private:
     std::vector<std::string> const_strings{};
     std::vector<userFunc> userfunctions{};
     std::vector<std::string> libfuncs_used{};
-    // Lib func map
-    std::map<std::string, std::function<void(void)>> libfuncs_map{};
 };
 
 AVM avm{};

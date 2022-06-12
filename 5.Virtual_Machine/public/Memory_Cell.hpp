@@ -7,8 +7,6 @@
 #include <cassert>
 #include <variant>
 
-#define AMV_STACKSIZE 4096
-
 typedef enum {
     NUMBER_M = 0,
     STRING_M,
@@ -186,8 +184,6 @@ void avm_table::set(avm_memcell* i, avm_memcell* c) {
     }
 }
 
-// Variables
-std::vector<avm_memcell> stack(AMV_STACKSIZE);
 #endif
 
 
