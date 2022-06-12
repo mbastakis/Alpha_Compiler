@@ -7,6 +7,7 @@
 #include "../public/jumps_exec.hpp"
 #include "../public/funcs_exec.hpp"
 #include "../public/tables_exec.hpp"
+#include "../public/libfuncs_Impl.hpp"
 
 //Definitions
 //#define AVM_ENDING_PC codeSize;
@@ -26,13 +27,14 @@ execute_func_t executeFuncs[] = {
         execute_tablegetelem, execute_tablesetelem, execute_nop
 };
 
-void execute_cycle () {
+bool execute_cycle() {
     if (executionFinished)
-        return;
+        return false;
     if (pc == codeSize) {
         executionFinished = 1;
-        return;
-    } else {
+        return false;
+    }
+    else {
         assert(pc < codeSize);
         Instruction* instr = avm.get(code, pc);
         assert(instr->opcode >= 0 && instr->opcode <= NOP_OP);
@@ -43,6 +45,7 @@ void execute_cycle () {
         if (pc == oldPC)
             ++pc;
     }
+    return true;
 }
 
 
@@ -62,13 +65,11 @@ int main(int argc, char** argv) {
         return -1;
     }
     avm.loadDataFromBinary(file);
-    //avm.printTargetCode("");
+    // avm.printTargetCode("");
 
     std::vector<Instruction*> instructions = avm.getInstructions();
     codeSize = instructions.size();
-    while(true) 
-        execute_cycle();
-    
+    while (execute_cycle());
 
     return 0;
 }

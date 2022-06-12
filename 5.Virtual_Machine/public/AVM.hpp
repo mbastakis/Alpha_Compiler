@@ -4,10 +4,10 @@
 #include <map>
 #include <functional>
 
-#include "helper.hpp"
 #include "Instruction.hpp"
-#include "libfuncs_Impl.hpp"
+#include "helper.hpp"
 #include "Memory_Cell.hpp"
+#include "libfuncs_Impl.hpp"
 
 #define AVM_STACKENV_SIZE 4
 avm_memcell ax, bx, cx, retval;
@@ -17,6 +17,7 @@ unsigned char executionFinished = 0;
 unsigned int pc = 0;
 unsigned int currLine = 0;
 unsigned int codeSize = 0;
+unsigned int totalActuals = 0;
 Instruction* code;
 
 typedef struct {
@@ -45,10 +46,7 @@ public:
         libfuncs_map.insert({ "sin", libfunc_sin });
     }
 
-    void callLibFunc(std::string libfuncName) {
-        // func is the library function
-        auto func = libfuncs_map[libfuncName];
-    }
+    void callLibFunc(std::string libfuncName);
 
     void loadDataFromBinary(FILE* file) {
         // Check magic number
@@ -110,22 +108,22 @@ public:
         for (int i = 0; i < size; i++) {
             Instruction* inst = new Instruction();
             fread(&inst->opcode, sizeof(char), 1, file);
-            std::cout << "op: " << inst->opcode << std::endl;
+            // std::cout << "op: " << inst->opcode << std::endl;
 
             fread(&inst->result.type, sizeof(char), 1, file);
             fread(&inst->result.val, sizeof(unsigned int), 1, file);
-            std::cout << "result type, val: " << inst->result.to_string() << "," << inst->result.val << std::endl;
+            // std::cout << "result type, val: " << inst->result.to_string() << "," << inst->result.val << std::endl;
 
             fread(&inst->arg1.type, sizeof(char), 1, file);
             fread(&inst->arg1.val, sizeof(unsigned int), 1, file);
-            std::cout << "arg1 type, val: " << inst->arg1.to_string() << "," << inst->arg1.val << std::endl;
+            // std::cout << "arg1 type, val: " << inst->arg1.to_string() << "," << inst->arg1.val << std::endl;
 
             fread(&inst->arg2.type, sizeof(char), 1, file);
             fread(&inst->arg2.val, sizeof(unsigned int), 1, file);
-            std::cout << "arg2 type, val: " << inst->arg2.to_string() << "," << inst->arg2.val << std::endl;
+            // std::cout << "arg2 type, val: " << inst->arg2.to_string() << "," << inst->arg2.val << std::endl;
 
             fread(&inst->srcLine, sizeof(int), 1, file);
-            std::cout << "src line: " << inst->srcLine << std::endl;
+            // std::cout << "src line: " << inst->srcLine << std::endl;
             instructions.push_back(inst);
         }
 
@@ -198,7 +196,7 @@ public:
     }
 
     double getConstNumber(unsigned int index) {
-         std::cout << index << " " << const_numbers.size() << std::endl;
+        std::cout << index << " " << const_numbers.size() << std::endl;
         assert(index <= const_numbers.size());
         return const_numbers[index];
     }
@@ -222,7 +220,7 @@ public:
         return instructions;
     }
 
-    avm_memcell* avm_translate_operand (VMarg* arg, avm_memcell* reg) {
+    avm_memcell* avm_translate_operand(VMarg* arg, avm_memcell* reg) {
         switch (arg->type)
         {
         case GLOBAL_T:
