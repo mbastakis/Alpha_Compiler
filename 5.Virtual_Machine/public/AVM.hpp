@@ -275,7 +275,7 @@ public:
         }
         case BOOL_T: {
             reg->type = BOOL_M;
-            reg->data = arg->val;
+            reg->data = arg->val == 1 ? true : false;
             return reg;
         }
         case NIL_T: {
