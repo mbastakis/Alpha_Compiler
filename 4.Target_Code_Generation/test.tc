@@ -1,7 +1,0 @@
-function f(a,b) {
-    m=9;
-    return m;
-}
-
-f(s,l);
-
