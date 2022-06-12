@@ -1,11 +1,13 @@
 #ifndef LIBFUNCS_IMPL
 #define LIBFUNCS_IMPL
 
-#define AVM_NUMACTUALS_OFFSET +4    // funcs_exec
-#define AVM_SAVEDTOP_OFFSET +2      // funcs_exec
-#define AVM_SAVEDTOPSP_OFFSET +1    // funcs_exec
+#define AVM_NUMACTUALS_OFFSET + 4    // funcs_exec
+#define AVM_SAVEDTOP_OFFSET + 2      // funcs_exec
+#define AVM_SAVEDTOPSP_OFFSET + 1    // funcs_exec
 
 #include <functional>
+#include <iostream>
+#include <cmath>
 #include "AVM.hpp"
 
 extern unsigned int avm_get_envvalue(unsigned int);
@@ -26,6 +28,7 @@ void print(void) {
     for (int i = 0; i < n; ++i) {
         std::cout << avm_getactual(i)->to_string();
     }
+    std::cout << std::endl;
 }
 
 void typeof(void) {
@@ -84,6 +87,94 @@ void argument(void) {
         retval.type = NIL_M;
     }
 
+}
+
+void a_cos(void) {
+    unsigned int n = avm_totalactuals();
+    if (n != 1) {
+        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+
+    }
+    else {
+        avm_memcell* arg = avm_getactual(0);
+        if (arg->type != NUMBER_M)
+            std::cout << "Cos expected argument of type NUMBER!" << std::endl;
+        else {
+            (&retval)->avm_memcellclear();
+            double argVal = std::get<double>(arg->data);
+            retval.type = NUMBER_M;
+            retval.data = std::cos(argVal * 3.14159 / 180);
+        }
+    }
+}
+
+void a_sin(void) {
+    unsigned int n = avm_totalactuals();
+    if (n != 1) {
+        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+
+    }
+    else {
+        avm_memcell* arg = avm_getactual(0);
+        if (arg->type != NUMBER_M)
+            std::cout << "Sin expected argument of type NUMBER!" << std::endl;
+        else {
+            (&retval)->avm_memcellclear();
+            double argVal = std::get<double>(arg->data);
+            retval.type = NUMBER_M;
+            retval.data = std::sin(argVal * 3.14159 / 180);
+        }
+    }
+}
+
+void a_sqrt(void) {
+    unsigned int n = avm_totalactuals();
+    if (n != 1) {
+        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+
+    }
+    else {
+        avm_memcell* arg = avm_getactual(0);
+        if (arg->type != NUMBER_M)
+            std::cout << "Sqrt expected argument of type NUMBER!" << std::endl;
+        else {
+            (&retval)->avm_memcellclear();
+            double argVal = std::get<double>(arg->data);
+
+            if (argVal < 0) {
+                retval.type = NIL_M;
+                return;
+            }
+
+            retval.type = NUMBER_M;
+            retval.data = std::sqrt(argVal);
+        }
+    }
+}
+
+void strtonum() {
+    unsigned int n = avm_totalactuals();
+    if (n != 1) {
+        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+
+    }
+    else {
+        avm_memcell* arg = avm_getactual(0);
+        if (arg->type != NUMBER_M)
+            std::cout << "Cos expected argument of type NUMBER!" << std::endl;
+        else {
+            (&retval)->avm_memcellclear();
+            double argVal = std::get<double>(arg->data);
+
+            if (argVal < 0) {
+                retval.type = NIL_M;
+                return;
+            }
+
+            retval.type = NUMBER_M;
+            retval.data = std::sqrt(argVal);
+        }
+    }
 }
 
 #endif

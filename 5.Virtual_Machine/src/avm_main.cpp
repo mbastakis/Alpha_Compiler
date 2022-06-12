@@ -36,13 +36,17 @@ extern void execute_tablegetelem(Instruction*);
 extern void execute_tablesetelem(Instruction*);
 extern void execute_nop(Instruction*);
 
+void execute_jump(Instruction* i) {
+    return;
+}
+
 execute_func_t executeFuncs[] = {
         execute_assign, execute_add, execute_sub,
         execute_mul, execute_div, execute_mod,
-        execute_and, execute_or,
-        execute_not, execute_jeq, execute_jne,
-        execute_jle, execute_jge, execute_jlt,
-        execute_jgt, execute_call, execute_pusharg,
+        execute_jeq, execute_jne, execute_jle,
+        execute_jge, execute_jlt,execute_jgt,
+        execute_and, execute_not, execute_or,
+        execute_jump, execute_call, execute_pusharg,
         execute_funcenter, execute_funcexit, execute_newtable,
         execute_tablegetelem, execute_tablesetelem, execute_nop
 };
@@ -91,6 +95,10 @@ int main(int argc, char** argv) {
     avm.libfuncs_map["totalarguments"] = totalarguments;
     avm.libfuncs_map["typeof"] = typeof;
     avm.libfuncs_map["argument"] = argument;
+    avm.libfuncs_map["cos"] = a_cos;
+    avm.libfuncs_map["sin"] = a_sin;
+    avm.libfuncs_map["sqrt"] = a_sqrt;
+
 
 
     std::vector<Instruction*> instructions = avm.getInstructions();

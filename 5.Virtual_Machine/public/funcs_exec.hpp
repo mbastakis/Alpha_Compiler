@@ -22,7 +22,7 @@ void avm_dec_top() {
     else --top;
 }
 
-void avm_push_envValue(unsigned int val) {
+void avm_push_envValue(double val) {
     stack[top].type = NUMBER_M;
     stack[top].data = val;
     avm_dec_top();
@@ -37,13 +37,14 @@ void avm_callsaveEnvironment() {
 
 unsigned int avm_get_envvalue(unsigned int i) {
     assert(stack[i].type == NUMBER_M);
-    unsigned int val = (unsigned int)std::get<double>(stack[i].data);
-    assert(std::get<unsigned int>(stack[i].data) == val);
+    double doubleVal = std::get<double>(stack[i].data);
+    unsigned int val = (unsigned int)doubleVal;
+    assert(doubleVal == val);
     return val;
 }
 
 void execute_call(Instruction* instr) {
-    avm_memcell* func = avm.avm_translate_operand(&instr->result, &ax);
+    avm_memcell* func = avm.avm_translate_operand(&instr->arg1, &ax);
     assert(func);
     avm_callsaveEnvironment();
 

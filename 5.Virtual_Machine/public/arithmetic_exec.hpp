@@ -9,6 +9,8 @@ extern AVM avm;
 extern avm_memcell ax, bx;
 extern unsigned char executionFinished;
 
+extern bool avm_tobool(avm_memcell* m);
+
 typedef double (*arithmetic_func_t)(double x, double y);
 
 double add_impl(double x, double y) { return x + y; }
@@ -50,15 +52,56 @@ void execute_arithmetic(Instruction* instr) {
 }
 
 void execute_and(Instruction* instr) {
+    avm_memcell* lv = avm.avm_translate_operand(&instr->result, NULL);
+    avm_memcell* arg1 = avm.avm_translate_operand(&instr->arg1, &ax);
+    avm_memcell* arg2 = avm.avm_translate_operand(&instr->arg2, &bx);
 
+    assert(arg1 && arg2);
+
+    if (arg1->type == UNDEFINED_M || arg2->type == UNDEFINED_M) {
+        std::cout << "Undefined var in 'and'" << std::endl;
+        executionFinished = 1;
+    }
+    else {
+        lv->avm_memcellclear();
+        lv->type = BOOL_M;
+        lv->data = avm_tobool(arg1) and avm_tobool(arg2);
+    }
 }
 
 void execute_or(Instruction* instr) {
+    avm_memcell* lv = avm.avm_translate_operand(&instr->result, NULL);
+    avm_memcell* arg1 = avm.avm_translate_operand(&instr->arg1, &ax);
+    avm_memcell* arg2 = avm.avm_translate_operand(&instr->arg2, &bx);
 
+    assert(arg1 && arg2);
+
+    if (arg1->type == UNDEFINED_M || arg2->type == UNDEFINED_M) {
+        std::cout << "Undefined var in 'or'" << std::endl;
+        executionFinished = 1;
+    }
+    else {
+        lv->avm_memcellclear();
+        lv->type = BOOL_M;
+        lv->data = avm_tobool(arg1) or avm_tobool(arg2);
+    }
 }
 
 void execute_not(Instruction* instr) {
+    avm_memcell* lv = avm.avm_translate_operand(&instr->result, NULL);
+    avm_memcell* arg1 = avm.avm_translate_operand(&instr->arg1, &ax);
 
+    assert(arg1);
+
+    if (arg1->type == UNDEFINED_M) {
+        std::cout << "Undefined var in not" << std::endl;
+        executionFinished = 1;
+    }
+    else {
+        lv->avm_memcellclear();
+        lv->type = BOOL_M;
+        lv->data = !avm_tobool(arg1);
+    }
 }
 
 void execute_assign(Instruction* instr) {
@@ -71,7 +114,6 @@ void execute_assign(Instruction* instr) {
 }
 
 void avm_assign(avm_memcell* lv, avm_memcell* rv) {
-    std::cout << "lv.data = " << lv->data.index() << " rv.data = " << rv->data.index();
     if (lv == rv) //Same cells? destructive to assign!
         return;
 
@@ -93,7 +135,6 @@ void avm_assign(avm_memcell* lv, avm_memcell* rv) {
         std::get<avm_table*>(lv->data)++;
     }
 
-    std::cout << lv->type << " " << rv->type << std::endl;
 }
 
 #endif

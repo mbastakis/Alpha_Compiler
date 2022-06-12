@@ -27,7 +27,7 @@ std::function<void(void)> libfunc_sin;
 
 Instruction* code;
 std::vector<avm_memcell> stack(AVM_STACKSIZE);
-unsigned int top = AVM_STACKSIZE, topsp = AVM_STACKSIZE;
+unsigned int top, topsp;
 unsigned char executionFinished = 0;
 unsigned int pc = 0;
 unsigned int codeSize = 0;
@@ -58,6 +58,8 @@ public:
         libfuncs_map.insert({ "sqrt", libfunc_sqrt });
         libfuncs_map.insert({ "cos", libfunc_cos });
         libfuncs_map.insert({ "sin", libfunc_sin });
+
+        totalGlobals = 0;
     }
 
     void callLibFunc(std::string libfuncName);
@@ -139,9 +141,18 @@ public:
             fread(&inst->srcLine, sizeof(int), 1, file);
             // std::cout << "src line: " << inst->srcLine << std::endl;
             instructions.push_back(inst);
+
+            if (inst->result.type == GLOBAL_T && inst->result.val + 1 > totalGlobals)
+                totalGlobals = inst->result.val + 1;
+            if (inst->arg1.type == GLOBAL_T && inst->arg1.val + 1 > totalGlobals)
+                totalGlobals = inst->arg1.val + 1;
+            if (inst->arg2.type == GLOBAL_T && inst->arg2.val + 1 > totalGlobals)
+                totalGlobals = inst->arg2.val + 1;
         }
 
         code = instructions[0];
+        top = AVM_STACKSIZE - totalGlobals - 1;
+        topsp = AVM_STACKSIZE - totalGlobals - 1;
     }
 
     void printTargetCode(std::string filename) {
@@ -210,7 +221,7 @@ public:
     }
 
     double getConstNumber(unsigned int index) {
-        std::cout << index << " " << const_numbers.size() << std::endl;
+        // std::cout << index << " " << const_numbers.size() << std::endl;
         assert(index <= const_numbers.size());
         return const_numbers[index];
     }
@@ -281,6 +292,7 @@ public:
 
     // Lib func map
     std::map<std::string, std::function<void(void)>> libfuncs_map{};
+    unsigned int totalGlobals;
 private:
     // Code
     std::vector<Instruction*> instructions{};
