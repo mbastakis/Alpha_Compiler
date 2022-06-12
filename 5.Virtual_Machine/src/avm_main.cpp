@@ -36,7 +36,9 @@ extern void execute_tablegetelem(Instruction*);
 extern void execute_tablesetelem(Instruction*);
 extern void execute_nop(Instruction*);
 
-void execute_jump(Instruction* i) {
+void execute_jump(Instruction* instr) {
+    assert(instr->result.type == LABEL_T);
+    pc = instr->result.val;
     return;
 }
 

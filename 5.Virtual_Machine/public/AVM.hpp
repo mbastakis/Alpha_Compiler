@@ -148,6 +148,13 @@ public:
                 totalGlobals = inst->arg1.val + 1;
             if (inst->arg2.type == GLOBAL_T && inst->arg2.val + 1 > totalGlobals)
                 totalGlobals = inst->arg2.val + 1;
+
+            if (inst->result.type == LABEL_T)
+                inst->result.val--;
+            if (inst->arg1.type == LABEL_T)
+                inst->arg1.val--;
+            if (inst->arg2.type == LABEL_T)
+                inst->arg2.val--;
         }
 
         code = instructions[0];

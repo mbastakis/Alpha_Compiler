@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <cmath>
+#include <string>
 #include "AVM.hpp"
 
 extern unsigned int avm_get_envvalue(unsigned int);
@@ -158,34 +159,36 @@ void a_sqrt(void) {
 bool is_number(const std::string& s)
 {
     std::string::const_iterator it = s.begin();
-    while (it != s.end() && std::isdigit(*it)) ++it;
+    while (it != s.end() && (std::isdigit(*it) || (*it) == '.')) ++it;
     return !s.empty() && it == s.end();
 }
 
-// void strtonum() {
-//     unsigned int n = avm_totalactuals();
-//     if (n != 1) {
-//         std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
-//         retval.type = NIL_M;
-//         return;
-//     }
-//     else {
-//         avm_memcell* arg = avm_getactual(0);
-//         (&retval)->avm_memcellclear();
-//         if (arg->type != NUMBER_M)
-//             std::cout << "Cos expected argument of type NUMBER!" << std::endl;
-//         else {
-//             std::string argVal = std::get<std::string>(arg->data);
-
-//             if (!is_number(argVal)) {
-//                 retval.type = NIL_M;
-//                 return;
-//             }
-
-//             retval.type = NUMBER_M;
-//             retval.data = std::sqrt(argVal);
-//         }
-//     }
-// }
+void strtonum() {
+    unsigned int n = avm_totalactuals();
+    if (n != 1) {
+        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+        retval.type = NIL_M;
+        return;
+    }
+    else {
+        avm_memcell* arg = avm_getactual(0);
+        (&retval)->avm_memcellclear();
+        if (arg->type != NUMBER_M)
+            std::cout << "Cos expected argument of type NUMBER!" << std::endl;
+        else {
+            std::string argVal = std::get<std::string>(arg->data);
+            try {
+                std::size_t offset = 0;
+                double d = std::stod(argVal, &offset);
+                retval.type = NUMBER_M;
+                retval.data = d;
+            }
+            catch (...) {
+                retval.type = NIL_M;
+                return;
+            };
+        }
+    }
+}
 
 #endif
