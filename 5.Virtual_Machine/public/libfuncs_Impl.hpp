@@ -93,9 +93,8 @@ void argument(void) {
 void a_cos(void) {
     unsigned int n = avm_totalactuals();
     if (n != 1) {
-        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+        std::cout << "One argument (not" << n << ") expected in 'cos'!" << std::endl;
         retval.type = NIL_M;
-        return;
     }
     else {
         avm_memcell* arg = avm_getactual(0);
@@ -113,9 +112,8 @@ void a_cos(void) {
 void a_sin(void) {
     unsigned int n = avm_totalactuals();
     if (n != 1) {
-        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+        std::cout << "One argument (not" << n << ") expected in 'sin'!" << std::endl;
         retval.type = NIL_M;
-        return;
     }
     else {
         avm_memcell* arg = avm_getactual(0);
@@ -133,9 +131,8 @@ void a_sin(void) {
 void a_sqrt(void) {
     unsigned int n = avm_totalactuals();
     if (n != 1) {
-        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+        std::cout << "One argument (not" << n << ") expected in 'sqrt'!" << std::endl;
         retval.type = NIL_M;
-        return;
     }
     else {
         avm_memcell* arg = avm_getactual(0);
@@ -156,6 +153,25 @@ void a_sqrt(void) {
     }
 }
 
+void objectcopy() {
+    unsigned int n = avm_totalactuals();
+    if (n != 1) {
+        std::cout << "One argument (not" << n << ") expected in 'objectcopy'!" << std::endl;
+        retval.type = NIL_M;
+    }
+    else {
+        avm_memcell* arg = avm_getactual(0);
+        (&retval)->avm_memcellclear();
+        if (arg->type != TABLE_M)
+            std::cout << "Objectcopy expected argument of type TABLE!" << std::endl;
+        else {
+            avm_table* table = std::get<avm_table*>(arg->data);
+            retval.type = TABLE_M;
+            retval.data = new avm_table(table);
+        }
+    }
+}
+
 bool is_number(const std::string& s)
 {
     std::string::const_iterator it = s.begin();
@@ -166,15 +182,14 @@ bool is_number(const std::string& s)
 void strtonum() {
     unsigned int n = avm_totalactuals();
     if (n != 1) {
-        std::cout << "One argument (not" << n << ") expected in 'argument'!" << std::endl;
+        std::cout << "One argument (not" << n << ") expected in 'strtonum'!" << std::endl;
         retval.type = NIL_M;
-        return;
     }
     else {
         avm_memcell* arg = avm_getactual(0);
         (&retval)->avm_memcellclear();
         if (arg->type != NUMBER_M)
-            std::cout << "Cos expected argument of type NUMBER!" << std::endl;
+            std::cout << "strtonum expected argument of type NUMBER!" << std::endl;
         else {
             std::string argVal = std::get<std::string>(arg->data);
             try {
@@ -190,5 +205,7 @@ void strtonum() {
         }
     }
 }
+
+
 
 #endif

@@ -565,7 +565,7 @@ void printTargetInBinary(std::string filename) {
         fwrite(&size, sizeof(size), 1, file);
         for (int i = 0; i < size; ++i) {
             unsigned int address = userfunctions[i]->get_taddress();
-            unsigned int localsize = userfunctions[i]->getOffset();
+            unsigned int localsize = userfunctions[i]->getTotalLocals();
             const char* id = userfunctions[i]->getId().c_str();
             fwrite(&address, sizeof(unsigned int), 1, file);
             fwrite(&localsize, sizeof(unsigned int), 1, file);

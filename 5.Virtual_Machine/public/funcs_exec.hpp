@@ -50,9 +50,9 @@ void execute_call(Instruction* instr) {
 
     switch (func->type) {
     case USERFUNC_M: {
-        pc = std::get<unsigned int>(func->data);
+        pc = avm.getUserFunction(std::get<unsigned int>(func->data)).address;
         assert(pc < codeSize);
-        assert(code[pc].opcode == ENTERFUNC_OP);
+        assert(avm.get(code, pc)->opcode == ENTERFUNC_OP);
         break;
     }
     case STRING_M:
@@ -79,12 +79,12 @@ void execute_pusharg(Instruction* instr) {
 void execute_funcenter(Instruction* instr) {
     avm_memcell* func = avm.avm_translate_operand(&instr->result, &ax);
     assert(func);
-    assert(pc == std::get<unsigned int>(func->data)); //Func address should match PC.
+    assert(pc == avm.getUserFunction(std::get<unsigned int>(func->data)).address); //Func address should match PC.
 
     //Callee actions here.
     totalActuals = 0;
     topsp = top;
-    top = top - avm.getUserFunction(pc).localSize;
+    top = top - avm.getUserFunction(std::get<unsigned int>(func->data)).localSize;
 }
 
 void execute_funcexit(Instruction* instr) {

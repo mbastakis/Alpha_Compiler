@@ -938,9 +938,11 @@ funcdef
             std::stack<Quad*> stack = returnStack.top();
             returnStack.pop();
             while(!stack.empty()) {
-                patchlabel(stack.top(), nextQuadLabel());
+                patchlabel(stack.top(), nextQuadLabel()-1);
                 stack.pop();
             }
+
+
         }
     }
     ;

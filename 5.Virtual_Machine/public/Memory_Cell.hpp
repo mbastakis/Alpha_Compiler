@@ -51,6 +51,8 @@ public:
         libfuncIndexed = new std::map<std::string, avm_memcell*>();
     }
 
+    avm_table(avm_table* table);
+
     ~avm_table() {
         delete strIndexed;
         delete numIndexed;
@@ -90,6 +92,29 @@ public:
 
     avm_memcell() {
         this->type = UNDEFINED_M;
+    }
+
+    avm_memcell(avm_memcell* copy) {
+        this->type = copy->type;
+        switch (copy->data.index()) {
+        case 0:
+            this->data = std::get<double>(copy->data);
+            break;
+        case 1:
+            this->data = std::get<std::string>(copy->data);
+            break;
+        case 2:
+            this->data = std::get<bool>(copy->data);
+            break;
+        case 3:
+            this->data = std::get<avm_table*>(copy->data);
+            break;
+        case 4:
+            this->data = std::get<unsigned int>(copy->data);
+            break;
+        default:
+            assert(0);
+        }
     }
 
     void copy(avm_memcell* copy) {
@@ -181,6 +206,14 @@ void avm_table::set(avm_memcell* i, avm_memcell* c) {
         break;
     default:
         break;
+    }
+}
+
+avm_table::avm_table(avm_table* table) {
+    this->refCounter = table->refCounter;
+
+    for (auto it = table->strIndexed->begin(); it != table->strIndexed->end(); it++) {
+        this->strIndexed->insert({ it->first, new avm_memcell(it->second) });
     }
 }
 

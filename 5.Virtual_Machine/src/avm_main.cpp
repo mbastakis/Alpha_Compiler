@@ -68,8 +68,7 @@ bool execute_cycle() {
             currLine = instr->srcLine;
         unsigned int oldPC = pc;
         (*executeFuncs[instr->opcode])(instr);
-        if (pc == oldPC)
-            ++pc;
+        if (pc == oldPC) ++pc;
     }
     return true;
 }
@@ -100,12 +99,17 @@ int main(int argc, char** argv) {
     avm.libfuncs_map["cos"] = a_cos;
     avm.libfuncs_map["sin"] = a_sin;
     avm.libfuncs_map["sqrt"] = a_sqrt;
+    avm.libfuncs_map["strtonum"] = strtonum;
+
 
 
 
     std::vector<Instruction*> instructions = avm.getInstructions();
     codeSize = instructions.size();
-    while (execute_cycle());
+    while (true) {
+        if (execute_cycle() == false) break;
+        else continue;
+    }
 
     return 0;
 }
