@@ -11,7 +11,7 @@ void execute_newtable(Instruction* instr) {
 
     lv->type = TABLE_M;
     lv->data = new avm_table();
-    std::get<avm_table*>(lv->data)++;
+    std::get<avm_table*>(lv->data)->increfCounter();
 }
 
 void execute_tablegetelem(Instruction* instr) {

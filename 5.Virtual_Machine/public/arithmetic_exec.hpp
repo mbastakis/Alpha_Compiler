@@ -121,9 +121,9 @@ void avm_assign(avm_memcell* lv, avm_memcell* rv) {
         return;
 
     if (rv->type == UNDEFINED_M) // From undefined r-value? warn!
-        std::cout << "Assigning from 'Undefined' content." << std::endl; //avm_warning
+        // std::cout << "Assigning from 'Undefined' content." << std::endl; //avm_warning
 
-    lv->avm_memcellclear(); //Clear old cell contents.
+        lv->avm_memcellclear(); //Clear old cell contents.
 
     memcpy(lv, rv, sizeof(avm_memcell));
     // lv->copy(rv);
@@ -132,7 +132,7 @@ void avm_assign(avm_memcell* lv, avm_memcell* rv) {
     if (lv->type == STRING_M)
         lv->data = std::get<std::string>(rv->data);
     else if (lv->type == TABLE_M) {
-        std::get<avm_table*>(lv->data)++;
+        std::get<avm_table*>(lv->data)->increfCounter();
     }
 
 }

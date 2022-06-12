@@ -6,6 +6,7 @@
 #include <map>
 #include <cassert>
 #include <variant>
+#include <iostream>
 
 typedef enum {
     NUMBER_M = 0,
@@ -70,19 +71,17 @@ public:
     }
 
 
-    avm_table& operator--();
-    avm_table& operator++();
+    void decrefCounter();
+    void increfCounter();
 };
 
-avm_table& avm_table::operator--() {
+void avm_table::decrefCounter() {
     assert(this->refCounter > 0);
     if (--this->refCounter == 0) this->~avm_table();
-    return *this;
 }
 
-avm_table& avm_table::operator++() {
+void avm_table::increfCounter() {
     ++this->refCounter;
-    return *this;
 }
 
 class avm_memcell {
@@ -152,7 +151,7 @@ public:
         }
         else if (this->type == TABLE_M) {
             assert(std::get<avm_table*>(this->data));
-            std::get<avm_table*>(this->data)--;
+            std::get<avm_table*>(this->data)->decrefCounter();
         }
         this->type = UNDEFINED_M;
     }
@@ -185,24 +184,25 @@ avm_memcell* avm_table::get(avm_memcell* i) {
     switch (i->type)
     {
     case NUMBER_M:
-        return this->numIndexed->find(std::get<double>(i->data))->second;
+        return (this->numIndexed->find(std::get<double>(i->data)) == this->numIndexed->end() ? NULL : this->numIndexed->find(std::get<double>(i->data))->second);
         break;
     case STRING_M:
-        return this->strIndexed->find(std::get<std::string>(i->data))->second;
+        return (this->strIndexed->find(std::get<std::string>(i->data)) == this->strIndexed->end() ? NULL : this->strIndexed->find(std::get<std::string>(i->data))->second);
         break;
     default:
         return NULL;
     }
+    return NULL;
 }
 
 void avm_table::set(avm_memcell* i, avm_memcell* c) {
     switch (i->type)
     {
     case NUMBER_M:
-        this->numIndexed->at(std::get<double>(i->data)) = c;
+        this->numIndexed->insert({ std::get<double>(i->data), new avm_memcell(c) });
         break;
     case STRING_M:
-        this->strIndexed->at(std::get<std::string>(i->data)) = c;
+        this->strIndexed->insert({ std::get<std::string>(i->data), new avm_memcell(c) });
         break;
     default:
         break;
