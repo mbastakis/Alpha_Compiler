@@ -10,3 +10,4 @@ How to build:
 	
 How to run:
 	$ ./dist/asa [fileInput] [fileOuput]
+This produces two files one file named [fileOutput].ab that is a binary file and one file [fileOuput].tc that has the terminal code.

@@ -1,0 +1,6 @@
+Made by Michail Mpastakis 4406, Marileni Sinioraki 4398, Eva Chrisostomaki 4361
+
+
+
+To build type "make".
+To run execute ./dist/avm with argument a binary file created by the phase4 of the project.

@@ -38,6 +38,7 @@ void typeof(void) {
     if (n != 1)
         std::cout << "One argument (not" << n << ") expected in 'typeof'!" << std::endl;
     else {
+        (&retval)->avm_memcellclear();
         retval.type = STRING_M;
         retval.data = avm_memcell_t_to_string[avm_getactual(0)->type];
     }

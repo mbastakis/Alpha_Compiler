@@ -77,7 +77,8 @@ public:
 
 void avm_table::decrefCounter() {
     assert(this->refCounter > 0);
-    if (--this->refCounter == 0) this->~avm_table();
+    if (--this->refCounter == 0);
+    this->~avm_table();
 }
 
 void avm_table::increfCounter() {
