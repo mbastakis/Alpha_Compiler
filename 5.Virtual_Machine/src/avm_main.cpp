@@ -103,7 +103,6 @@ int main(int argc, char** argv) {
 
 
 
-
     std::vector<Instruction*> instructions = avm.getInstructions();
     codeSize = instructions.size();
     while (true) {
